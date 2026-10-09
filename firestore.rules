@@ -71,13 +71,14 @@ service cloud.firestore {
         && (!('coverUrl' in request.resource.data) || (request.resource.data.coverUrl is string && request.resource.data.coverUrl.size() <= 2000 && request.resource.data.coverUrl.matches('^https://.*')))
         && request.resource.data.createdAt is string && request.resource.data.updatedAt is string
         // Favourite artists round your photo (up to 6 ids), and an animated background: a style name, the
-        // panda garden, the frog pond and the toe beach only on the profiles they were made for.
+        // panda garden, the frog pond, the toe beach and the gnome garden only on the profiles they were made for.
         && (!('artists' in request.resource.data) || (request.resource.data.artists is list && request.resource.data.artists.size() <= 6))
         && (!('showArtists' in request.resource.data) || request.resource.data.showArtists is bool)
         && (!('backdrop' in request.resource.data) || (request.resource.data.backdrop is string && request.resource.data.backdrop.matches('^[a-z-]{1,20}$')
           && (request.resource.data.backdrop != 'panda' || uid == '8EEXIUNCQghOnejeAOygGMSl6Bp1')
           && (request.resource.data.backdrop != 'frog' || uid == '6i9w14pQcdR05jYEUvPmadkQ6NZ2')
           && (request.resource.data.backdrop != 'toes' || uid == 'QdMqoH4PeEfvkBmiKAzdnWyBUlL2')
+          && (request.resource.data.backdrop != 'gnome' || uid == '8EEXIUNCQghOnejeAOygGMSl6Bp1')
           // A gift background: only with its grant (a sprout that came with it), or for whoever gives them.
           && (!(request.resource.data.backdrop in giftThemes()) || request.resource.data.handle in giftGivers() || exists(path('themeGrants', uid + '_' + request.resource.data.backdrop)))))
         && getAfter(path('handles', request.resource.data.handle)).data.uid == uid;
@@ -475,9 +476,20 @@ service cloud.firestore {
       allow list: if signedIn() && (resource.data.from == me() || resource.data.to == me());
       allow create: if signedIn()
         && id.matches('^[a-z0-9]{12,40}$')
-        && request.resource.data.keys().hasOnly(['from', 'kind', 'note', 'festivalId', 'artistId', 'artistName', 'theme', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['from', 'kind', 'note', 'festivalId', 'artistId', 'artistName', 'theme', 'via', 'createdAt'])
         && request.resource.data.from == me()
-        && request.resource.data.kind in ['seedling', 'plur', 'wanderer', 'bass', 'melody', 'groove', 'spotlight', 'sunrise', 'moonlight', 'seeker']
+        && request.resource.data.kind in ['seedling', 'plur', 'wanderer', 'bass', 'melody', 'groove', 'spotlight', 'sunrise', 'moonlight', 'seeker', 'gnome']
+        // Given on from your garden (`via`): a sprout given to you, of this kind (or a plain one that grew into
+        // it) and the same artist, not given on already, and marked given on as this one in the same write.
+        && (!('via' in request.resource.data) || (request.resource.data.via is string
+          && get(path('sprouts', request.resource.data.via)).data.get('to', '') == me()
+          && get(path('sprouts', request.resource.data.via)).data.kind in [request.resource.data.kind, 'seedling']
+          && get(path('sprouts', request.resource.data.via)).data.get('artistId', '') == request.resource.data.get('artistId', '')
+          && !('passedOn' in get(path('sprouts', request.resource.data.via)).data)
+          && getAfter(path('sprouts', request.resource.data.via)).data.get('passedOn', '') == id))
+        // Gnome hats come from their keeper (features/sprouts/sprouts.ts, GNOME_FRIENDS), as many as they like, or
+        // are given on that way.
+        && (request.resource.data.kind != 'gnome' || me() == '8EEXIUNCQghOnejeAOygGMSl6Bp1' || 'via' in request.resource.data)
         && (!('note' in request.resource.data) || (request.resource.data.note is string && request.resource.data.note.size() <= 60))
         && (!('festivalId' in request.resource.data) || (request.resource.data.festivalId is string && request.resource.data.festivalId.size() <= 120))
         // An artist's sprout names the artist (id and name, together).
@@ -488,14 +500,29 @@ service cloud.firestore {
         && (!('theme' in request.resource.data) || (request.resource.data.theme in giftThemes() && get(path('profiles', me())).data.handle in giftGivers()))
         && request.resource.data.createdAt == request.time
         && exists(path('profiles', me()));
-      allow update: if signedIn()
-        && !('to' in resource.data)
+      allow update: if signedIn() && ((
+        !('to' in resource.data)
         && resource.data.from != me()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['to', 'claimedAt'])
         && request.resource.data.to == me()
         && request.resource.data.claimedAt == request.time
         && request.time < resource.data.createdAt + duration.value(30, 'd')
-        && !blockedBy(resource.data.from);
+        && !blockedBy(resource.data.from)
+      ) || (
+        // One you have, given on once: marked with the new one, made in the same write from it.
+        resource.data.get('to', '') == me()
+        && !('passedOn' in resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['passedOn'])
+        && request.resource.data.passedOn is string
+        && getAfter(path('sprouts', request.resource.data.passedOn)).data.get('via', '') == id
+      ) || (
+        // Taken back: yours again once the one on its way is gone (nobody picked it up).
+        resource.data.get('to', '') == me()
+        && 'passedOn' in resource.data
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['passedOn'])
+        && !('passedOn' in request.resource.data)
+        && !existsAfter(path('sprouts', resource.data.passedOn))
+      ));
       allow delete: if signedIn() && (
         (resource.data.from == me() && !('to' in resource.data))
         || ((resource.data.from == me() || resource.data.get('to', '') == me()) && !exists(path('profiles', me())))

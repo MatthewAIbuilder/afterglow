@@ -140,11 +140,16 @@ export type Sprout = {
   artistName?: string;
   /** A gift theme that came with it (only Afterglow's developer can give one; features/themes/gifts.ts). */
   theme?: string;
+  /** A hat passed on: the sprout it was in the giver's garden. */
+  via?: string;
+  /** This one was passed on, as this sprout (it's no longer in its owner's garden). */
+  passedOn?: string;
   /** When it reached Afterglow (ISO). */
   createdAt: string;
   claimedAt?: string;
 };
-export type SproutInput = { id: string; kind: string; note?: string; festivalId?: string; artistId?: string; artistName?: string; theme?: string };
+/** `via`: a hat passed on, the sprout of yours it is (marked passed on in the same write). */
+export type SproutInput = { id: string; kind: string; note?: string; festivalId?: string; artistId?: string; artistName?: string; theme?: string; via?: string };
 
 export type CrewInvite = {
   /** `crewId_to` */

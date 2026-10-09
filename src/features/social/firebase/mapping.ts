@@ -196,10 +196,14 @@ export function sproutFromDoc(id: string, d: unknown): Sprout | null {
   const artistId = str(o.artistId);
   const artistName = str(o.artistName);
   const theme = str(o.theme);
+  const via = str(o.via);
+  const passedOn = str(o.passedOn);
   return {
     id,
     kind,
     from,
+    ...(via ? { via } : {}),
+    ...(passedOn ? { passedOn } : {}),
     ...(theme ? { theme } : {}),
     ...(artistId && artistName ? { artistId, artistName: artistName.slice(0, 60) } : {}),
     createdAt: timeOf(o.createdAt) ?? new Date().toISOString(),

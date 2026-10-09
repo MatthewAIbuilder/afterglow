@@ -4,6 +4,7 @@ import { cleanBackdrop } from '../../profile/backdrops';
 import { cleanArtistName } from '../../../data/extraArtists';
 import { canGiveThemes, isGiftTheme } from '../../themes/gifts';
 import { cleanPublicGarden, type PublicResident } from '../../sprouts/publicGarden';
+import { isKind, keptKinds, kindOf } from '../../sprouts/sprouts';
 import { GARDEN_BACKUP_MAX } from '../../sprouts/backup';
 import { cleanDecor, type DecorId } from '../../sprouts/decor';
 import { cleanNote, cleanPublicKandi, cleanWord, isCharm, isPattern, KANDI_ID, type Kandi, type PublicKandi } from '../../kandi/kandi';
@@ -1121,7 +1122,15 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         if (there.from === u.uid) return;
         throw new SocialError('unknown');
       }
-      sprouts.set(input.id, { id: input.id, kind: input.kind, from: u.uid, createdAt: now(), ...(input.note ? { note: input.note } : {}), ...(input.festivalId ? { festivalId: input.festivalId } : {}), ...(input.artistId && input.artistName ? { artistId: input.artistId, artistName: input.artistName } : {}), ...(input.theme ? { theme: input.theme } : {}) });
+      // Like the rules: given on (`via`) from one given to you, of this kind (or plain) and artist, not given on already;
+      // a hat only from its keepers or given on.
+      const kind = isKind(input.kind) ? kindOf(input.kind) : undefined;
+      if (input.via) {
+        const via = sprouts.get(input.via);
+        if (!via || via.to !== u.uid || (via.kind !== input.kind && via.kind !== 'seedling') || (via.artistId ?? '') !== (input.artistId ?? '') || via.passedOn) throw new SocialError('unknown');
+        sprouts.set(via.id, { ...via, passedOn: input.id });
+      } else if (kind?.seed && !keptKinds(u.uid).includes(kind.id)) throw new SocialError('unknown');
+      sprouts.set(input.id, { id: input.id, kind: input.kind, from: u.uid, createdAt: now(), ...(input.via ? { via: input.via } : {}), ...(input.note ? { note: input.note } : {}), ...(input.festivalId ? { festivalId: input.festivalId } : {}), ...(input.artistId && input.artistName ? { artistId: input.artistId, artistName: input.artistName } : {}), ...(input.theme ? { theme: input.theme } : {}) });
     },
     async claimSprout(id) {
       if (network.down) throw new SocialError('network');
@@ -1464,12 +1473,17 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       needOrg(p.orgId);
       orgPosts.delete(id);
     },
-    async takeBackSprout(id) {
+    async takeBackSprout(id, via) {
       if (network.down) throw new SocialError('network');
       const u = me();
       const s = sprouts.get(id);
       if (s?.to) throw new SocialError('sprout-taken');
       if (s && s.from === u.uid) sprouts.delete(id);
+      const v = via ? sprouts.get(via) : undefined;
+      if (v && v.to === u.uid && v.passedOn === id) {
+        const { passedOn: _, ...rest } = v;
+        sprouts.set(via!, rest);
+      }
     },
     async report(target, reason, note) {
       reports.push({ id: `r${++n}`, by: me().uid, target, reason, note, createdAt: `${now()}#${String(n).padStart(6, '0')}`, status: 'open' });

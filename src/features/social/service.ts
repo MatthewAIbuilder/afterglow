@@ -360,8 +360,8 @@ export interface SocialService {
   myKandi(max: number): Promise<Kandi[]>;
   /** Take kandi out of your garden (or take back one you gave). */
   removeKandi(id: string): Promise<void>;
-  /** Take back a sprout nobody has picked up (one that isn't there is fine; `sprout-taken` once someone has it). */
-  takeBackSprout(id: string): Promise<void>;
+  /** Take back a sprout nobody has picked up (one that isn't there is fine; `sprout-taken` once someone has it). A hat passed on (`via`) is yours again. */
+  takeBackSprout(id: string, via?: string): Promise<void>;
 
   /** A sticker by its code, or null. Anyone can read one, signed in or not. */
   sticker(code: string): Promise<Sticker | null>;

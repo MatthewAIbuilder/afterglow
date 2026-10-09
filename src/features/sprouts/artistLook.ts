@@ -42,6 +42,7 @@ export type Creature =
   | 'rail'
   | 'sunrise'
   | 'lantern'
+  | 'gnome'
   | 'confetti'
   | 'frog'
   // An organizer's own (features/organizers): Underground Alchemy's potion.
@@ -487,9 +488,10 @@ const PLACES: Record<PlaceCreature, Spec> = {
   merch: { creature: 'merch', palette: P('#FFFFFF', '#2A2A3A', '#0E0E16', '#FF7EB6', '#7A2A5A', '#FFD24A', '#B99CFF'), name: t('The Merch tee'), theme: t('The festival tee you’ll wear for years') },
   gates: { creature: 'gates', palette: P('#FFF4E0', '#7A5AD8', '#2A1E5A', '#FF5A7A', '#121A2A', '#FFD24A', '#B99CFF'), name: t('The Gates'), theme: t('The arch of lights you walk through on day one') },
   shower: { creature: 'shower', palette: P('#FFFFFF', '#C8D4E4', '#4A5A74', '#FF9A2A', '#FFD24A', '#7FD3FF', '#9AD8FF'), name: t('The Shower'), theme: t('A hot shower and a rubber duck, camping luxury') },
+  gnome: { creature: 'gnome', palette: P('#FFE2CC', '#E8463A', '#8A1E1A', '#F6F2EA', '#3D6FD0', '#FFC95A', '#FF7A6A'), name: t('The Garden gnome'), theme: t('A garden gnome keeping watch over the sprouts') },
   flask: { creature: 'flask', palette: P('#F3EEFF', '#A97CFF', '#4A2E9A', '#D9B48A', '#7A5634', '#C9F7FF', '#A97CFF'), name: t('The Alchemist'), theme: t('A bubbling potion from the underground') },
 };
-export type PlaceCreature = 'ferris' | 'rail' | 'sunrise' | 'lantern' | 'confetti' | 'frog' | 'flask' | 'discoball' | 'totem' | 'tent' | 'glowstick' | 'glowshroom' | 'bassbin' | 'campfire' | 'mainstage' | 'bubbles' | 'mixtape' | 'portapotty' | 'refill' | 'charger' | 'fan' | 'silentdisco' | 'shuttle' | 'hammock' | 'foodtruck' | 'caretent' | 'lostfound' | 'pickup' | 'merch' | 'gates' | 'shower';
+export type PlaceCreature = 'ferris' | 'rail' | 'sunrise' | 'lantern' | 'confetti' | 'frog' | 'flask' | 'discoball' | 'totem' | 'tent' | 'glowstick' | 'glowshroom' | 'bassbin' | 'campfire' | 'mainstage' | 'bubbles' | 'mixtape' | 'portapotty' | 'refill' | 'charger' | 'fan' | 'silentdisco' | 'shuttle' | 'hammock' | 'foodtruck' | 'caretent' | 'lostfound' | 'pickup' | 'merch' | 'gates' | 'shower' | 'gnome';
 export const PLACE_CREATURES = Object.keys(PLACES) as PlaceCreature[];
 
 /** The sound creatures (no artist's identity), which stickers can use too. */

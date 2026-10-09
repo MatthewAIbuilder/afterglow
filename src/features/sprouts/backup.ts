@@ -26,6 +26,9 @@ export type BackupParts<G extends WithId & WithAt, S extends WithId & WithAt> = 
   artistShown?: Readonly<Record<string, number>>;
   starterAt?: number;
   wild?: readonly G[];
+  /** Given away and picked up (`account:id`), and your own artist collectibles given away (`account:artistId` → when). */
+  gone?: readonly string[];
+  artistGone?: Readonly<Record<string, number>>;
 };
 
 /** The copy to keep, as text, or undefined when there's nothing worth keeping yet (so an empty phone never writes over a full copy). */
@@ -43,6 +46,8 @@ export function backupText<G extends WithId & WithAt, S extends WithId & WithAt>
     ...(parts.bloomsShown?.length ? { bloomsShown: parts.bloomsShown.slice(-500) } : {}),
     ...(parts.artistShown ? { artistShown: parts.artistShown } : {}),
     ...(parts.starterAt ? { starterAt: parts.starterAt } : {}),
+    ...(parts.gone?.length ? { gone: parts.gone.slice(-2000) } : {}),
+    ...(parts.artistGone && Object.keys(parts.artistGone).length ? { artistGone: parts.artistGone } : {}),
     wild,
   });
   return text.length <= GARDEN_BACKUP_MAX ? text : undefined;

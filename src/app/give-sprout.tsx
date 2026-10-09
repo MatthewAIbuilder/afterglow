@@ -13,13 +13,14 @@ import { SPROUT_DOTS, SPROUT_GLOW, SPROUT_GREEN } from '../features/sprouts/look
 import { Sprout } from '../features/sprouts/Sprout';
 import { SproutOf } from '../features/sprouts/SproutOf';
 import { artistLook } from '../features/sprouts/artistLook';
-import { tierLabel } from '../features/sprouts/artistSprouts';
-import { kindOf, seedsLine, SPROUT_NOTE_MAX, type SproutArtist, type SproutCard, type SproutKind, sproutLink, sproutName } from '../features/sprouts/sprouts';
+import { type Tier, tierLabel } from '../features/sprouts/artistSprouts';
+import { giftStage, keptKinds, kindOf, seedsLine, SPROUT_NOTE_MAX, type SproutArtist, type SproutCard, type SproutKind, sproutLink, sproutName } from '../features/sprouts/sprouts';
 import { canGiveThemes, GIFT_THEME_IDS } from '../features/themes/gifts';
 import { ThemeSwatch } from '../features/themes/ThemePreview';
 import { themeOf } from '../features/themes/themes';
 import type { ThemeId } from '../theme/palettes';
 import { useCatalog } from '../state/catalog';
+import type { Artist } from '../data/models';
 import { t } from '../i18n';
 import { showAlert } from '../lib/dialog';
 import { haptic } from '../lib/haptics';
@@ -46,15 +47,20 @@ export default function GiveSproutScreen() {
   const catalog = useCatalog();
   const params = useLocalSearchParams<{ artist?: string }>();
   const [kind, setKind] = useState<SproutKind>('seedling');
-  // An artist's sprout (one you've filmed), chosen here or from the garden.
+  // An artist's collectible (one you've filmed, or one you were given), chosen here or from the garden.
   const [artistId, setArtistId] = useState<string | undefined>(typeof params.artist === 'string' ? params.artist : undefined);
-  const earned = artistId ? sprouts.artists.find((a) => a.artistId === artistId) : undefined;
+  const artistChoices = useMemo<{ artistId: string; name: string; tier: Tier; videos: number; mine: boolean }[]>(() => {
+    const mine = sprouts.artists.map((a) => ({ artistId: a.artistId, name: catalog.artist(a.artistId)?.name ?? '', tier: a.tier, videos: a.videos, mine: true }));
+    const given = sprouts.garden.flatMap((g) => (g.artist && g.stage === 3 ? [g.artist] : [])).filter((a, i, all) => all.findIndex((x) => x.id === a.id) === i && !mine.some((m) => m.artistId === a.id));
+    return [...mine.filter((m) => m.name), ...given.map((a) => ({ artistId: a.id, name: a.name, tier: 0 as Tier, videos: 0, mine: false }))];
+  }, [sprouts.artists, sprouts.garden, catalog]);
+  const earned = artistId ? artistChoices.find((a) => a.artistId === artistId) : undefined;
   const artistOf = (id: string) => catalog.artist(id);
   const lookOf = (a: SproutArtist) => {
     const l = artistLook(artistOf(a.id) ?? a);
     return t('{name}: {theme}', { name: l.name, theme: l.theme.toLowerCase() });
   };
-  const chosen: SproutArtist | undefined = earned && artistOf(earned.artistId) ? { id: earned.artistId, name: artistOf(earned.artistId)!.name } : undefined;
+  const chosen: SproutArtist | undefined = earned ? { id: earned.artistId, name: earned.name } : undefined;
   const [note, setNote] = useState('');
   // Only Afterglow's developer can send a gift theme with a sprout (features/themes/gifts.ts).
   const themeGiver = canGiveThemes(social.profile?.handle);
@@ -86,7 +92,9 @@ export default function GiveSproutScreen() {
           : r.problem === 'loading'
             ? t('One moment, your garden is still loading.')
             : r.problem === 'not-yours'
-              ? t('Film this artist’s set to earn their collectible first.')
+              ? chosen
+                ? t('Film this artist’s set to earn their collectible first.')
+                : t('Grow your gnome all the way first, then you can pass it on.')
               : t('Make your profile to give sprouts.'),
       );
       return;
@@ -126,6 +134,8 @@ export default function GiveSproutScreen() {
   }, [picked, gift, online]);
 
   const k = kindOf(kind);
+  const hat = !!k.seed && !chosen;
+  const noSeeds = sprouts.seeds === 0 && !hat;
   const blocked = !social.availability.ok || !social.user || !social.profile;
 
   return (
@@ -205,14 +215,23 @@ export default function GiveSproutScreen() {
                   <SproutOf artist={chosen} tier={earned.tier} size={150} />
                   <Text style={styles.heroName}>{sproutName({ kind: 'seedling', artist: chosen })}</Text>
                   <Text style={styles.body}>
-                    {t('{look}. {tier} of them filmed. The one you give stays yours too.', { look: lookOf(chosen), tier: tierLabel(earned) })}
+                    {earned.mine
+                      ? t('{look}. {tier} of them filmed. The one you give leaves your garden: film them again to earn it back.', { look: lookOf(chosen), tier: tierLabel(earned) })
+                      : t('{look}. Given to you. The one you give leaves your garden for theirs.', { look: lookOf(chosen) })}
                   </Text>
                 </>
               ) : (
                 <>
-                  <Sprout kind={kind} stage={kind === 'seedling' ? 2 : 3} size={150} />
+                  <Sprout kind={kind} stage={giftStage(kind)} size={150} />
                   <Text style={styles.heroName}>{k.name}</Text>
                   <Text style={styles.body}>{k.about}</Text>
+                  {keptKinds(social.user?.uid).includes(kind) ? (
+                    <Text style={styles.body}>{t('You can give as many as you like, and they don’t use seeds.')}</Text>
+                  ) : k.seed ? (
+                    <Text style={styles.body}>{t('Your grown gnome leaves your garden, and they get a new hat to grow.')}</Text>
+                  ) : kind !== 'seedling' ? (
+                    <Text style={styles.body}>{t('Giving it moves it: it leaves your garden for theirs.')}</Text>
+                  ) : null}
                 </>
               )}
             </View>
@@ -231,7 +250,7 @@ export default function GiveSproutScreen() {
                     accessibilityLabel={kindOf(id).name}
                     style={[styles.kind, !chosen && id === kind && styles.kindOn]}
                   >
-                    <Sprout kind={id} stage={id === 'seedling' ? 2 : 3} size={44} still />
+                    <Sprout kind={id} stage={giftStage(id)} size={44} still />
                     <Text style={styles.kindName} numberOfLines={1}>
                       {kindOf(id).short}
                     </Text>
@@ -241,13 +260,12 @@ export default function GiveSproutScreen() {
             ) : (
               <Text style={styles.hint}>{t('Grow your sprouts into new kinds, and you can give those too.')}</Text>
             )}
-            {sprouts.artists.length ? (
+            {artistChoices.length ? (
               <>
                 <Text style={styles.rowTitle}>{t('Artist collectibles')}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.kinds} accessibilityRole="radiogroup">
-                  {sprouts.artists.flatMap((a) => {
-                    const artist = artistOf(a.artistId);
-                    if (!artist) return [];
+                  {artistChoices.flatMap((a) => {
+                    const artist = artistOf(a.artistId) ?? ({ id: a.artistId, name: a.name, sound: {} } as Artist);
                     const on = chosen?.id === a.artistId;
                     return [
                       <Pressable
@@ -258,7 +276,7 @@ export default function GiveSproutScreen() {
                         }}
                         accessibilityRole="radio"
                         accessibilityState={{ selected: on }}
-                        accessibilityLabel={t('{artist} collectible, {tier}', { artist: artist.name, tier: tierLabel(a) })}
+                        accessibilityLabel={a.mine ? t('{artist} collectible, {tier}', { artist: artist.name, tier: tierLabel(a) }) : t('{artist} collectible, given to you', { artist: artist.name })}
                         style={[styles.kind, on && styles.kindOn]}
                       >
                         <Sprout artist={artistLook(artist)} tier={a.tier} stage={3} size={44} still />
@@ -323,14 +341,15 @@ export default function GiveSproutScreen() {
               accessibilityLabel={t('A note with your sprout')}
               style={styles.input}
             />
-            <Text style={[styles.seeds, sprouts.seeds === 0 && styles.wait]}>{seedsLine(sprouts.seeds, sprouts.festivalDay)}</Text>
+            {/* A hat uses no seed. */}
+            {hat ? null : <Text style={[styles.seeds, sprouts.seeds === 0 && styles.wait]}>{seedsLine(sprouts.seeds, sprouts.festivalDay)}</Text>}
             {problem ? <Text style={styles.wait}>{problem}</Text> : null}
             <Pressable
               onPress={show}
-              disabled={sprouts.seeds === 0}
+              disabled={noSeeds}
               accessibilityRole="button"
-              accessibilityState={{ disabled: sprouts.seeds === 0 }}
-              style={({ pressed }) => [styles.primary, sprouts.seeds === 0 && styles.disabled, pressed && styles.pressed]}
+              accessibilityState={{ disabled: noSeeds }}
+              style={({ pressed }) => [styles.primary, noSeeds && styles.disabled, pressed && styles.pressed]}
             >
               <Text style={styles.primaryText}>{t('Show the code')}</Text>
             </Pressable>

@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { DEFAULT_THEME, isThemeId, PALETTES, rgbaOf, THEME_IDS } from '../../../theme/palettes';
 import { FROG_FRIENDS, PANDA_FRIENDS, TOE_BEACH_FRIENDS } from '../../profile/backdrops';
-import { canUseTheme, cleanOffered, giftDue, madeTheme, THEMES, themeChoices, themeOf, themeToRevert } from '../themes';
+import { canUseTheme, cleanOffered, giftDue, madeTheme, offerKey, THEMES, themeChoices, themeOf, themeToRevert } from '../themes';
 
 const lum = (hex: string) => {
   const n = parseInt(hex.slice(1), 16);
@@ -54,7 +54,12 @@ describe('app themes', () => {
   });
 
   it('the panda, frog and toe themes belong to one person each', () => {
-    expect(madeTheme(PANDA_FRIENDS[0])?.id).toBe('panda');
+    // The panda garden's owner has the gnome garden too: the newest is the one offered.
+    expect(madeTheme(PANDA_FRIENDS[0])?.id).toBe('gnome');
+    expect(themeChoices(PANDA_FRIENDS[0]).slice(0, 2).map((t) => t.id)).toEqual(['panda', 'gnome']);
+    expect(canUseTheme(themeOf('gnome'), PANDA_FRIENDS[0], false)).toBe(true);
+    expect(canUseTheme(themeOf('gnome'), FROG_FRIENDS[0], true)).toBe(false);
+    expect(themeOf('gnome').backdrop).toBe('gnome');
     expect(madeTheme(FROG_FRIENDS[0])?.id).toBe('frog');
     expect(madeTheme(TOE_BEACH_FRIENDS[0])?.id).toBe('toes');
     expect(themeChoices(PANDA_FRIENDS[0])[0].id).toBe('panda');
@@ -77,8 +82,14 @@ describe('app themes', () => {
   it('offers someone their own theme once', () => {
     const grace = PANDA_FRIENDS[0];
     expect(giftDue(grace, 'afterglow', [])).toBe(true);
-    expect(giftDue(grace, 'panda', [])).toBe(false);
-    expect(giftDue(grace, 'afterglow', [grace])).toBe(false);
+    expect(giftDue(grace, 'gnome', [])).toBe(false);
+    // Offered the panda garden before (kept as the account alone): the gnome garden is still offered, once.
+    expect(giftDue(grace, 'panda', [grace])).toBe(true);
+    expect(offerKey(grace, 'gnome')).toBe(`${grace}:gnome`);
+    expect(giftDue(grace, 'afterglow', [grace, offerKey(grace, 'gnome')])).toBe(false);
+    const frog = FROG_FRIENDS[0];
+    expect(offerKey(frog, 'frog')).toBe(frog);
+    expect(giftDue(frog, 'afterglow', [frog])).toBe(false);
     expect(giftDue('someone', 'afterglow', [])).toBe(false);
     expect(cleanOffered(['a', 3, 'b'])).toEqual(['a', 'b']);
     expect(cleanOffered('x')).toEqual([]);

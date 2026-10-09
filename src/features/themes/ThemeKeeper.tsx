@@ -8,7 +8,7 @@ import { THEME_ID } from '../../theme/tokens';
 import { writeStoredTheme } from '../../theme/storedTheme';
 import { useStanding } from '../standing/useStanding';
 import { giftToShow } from './gifts';
-import { cleanOffered, giftDue, themeToRevert } from './themes';
+import { cleanOffered, giftDue, madeTheme, offerKey, themeToRevert } from './themes';
 
 export const THEME_GIFT_KEY = 'themeGift.v1';
 const TABS = new Set(['/', '/sound', '/festivals', '/together', '/profile']);
@@ -49,8 +49,9 @@ export function ThemeKeeper() {
     AsyncStorage.getItem(THEME_GIFT_KEY)
       .then((raw) => {
         const offered = cleanOffered(raw ? JSON.parse(raw) : []);
-        if (!giftDue(uid, THEME_ID, offered)) return;
-        AsyncStorage.setItem(THEME_GIFT_KEY, JSON.stringify([...offered, uid])).catch(() => {});
+        const mine = madeTheme(uid);
+        if (!mine || !giftDue(uid, THEME_ID, offered)) return;
+        AsyncStorage.setItem(THEME_GIFT_KEY, JSON.stringify([...offered, offerKey(uid, mine.id)])).catch(() => {});
         setTimeout(() => router.push({ pathname: '/themes', params: { gift: '1' } }), 900);
       })
       .catch(() => {});

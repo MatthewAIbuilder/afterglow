@@ -1,12 +1,12 @@
 import { DEFAULT_THEME, isThemeId, PALETTES, type Palette, type ThemeId } from '../../theme/palettes';
-import { type BackdropId, FROG_FRIENDS, PANDA_FRIENDS, TOE_BEACH_FRIENDS } from '../profile/backdrops';
+import { type BackdropId, FROG_FRIENDS, GNOME_FRIENDS, PANDA_FRIENDS, TOE_BEACH_FRIENDS } from '../profile/backdrops';
 import { t } from '../../i18n';
 
 /**
  * App themes: a whole new look for Afterglow (the night, the glow, the
  * lights in the sky), each with a profile background to match. Afterglow,
- * Aurora and Pride are free; the rest come with Afterglow Plus; three are made for one
- * person each. Pure.
+ * Aurora and Pride are free; the rest come with Afterglow Plus; four are made for one
+ * person each (one person has two). Pure.
  */
 export type AppTheme = {
   id: ThemeId;
@@ -38,6 +38,7 @@ export const THEMES: readonly AppTheme[] = [
   { id: 'frog', name: 'Frog pond', about: t('Made just for you: lily-pad green and firefly light'), plus: false, only: FROG_FRIENDS, backdrop: 'frog' },
   { id: 'daisy', name: 'Neon Daisy', about: t('A gift: neon daisy pink, carnival gold and a night full of lights'), plus: false, gift: true, backdrop: 'daisy' },
   { id: 'toes', name: 'Toe beach', about: t('Made just for you: sunset peach on the sand'), plus: false, only: TOE_BEACH_FRIENDS, backdrop: 'toes' },
+  { id: 'gnome', name: 'Gnome garden', about: t('Made just for you: toadstool red, moss green and lantern gold'), plus: false, only: GNOME_FRIENDS, backdrop: 'gnome' },
 ];
 
 const BY_ID = new Map(THEMES.map((t) => [t.id, t]));
@@ -57,8 +58,8 @@ export function canUseTheme(t: AppTheme, uid: string | undefined, plus: boolean,
   return !t.plus || plus;
 }
 
-/** The theme made for this account, if there is one. */
-export const madeTheme = (uid: string | undefined) => THEMES.find((t) => t.only && uid && t.only.includes(uid));
+/** The theme made for this account, if there is one (the newest, for someone with more than one). */
+export const madeTheme = (uid: string | undefined) => [...THEMES].reverse().find((t) => t.only && uid && t.only.includes(uid));
 
 /**
  * The theme to go back to when the one being worn no longer belongs to
@@ -75,10 +76,15 @@ export function themeToRevert(current: ThemeId, who: { uid?: string; plus?: bool
   return undefined;
 }
 
+/** The first made-for themes were remembered as offered by the account alone; later ones by account and theme. */
+const OFFERED_BY_ACCOUNT: ReadonlySet<string> = new Set(['panda', 'frog', 'toes']);
+/** What `themeGift.v1` keeps once `uid` has been offered their theme `id`. */
+export const offerKey = (uid: string, id: ThemeId) => (OFFERED_BY_ACCOUNT.has(id) ? uid : `${uid}:${id}`);
+
 /** Whether to offer someone their own theme as a gift: they have one, aren't wearing it, and haven't been offered it. */
 export function giftDue(uid: string | undefined, current: ThemeId, offered: readonly string[]): boolean {
   const mine = madeTheme(uid);
-  return !!mine && !!uid && current !== mine.id && !offered.includes(uid);
+  return !!mine && !!uid && current !== mine.id && !offered.includes(offerKey(uid, mine.id));
 }
 
 export const cleanOffered = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string').slice(-20) : []);

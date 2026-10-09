@@ -195,6 +195,8 @@ export const es_profileLogic: Dictionary = {
   'Made just for you: frogs on lily pads, fireflies and a green glow': 'Hecho solo para ti: ranas en nenúfares, luciérnagas y un brillo verde',
   'Toe beach': 'Playa de los dedos',
   'Made just for you: footprints in the sand, wiggling toes and a sunset': 'Hecho solo para ti: huellas en la arena, dedos que se mueven y un atardecer',
+  'Gnome garden': 'Jardín de gnomos',
+  'Made just for you: gnomes among the toadstools, lanterns and fireflies': 'Hecho solo para ti: gnomos entre las setas, faroles y luciérnagas',
   // Theme descriptions (theme names stay as they are)
   'The original: violet festival light at night': 'El original: luz violeta de festival de noche',
   'Northern-lights green on a deep blue night': 'Verde de aurora boreal en una noche azul profundo',
@@ -211,6 +213,7 @@ export const es_profileLogic: Dictionary = {
   'Made just for you: blossom pink and bamboo green': 'Hecho solo para ti: rosa de flor y verde bambú',
   'Made just for you: lily-pad green and firefly light': 'Hecho solo para ti: verde nenúfar y luz de luciérnaga',
   'Made just for you: sunset peach on the sand': 'Hecho solo para ti: durazno de atardecer sobre la arena',
+  'Made just for you: toadstool red, moss green and lantern gold': 'Hecho solo para ti: rojo de seta, verde musgo y dorado de farol',
   // Milestones
   'First festival': 'Primer festival',
   'Go to a festival': 'Ve a un festival',

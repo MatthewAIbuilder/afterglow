@@ -12,7 +12,7 @@ import { accountsOff } from '../../features/social/unavailable';
 import { SPROUT_GREEN } from '../../features/sprouts/look';
 import { claimLine } from '../../features/sprouts/outbox';
 import { Sprout } from '../../features/sprouts/Sprout';
-import { giftTitle, kindOf, sproutCardFrom, sproutName } from '../../features/sprouts/sprouts';
+import { giftStage, giftTitle, kindOf, sproutCardFrom, sproutName } from '../../features/sprouts/sprouts';
 import { SproutOf } from '../../features/sprouts/SproutOf';
 import { artistLook } from '../../features/sprouts/artistLook';
 import { FollowGiver } from '../../features/sprouts/FollowGiver';
@@ -127,7 +127,7 @@ export default function SproutScreen() {
         <View style={styles.stage}>
           <Animated.View style={[styles.halo, haloStyle]} pointerEvents="none" />
           <Animated.View style={sproutStyle}>
-            <SproutOf kind={card.kind} artist={card.artist} stage={card.kind === 'seedling' ? 2 : 3} size={170} />
+            <SproutOf kind={card.kind} artist={card.artist} stage={giftStage(card.kind)} size={170} />
           </Animated.View>
           <View style={styles.ground} />
           {celebrate ? <ConfettiBurst key={celebrate} spread={150} /> : null}

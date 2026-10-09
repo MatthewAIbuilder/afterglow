@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { BACKDROPS, backdropChoices, canUse, cleanBackdrop, FROG_FRIENDS, madeFor, NO_BACKDROP, PANDA_FRIENDS, shownBackdrop, TOE_BEACH_FRIENDS } from '../backdrops';
+import { BACKDROPS, backdropChoices, canUse, cleanBackdrop, FROG_FRIENDS, GNOME_FRIENDS, madeFor, NO_BACKDROP, PANDA_FRIENDS, shownBackdrop, TOE_BEACH_FRIENDS } from '../backdrops';
 import { TOE_FRIENDS } from '../../toes/toes';
 import { publicOrbit } from '../identity';
 import type { Artist } from '../../../data/models';
@@ -27,19 +27,24 @@ describe('profile backgrounds', () => {
   });
 
   it('the panda garden and the frog pond belong to one person each, on by default', () => {
-    expect(madeFor(panda)?.id).toBe('panda');
+    // The panda garden's owner also has the gnome garden: the newest shows by default, both can be picked.
+    expect(GNOME_FRIENDS).toEqual(PANDA_FRIENDS);
+    expect(madeFor(panda)?.id).toBe('gnome');
     expect(madeFor(frog)?.id).toBe('frog');
-    expect(backdropChoices(panda)[0].id).toBe('panda');
+    expect(backdropChoices(panda).slice(0, 2).map((b) => b.id)).toEqual(['panda', 'gnome']);
     expect(backdropChoices(panda).some((b) => b.id === 'frog')).toBe(false);
-    expect(shownBackdrop(undefined, panda, false)).toBe('panda');
+    expect(backdropChoices('someone').some((b) => b.id === 'gnome')).toBe(false);
+    expect(shownBackdrop(undefined, panda, false)).toBe('gnome');
+    expect(shownBackdrop('panda', panda, false)).toBe('panda');
+    expect(shownBackdrop('gnome', 'someone', true)).toBeUndefined();
     expect(shownBackdrop(undefined, frog, false)).toBe('frog');
     // The toe beach goes to the same person as the hidden toes.
     expect(TOE_BEACH_FRIENDS).toEqual(TOE_FRIENDS);
     expect(shownBackdrop(undefined, TOE_FRIENDS[0], false)).toBe('toes');
-    expect(shownBackdrop('toes', panda, true)).toBe('panda');
+    expect(shownBackdrop('toes', panda, true)).toBe('gnome');
     // Someone else can't show them, even by writing the name.
     expect(shownBackdrop('panda', 'someone', true)).toBeUndefined();
-    expect(shownBackdrop('frog', panda, true)).toBe('panda');
+    expect(shownBackdrop('frog', panda, true)).toBe('gnome');
     // They can pick another or turn theirs off.
     expect(shownBackdrop('aurora', panda, false)).toBe('aurora');
     expect(shownBackdrop(NO_BACKDROP, panda, false)).toBeUndefined();
