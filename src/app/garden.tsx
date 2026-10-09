@@ -574,7 +574,7 @@ const styles = StyleSheet.create({
   secondary: { flex: 1, minWidth: 130, alignItems: 'center', paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   secondaryText: { ...type.headline, color: color.moon },
   storyGarden: { borderRadius: radius.lg, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(143,240,180,0.35)' },
-  shareGarden: { flex: 0, alignSelf: 'center', paddingHorizontal: space.xl, marginTop: space.sm },
+  shareGarden: { flex: -1, alignSelf: 'center', paddingHorizontal: space.xl, marginTop: space.sm },
   section: { gap: space.sm, marginTop: space.md },
   waitRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, padding: space.sm, borderRadius: radius.md, borderWidth: 1, borderStyle: 'dashed', borderColor: 'rgba(255,184,107,0.6)' },
   waitText: { ...type.caption, color: '#FFB86B', flex: 1 },
@@ -596,6 +596,7 @@ const styles = StyleSheet.create({
   note: { ...type.headline, color: color.moon, fontStyle: 'italic', textAlign: 'center' },
   growLine: { ...type.label, color: SPROUT_GREEN },
   tip: { ...type.caption, color: color.moonFaint, alignSelf: 'stretch', textAlign: 'center' },
-  sheetClose: { flex: 0, alignSelf: 'stretch', marginTop: space.md },
+  // flex -1, not 0: in a browser `flex: 0` means a zero height, so the label spilled out under the button.
+  sheetClose: { flex: -1, alignSelf: 'stretch', marginTop: space.md },
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
 });
