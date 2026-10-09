@@ -18,7 +18,9 @@ import {
   newlyBloomed,
   giftStage,
   grownName,
+  isReceived,
   passable,
+  toPass,
   stageName,
   readSproutLink,
   seedsLeft,
@@ -118,8 +120,13 @@ describe('growing', () => {
       ['a', 'wanderer', 3],
     ]);
     expect(newlyBloomed(view, {})).toEqual({ a: 'wanderer' });
-    // A received kind isn't yours to give until you grow it.
-    expect(givableKinds(view, {})).toEqual(['seedling', 'wanderer']);
+    // Every grown kind in your garden can be given away (giving moves it), the one you were given first.
+    expect(givableKinds(view)).toEqual(['seedling', 'wanderer', 'bass']);
+    expect(passable(view).map((s) => s.id)).toEqual(['b', 'a']);
+    expect(toPass(view, 'wanderer')?.id).toBe('a');
+    expect(toPass(view, 'plur')).toBeUndefined();
+    expect(isReceived(view[0])).toBe(true);
+    expect(isReceived({ ...view[1], id: 'starter' })).toBe(false);
     // Remembered, it stays that kind whatever comes next.
     const later = garden(sprouts, { ...j, gave: Array(40).fill(at(10, 8)) }, { a: 'wanderer' }, at(10, 9));
     expect(later.find((s) => s.id === 'a')?.shown).toBe('wanderer');
@@ -190,7 +197,7 @@ describe('the bell', () => {
   it('says when one of your sprouts bloomed', () => {
     const now = at(10, 20);
     const list = bloomNotices([{ id: 'a', kind: 'wanderer', at: at(10, 19) }, { id: 'b', kind: 'plur', at: at(9, 1) }], now);
-    expect(list.map((n) => [n.id, n.title, n.body])).toEqual([['bloom:a', 'Your sprout bloomed into a Wanderer sprout', 'You can give Wanderer sprouts now.']]);
+    expect(list.map((n) => [n.id, n.title, n.body])).toEqual([['bloom:a', 'Your sprout bloomed into a Wanderer sprout', 'You can give it away now: it moves to their garden.']]);
   });
 
   it('a wild sprout: a grown kind picked by the festival and night, and bell news', () => {
@@ -225,10 +232,9 @@ describe('the bell', () => {
     // Not until it's grown can it be passed on; the keeper gives them any time; their own one never goes.
     expect(passable(garden([given], none, {}, at(10, 11)))).toEqual([]);
     expect(passable(grown).map((s) => s.id)).toEqual(['hat1']);
-    expect(givableKinds(garden([given], none, {}, at(10, 11)), {}, 'someone')).toEqual(['seedling']);
-    expect(givableKinds(grown, {}, 'someone')).toEqual(['seedling', 'gnome']);
-    expect(givableKinds(grown, { hat1: 'gnome' }, 'someone')).toEqual(['seedling', 'gnome']);
-    expect(givableKinds([], {}, keeper)).toEqual(['seedling', 'gnome']);
+    expect(givableKinds(garden([given], none, {}, at(10, 11)), 'someone')).toEqual(['seedling']);
+    expect(givableKinds(grown, 'someone')).toEqual(['seedling', 'gnome']);
+    expect(givableKinds([], keeper)).toEqual(['seedling', 'gnome']);
     const ownGrown = garden([own], j, {}, at(12, 1));
     expect(ownGrown[0].stage).toBe(3);
     expect(passable(ownGrown)).toEqual([]);

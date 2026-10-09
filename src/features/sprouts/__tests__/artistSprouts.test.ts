@@ -1,7 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 import { ALL_LOOKS, artistLook, foldName, mix } from '../artistLook';
 import { DRAW } from '../creatures';
-import { artistGardenLine, artistSprouts, cleanShown, newArtistSprouts, shownMark, tierFor, tierLabel, tierLine, toNextTier, withPosted } from '../artistSprouts';
+import { artistGardenLine, artistSprouts, cleanShown, newArtistSprouts, shownMark, sinceGiven, tierFor, tierLabel, tierLine, toNextTier, withPosted } from '../artistSprouts';
+import { artistsGivenAt } from '../outbox';
 import { aSprout, cleanSproutArtist, giftTitle, readSproutLink, sproutLink, sproutName } from '../sprouts';
 
 const at = (d: number) => new Date(2026, 9, d).toISOString();
@@ -121,5 +122,25 @@ describe('collectibles from videos you posted', () => {
       ['kompany', 1, 0],
       ['rezz', 1, 0],
     ]);
+  });
+});
+
+describe('giving your own collectible away', () => {
+  it('counts only videos filmed after you last gave it, so filming them again earns it back', () => {
+    const memories = [
+      { artistId: 'a', capturedAt: at(1) },
+      { artistId: 'a', capturedAt: at(2) },
+      { artistId: 'b', capturedAt: at(2) },
+    ];
+    const given = artistsGivenAt([
+      { id: 'g1aaaaaaaaaaaaaaaaaa', kind: 'seedling', artist: { id: 'a', name: 'A' }, at: Date.parse(at(3)), sent: true, tries: 0 },
+      // Taken back, or one you were given passed on (`via`): neither counts.
+      { id: 'g2aaaaaaaaaaaaaaaaaa', kind: 'seedling', artist: { id: 'b', name: 'B' }, at: Date.parse(at(3)), sent: true, tries: 0, takenBack: true },
+      { id: 'g3aaaaaaaaaaaaaaaaaa', kind: 'seedling', artist: { id: 'b', name: 'B' }, via: 'x', at: Date.parse(at(3)), sent: true, tries: 0 },
+    ]);
+    expect(given).toEqual({ a: Date.parse(at(3)) });
+    expect(artistSprouts(sinceGiven(memories, given)).map((s) => s.artistId)).toEqual(['b']);
+    const again = sinceGiven([...memories, { artistId: 'a', capturedAt: at(4) }], given);
+    expect(artistSprouts(again).find((s) => s.artistId === 'a')?.videos).toBe(1);
   });
 });

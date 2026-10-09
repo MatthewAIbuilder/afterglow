@@ -898,6 +898,29 @@ await t('gnome hats: from their keeper as many as they like, or passed on once b
   late.update(doc(P.firestore(), 'sprouts', 'gnomehat000000000001'), { passedOn: deleteField() });
   await assertFails(late.commit());
 });
+await t('any sprout given to you can be given on once, as the same kind and artist', async () => {
+  const R = env.authenticatedContext('uidR'), S2 = env.authenticatedContext('uidS');
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const db = ctx.firestore();
+    await setDoc(doc(db, 'profiles', 'uidR'), profile('rae'));
+    await setDoc(doc(db, 'profiles', 'uidS'), profile('sol'));
+    await setDoc(doc(db, 'sprouts', 'givenon000000000001'), { from: 'uidS', kind: 'plur', to: 'uidR', createdAt: new Date(), claimedAt: new Date() });
+    await setDoc(doc(db, 'sprouts', 'givenon000000000002'), { from: 'uidS', kind: 'seedling', artistId: 'a1', artistName: 'One', to: 'uidR', createdAt: new Date(), claimedAt: new Date() });
+  });
+  const on = (ctx, id, via, data) => {
+    const b = writeBatch(ctx.firestore());
+    b.set(doc(ctx.firestore(), 'sprouts', id), { from: ctx === R ? 'uidR' : 'uidS', createdAt: serverTimestamp(), via, ...data });
+    b.update(doc(ctx.firestore(), 'sprouts', via), { passedOn: id });
+    return b.commit();
+  };
+  // Not as another kind, or another artist, or by someone it wasn't given to.
+  await assertFails(on(R, 'givenon000000000003', 'givenon000000000001', { kind: 'bass' }));
+  await assertFails(on(R, 'givenon000000000003', 'givenon000000000002', { kind: 'seedling', artistId: 'a2', artistName: 'Two' }));
+  await assertFails(on(S2, 'givenon000000000003', 'givenon000000000001', { kind: 'plur' }));
+  await assertSucceeds(on(R, 'givenon000000000003', 'givenon000000000001', { kind: 'plur' }));
+  await assertFails(on(R, 'givenon000000000004', 'givenon000000000001', { kind: 'plur' }));
+  await assertSucceeds(on(R, 'givenon000000000005', 'givenon000000000002', { kind: 'seedling', artistId: 'a1', artistName: 'One' }));
+});
 await t('gift themes: only @matt.raves sends one with a sprout; whoever picks it up gets the grant and its background', async () => {
   const M = env.authenticatedContext('uidM'), N = env.authenticatedContext('uidN'), O = env.authenticatedContext('uidO');
   await assertSucceeds(claim(M, 'uidM', 'matt.raves'));

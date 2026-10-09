@@ -1122,13 +1122,14 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         if (there.from === u.uid) return;
         throw new SocialError('unknown');
       }
-      // Like the rules: a hat comes from its keepers, or is passed on from one you were given that isn't passed on already.
+      // Like the rules: given on (`via`) from one given to you, of this kind (or plain) and artist, not given on already;
+      // a hat only from its keepers or given on.
       const kind = isKind(input.kind) ? kindOf(input.kind) : undefined;
-      if (kind?.seed && !keptKinds(u.uid).includes(kind.id)) {
-        const via = input.via ? sprouts.get(input.via) : undefined;
-        if (!via || via.to !== u.uid || via.kind !== input.kind || via.passedOn) throw new SocialError('unknown');
+      if (input.via) {
+        const via = sprouts.get(input.via);
+        if (!via || via.to !== u.uid || (via.kind !== input.kind && via.kind !== 'seedling') || (via.artistId ?? '') !== (input.artistId ?? '') || via.passedOn) throw new SocialError('unknown');
         sprouts.set(via.id, { ...via, passedOn: input.id });
-      } else if (input.via) throw new SocialError('unknown');
+      } else if (kind?.seed && !keptKinds(u.uid).includes(kind.id)) throw new SocialError('unknown');
       sprouts.set(input.id, { id: input.id, kind: input.kind, from: u.uid, createdAt: now(), ...(input.via ? { via: input.via } : {}), ...(input.note ? { note: input.note } : {}), ...(input.festivalId ? { festivalId: input.festivalId } : {}), ...(input.artistId && input.artistName ? { artistId: input.artistId, artistName: input.artistName } : {}), ...(input.theme ? { theme: input.theme } : {}) });
     },
     async claimSprout(id) {

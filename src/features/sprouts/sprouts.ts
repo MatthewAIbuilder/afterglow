@@ -419,16 +419,25 @@ export function newlyBloomed(view: readonly GardenView[], bloomed: Readonly<Reco
   return out;
 }
 
-/** Fully grown hats someone gave you, which you can pass on (a keeper's own one stays). */
-export const passable = (view: readonly GardenView[]) => view.filter((s) => kindOf(s.kind).seed && !s.artist && s.stage === 3 && !!s.from && !KEPT_SPROUT_IDS.includes(s.id));
+/**
+ * What in your garden you can give away (giving moves it: it leaves your
+ * garden): every grown sprout of a kind (one you grew, one you were given, a
+ * wild one) and every fully grown hat; artist collectibles you were given too.
+ * Not a plain sprout still growing, and not a keeper's own hat. Ones you were
+ * given first (Afterglow can check those), newest first.
+ */
+export const passable = (view: readonly GardenView[]) =>
+  view.filter((s) => s.stage === 3 && (s.artist || s.shown !== 'seedling') && !KEPT_SPROUT_IDS.includes(s.id)).sort((a, b) => Number(isReceived(b)) - Number(isReceived(a)));
+/** It came from someone, through Afterglow (not your first sprout, a keeper's own or a wild one). */
+export const isReceived = (s: GardenSprout) => !!s.from && s.id !== STARTER_ID && !KEPT_SPROUT_IDS.includes(s.id) && !s.id.startsWith(WILD_PREFIX);
+/** The one to give when you give a kind (or an artist you were given): the first `passable` of it. */
+export const toPass = (view: readonly GardenView[], kind: SproutKind, artistId?: string) => passable(view).find((s) => (artistId ? s.artist?.id === artistId : !s.artist && s.shown === kind));
 
-/** Kinds you can give: plain sprouts always, every kind you've grown, and a hat while you keep them or have a grown one to pass on. */
-export function givableKinds(view: readonly GardenView[], bloomed: Readonly<Record<string, SproutKind>>, uid?: string): SproutKind[] {
-  const grown = new Set<SproutKind>(Object.values(bloomed));
-  for (const s of view) if (s.kind === 'seedling' && s.stage === 3 && s.shown !== 'seedling') grown.add(s.shown);
+/** Kinds you can give: a new plain sprout (from your seeds) always, the kinds a keeper keeps, and every kind you have one of to give away. */
+export function givableKinds(view: readonly GardenView[], uid?: string): SproutKind[] {
   const kept = keptKinds(uid);
-  const toPass = new Set(passable(view).map((s) => s.kind));
-  return SPROUT_KINDS.map((k) => k.id).filter((k) => k === 'seedling' || (kindOf(k).seed ? kept.includes(k) || toPass.has(k) : grown.has(k)));
+  const have = new Set(passable(view).flatMap((s) => (s.artist ? [] : [s.shown])));
+  return SPROUT_KINDS.map((k) => k.id).filter((k) => k === 'seedling' || kept.includes(k) || have.has(k));
 }
 
 /** Kinds you've collected (received or grown), for the collection row. */

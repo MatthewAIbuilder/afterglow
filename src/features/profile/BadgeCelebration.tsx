@@ -121,7 +121,7 @@ function Burst({ unlock, onDone }: { unlock: Unlock; onDone: () => void }) {
         : unlock.kind === 'sprout'
           ? unlock.foundAt
             ? t('{about} Found at {place}: every festival night brings a new one.', { about: kindOf(unlock.sprout).about, place: unlock.foundAt })
-            : (kindOf(unlock.sprout).grown ?? t('{about} You can give {name}s now.', { about: kindOf(unlock.sprout).about, name: kindOf(unlock.sprout).name }))
+            : (kindOf(unlock.sprout).grown ?? t('{about} You can give it away now: it moves to their garden.', { about: kindOf(unlock.sprout).about }))
           : unlock.kind === 'artistSprout'
             ? unlock.tier
               ? unlock.tier < 3
