@@ -41,10 +41,10 @@ days for that before the Oct 27 cut-off, and a week more before the freeze.
 
 | When | What | Who | Done |
 | --- | --- | --- | --- |
-| Oct 10–12 | Who runs Afterglow (name or company, state) for the legal pages; whether a lawyer reads them | You | ☐ |
-| Oct 10–12 | The care timing guide: checked by someone qualified by Oct 15, or the App Store version ships without it | You | ☐ |
-| Oct 10–14 | Legal pages finished, demo festivals hidden, the fixes from phone testing | Me | ☐ |
-| Oct 13–15 | Name and subtitle chosen (`docs/app-store/listing.md`), screenshots made (GitHub → Actions → App Store screenshots) | You | ☐ |
+| Oct 10–12 | Who runs Afterglow (name or company, state) for the legal pages; whether a lawyer reads them (Matthew Smith, Florida; no lawyer) | You | ✅ |
+| Oct 10–12 | The care timing guide: the user wants it in the App Store build; cross-checked against TripSit's figures on Oct 10 (no qualified reviewer) | Both | ✅ |
+| Oct 10–14 | Legal pages finished (done Oct 10), demo festivals hidden (done Oct 5), the fixes from phone testing | Me | ☐ |
+| Oct 13–15 | Name and subtitle chosen (Afterglow: Festival Sets, Oct 10; subtitle to pick from `docs/app-store/listing.md`), screenshots made (GitHub → Actions → App Store screenshots) | You | ☐ |
 | Oct 15–16 | New build (`npm run build:ios`), tried on your iPhone through TestFlight | You | ☐ |
 | **Fri Oct 17** | **Submit for App Store review**: listing, screenshots, App Privacy answers, age rating 18+, the review account and notes, release set to **Manually release this version** | You | ☐ |
 | Oct 18–27 | Answer Apple's questions; a fix and a new build if they ask for one | Both | ☐ |

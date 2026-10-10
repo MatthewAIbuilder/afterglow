@@ -15,8 +15,8 @@ The words are in `src/features/legal/documents.ts`, so the app and the website a
 These were written by Claude from what the app actually does. They are a solid, honest starting point, not legal advice. Before launching widely:
 
 1. ~~Add a contact email.~~ Done: afterglowmusic.support@gmail.com (`SUPPORT_EMAIL` in `src/config/app.ts`) appears on all three pages and on the sign-up screen.
-2. **Add who runs Afterglow.** Your name or company and where you're based. Terms usually also say which law applies and where disputes are handled. These are left out because they depend on you.
-3. **Have someone qualified read them**, especially if you'll have users in the EU or UK (GDPR), California (CCPA), or anyone under 18.
+2. ~~Add who runs Afterglow.~~ Done 2026-10-10: Matthew Smith, in Florida, United States (`OPERATOR` in `documents.ts`), on the Privacy Policy and the Terms; the Terms follow Florida law, and say Apple's standard licence applies to App Store copies and Apple isn't responsible for the app.
+3. **Have someone qualified read them** (the user decided on 2026-10-10 to launch without a lawyer's review for now), especially if you'll have users in the EU or UK (GDPR), California (CCPA), or anyone under 18.
 
 ## Where each privacy claim comes from
 
