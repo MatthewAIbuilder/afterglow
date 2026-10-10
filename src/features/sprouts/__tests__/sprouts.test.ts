@@ -3,6 +3,8 @@ import type { Festival } from '../../../data/models';
 import { GNOME_FRIENDS } from '../../profile/backdrops';
 import { bloomNotices, sproutNotices, wildNotices, claimsToSend, cleanClaims, cleanGifts, CLAIM_KEEP_MS, GIFT_REFUSED_MAX, giftsToSend, giftTried, nextDue, passingOn, queueClaim, retryDelay, seedGifts, tidy, type Gift } from '../outbox';
 import {
+  CATERPILLAR_FRIENDS,
+  KEEPS_EVERY_KIND,
   cleanBloomed,
   festivalDaysOf,
   garden,
@@ -248,6 +250,30 @@ describe('the bell', () => {
     expect(kindListed(kindOf('gnome'), new Set(['gnome']))).toBe(true);
     expect(kindListed(kindOf('gnome'), new Set(), keeper)).toBe(true);
     expect(kindListed(kindOf('plur'), new Set())).toBe(true);
+  });
+  it('caterpillars: their keeper and the every-kind keeper give them; one grows into a butterfly and can then be passed on', () => {
+    const jannik = CATERPILLAR_FRIENDS[0];
+    const all = KEEPS_EVERY_KIND[0];
+    expect(keptKinds(jannik)).toEqual(['caterpillar']);
+    expect(keptKinds(all)).toEqual(['gnome', 'caterpillar']);
+    expect(keptKinds(GNOME_FRIENDS[0])).toEqual(['gnome']);
+    expect(keptSprouts(all, at(1, 1)).map((s) => s.id)).toEqual(['kept-gnome', 'kept-caterpillar']);
+    expect(givableKinds([], jannik)).toEqual(['seedling', 'caterpillar']);
+    expect(givableKinds([], all)).toEqual(['seedling', 'gnome', 'caterpillar']);
+    const given = { id: 'cat1', kind: 'caterpillar' as const, from: jannik, name: 'Jannik', at: at(10, 10) };
+    expect(garden([given], none, {}, at(10, 11))[0]).toMatchObject({ shown: 'caterpillar', stage: 0 });
+    expect(stageName('caterpillar', 0)).toBe('Caterpillar');
+    expect(growthLine(garden([given], none, {}, at(10, 11))[0].growth!, 'caterpillar')).toBe('Caterpillar · 6 more growth to munching');
+    const j: Journey = { ...none, festivalDays: [at(10, 11), at(10, 12), at(10, 13), at(10, 14), at(10, 15)] };
+    const grown = garden([given], j, {}, at(10, 16));
+    expect(grown[0]).toMatchObject({ shown: 'caterpillar', stage: 3 });
+    expect(grownName('caterpillar')).toBe('Butterfly');
+    expect(giftStage('caterpillar')).toBe(0);
+    expect(givableKinds(garden([given], none, {}, at(10, 11)), 'someone')).toEqual(['seedling']);
+    expect(givableKinds(grown, 'someone')).toEqual(['seedling', 'caterpillar']);
+    expect(kindListed(kindOf('caterpillar'), new Set())).toBe(false);
+    expect(kindListed(kindOf('caterpillar'), new Set(), all)).toBe(true);
+    expect(kindListed(kindOf('gnome'), new Set(), all)).toBe(true);
   });
   it('a hat on its way to someone has left your garden, uses no seed, and is kept until someone has it', () => {
     const hat: Gift = { id: 'passaaaaaaaaaaaaaaaa', kind: 'gnome', via: 'hat1aaaaaaaaaaaaaaaa', at: at(10, 1), sent: true, tries: 0 };

@@ -94,7 +94,7 @@ export default function GiveSproutScreen() {
             : r.problem === 'not-yours'
               ? chosen
                 ? t('Film this artist’s set to earn their collectible first.')
-                : t('Grow your gnome all the way first, then you can pass it on.')
+                : (k.notGrown ?? t('Grow it all the way first, then you can pass it on.'))
               : t('Make your profile to give sprouts.'),
       );
       return;
@@ -227,8 +227,8 @@ export default function GiveSproutScreen() {
                   <Text style={styles.body}>{k.about}</Text>
                   {keptKinds(social.user?.uid).includes(kind) ? (
                     <Text style={styles.body}>{t('You can give as many as you like, and they don’t use seeds.')}</Text>
-                  ) : k.seed ? (
-                    <Text style={styles.body}>{t('Your grown gnome leaves your garden, and they get a new hat to grow.')}</Text>
+                  ) : k.passOn ? (
+                    <Text style={styles.body}>{k.passOn}</Text>
                   ) : kind !== 'seedling' ? (
                     <Text style={styles.body}>{t('Giving it moves it: it leaves your garden for theirs.')}</Text>
                   ) : null}
