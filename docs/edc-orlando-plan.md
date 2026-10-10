@@ -21,8 +21,8 @@ The goal, set on 2026-10-09: Afterglow in people's hands at EDC Orlando
 | Oct 9 | Bigger "Open Afterglow" code on the totem | Me | ✅ |
 | Oct 9 | TestFlight and Android link set up in the code, guides written | Me | ✅ |
 | ~~Thu Oct 16~~ | ~~If there's no welcome email yet, contact Apple Developer support~~ (not needed) | You | ✅ |
-| Oct 13–19 | App Store Connect app made, first `npm run build:ios`, on your iPhone through TestFlight (internal) | You | ☐ |
-| Oct 13–19 | Phone test checklist on that build; send me anything wrong | You | ☐ |
+| Oct 13–19 | App Store Connect app made, first `npm run build:ios`, on your iPhone through TestFlight (internal) (done Oct 10) | You | ✅ |
+| Oct 13–19 | Phone test checklist on that build; send me anything wrong (first pass Oct 10: one problem, friends in festival mode, fixed) | You | ☐ |
 | Oct 13–26 | Fixes | Me | ☐ |
 | Oct 20–26 | External TestFlight group and Apple's beta check; public link (test information submitted Oct 10, waiting on Apple's beta check, then Enable Public Link) | You | ☐ |
 | Oct 20–26 | `npm run build:android-link`; try it on an Android phone if you can borrow one | You | ☐ |
