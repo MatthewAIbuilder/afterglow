@@ -15,7 +15,7 @@ The goal, set on 2026-10-09: Afterglow in people's hands at EDC Orlando
 | When | What | Who | Done |
 | --- | --- | --- | --- |
 | By Sun Oct 12 | Apple Developer welcome email (arrived Oct 10) | Apple | ✅ |
-| By Sun Oct 12 | Expo account, `eas login` and `eas init` (`docs/development-build.md` step 2) | You | ☐ |
+| By Sun Oct 12 | Expo account, `eas login` and `eas init` (`docs/development-build.md` step 2) | You | ✅ |
 | By Sun Oct 12 | Google Play account started (`docs/google-play.md` step 1) | You | ☐ |
 | By Sun Oct 12 | Check EDC Orlando is on Festivals at afterglowmusic.app, with its lineup | You | ☐ |
 | Oct 9 | Bigger "Open Afterglow" code on the totem | Me | ✅ |
