@@ -7,7 +7,9 @@
  * ranges are broad on purpose; bodies, food, and what's really in a pill all
  * change them. Pure; kept on the phone, works with no signal.
  *
- * Reviewed figures before a public launch: see docs/app-store.md.
+ * Cross-checked against TripSit's published onset and duration figures on
+ * 2026-10-10 (LSD, ketamine, cocaine and GHB widened to match); still
+ * awaiting a qualified reviewer: see docs/app-store.md.
  */
 
 import { t, tc } from '../../i18n';
@@ -87,16 +89,16 @@ export const GUIDE: readonly GuideEntry[] = [
     how: t('on a tab'),
     onset: [30, 90],
     peak: [120, 240],
-    total: [480, 720],
+    total: [540, 840],
     tips: [t('It lasts most of the night. Don’t take more because it feels slow to start.'), t('If it gets intense, find a quiet spot and a friend. It passes.')],
   },
   {
     id: 'ketamine',
     name: t('Ketamine'),
     how: t('snorted'),
-    onset: [5, 15],
-    peak: [15, 30],
-    total: [45, 90],
+    onset: [5, 20],
+    peak: [20, 45],
+    total: [60, 120],
     tips: [t('Sit down somewhere safe before it hits: falls and getting lost are common.'), t('Stay with a friend.')],
   },
   {
@@ -105,7 +107,7 @@ export const GUIDE: readonly GuideEntry[] = [
     how: t('snorted'),
     onset: [2, 5],
     peak: [15, 30],
-    total: [30, 60],
+    total: [60, 90],
     tips: [t('It wears off fast, which makes taking more tempting. Keep count.'), t('Hard on your heart, especially when you’re hot.')],
   },
   {
@@ -121,8 +123,8 @@ export const GUIDE: readonly GuideEntry[] = [
     id: 'ghb',
     name: t('GHB / G'),
     how: t('swallowed'),
-    onset: [15, 45],
-    peak: [45, 90],
+    onset: [15, 60],
+    peak: [60, 90],
     total: [90, 180],
     tips: [t('The gap between feeling good and passing out is tiny.'), t('Never with alcohol.'), t('If someone can’t be woken, call for help straight away.')],
   },
