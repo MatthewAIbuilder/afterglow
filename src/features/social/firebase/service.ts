@@ -7,7 +7,7 @@ import { Platform } from 'react-native';
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
 import type { FIREBASE_CONFIG } from '../../../config/social';
 import { firebaseConfigured } from '../../../config/social';
-import { ARTISTS_SHOWN, CHAT_MAX, CHAT_SEND_TIMEOUT_MS, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, DROP_FILE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type ClipComment, type Comment, validClipId, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile, DM_PREFIX, directRoom, isDirectRoom, SUPPORT_REPLIES_MAX, type ReportRecord, TIP_TEXT_MAX, VIDEO_TAGS_MAX, type VideoTag } from '../models';
+import { appSettingsFromDoc, ARTISTS_SHOWN, CHAT_MAX, CHAT_SEND_TIMEOUT_MS, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, DROP_FILE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type ClipComment, type Comment, validClipId, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile, DM_PREFIX, directRoom, isDirectRoom, SUPPORT_REPLIES_MAX, type ReportRecord, TIP_TEXT_MAX, VIDEO_TAGS_MAX, type VideoTag } from '../models';
 import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 import { throwbackShares } from '../../memories/throwbackLimit';
@@ -981,6 +981,17 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         return patchFromDoc(ref_.id, { ...data, publishedAt: now() })!;
       }),
     unpublishPatch: (id) => guard(async () => deleteDoc(doc(fb().db, 'published', id))),
+    appSettings: () =>
+      guard(async () => {
+        const snap = await readDoc(doc(fb().db, 'appSettings', 'app'));
+        // From the server only: with no signal the phone keeps what it read last.
+        if (snap.metadata.fromCache) throw new SocialError('network');
+        return appSettingsFromDoc(snap.exists() ? snap.data() : undefined);
+      }),
+    setAppSettings: (next) =>
+      guard(async () => {
+        await setDoc(doc(fb().db, 'appSettings', 'app'), { careGuide: next.careGuide === true, by: me().uid, at: serverTimestamp() });
+      }),
     setPlus: (uid, plus) =>
       guard(async () => {
         const ref_ = doc(fb().db, 'plus', uid);

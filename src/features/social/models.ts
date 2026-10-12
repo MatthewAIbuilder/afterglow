@@ -510,6 +510,18 @@ export const TIP_PHOTO_MAX = 900_000;
  * catalogue/afterglow.json, for one festival. Every app reads these on top
  * of its catalogue, so it shows within minutes, until it's taken down.
  */
+/**
+ * App-wide switches set from HQ: every app reads them (no account needed),
+ * only the support account changes them. `careGuide`: the timing guide in
+ * Look after yourself is shown (true unless HQ switched it off).
+ */
+export type AppSettings = { careGuide: boolean };
+export const DEFAULT_APP_SETTINGS: AppSettings = { careGuide: true };
+/** Reads the settings document; anything missing or odd keeps the default (the guide shown). */
+export const appSettingsFromDoc = (raw: unknown): AppSettings => ({
+  careGuide: !(raw && typeof raw === 'object' && (raw as { careGuide?: unknown }).careGuide === false),
+});
+
 export type LivePatch = { id: string; title: string; festivalId: string; file: string; by: string; publishedAt: string; dropId?: string };
 export const PATCH_MAX_CHARS = 800_000;
 

@@ -1,5 +1,5 @@
 import { throwbackShares } from '../../memories/throwbackLimit';
-import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, type ClipComment, type Comment, validClipId, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Drop, type LivePatch, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX, type Sprout, type DirectChat, directRoom, isDirectRoom, otherInRoom, SUPPORT_REPLIES_MAX, type SetTimesTip, type VideoTag, VIDEO_TAGS_MAX } from '../models';
+import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, type ClipComment, type Comment, validClipId, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Drop, type LivePatch, type AppSettings, DEFAULT_APP_SETTINGS, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX, type Sprout, type DirectChat, directRoom, isDirectRoom, otherInRoom, SUPPORT_REPLIES_MAX, type SetTimesTip, type VideoTag, VIDEO_TAGS_MAX } from '../models';
 import { cleanBackdrop } from '../../profile/backdrops';
 import { cleanArtistName } from '../../../data/extraArtists';
 import { canGiveThemes, isGiftTheme } from '../../themes/gifts';
@@ -114,6 +114,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   /** Who found what: `${uid}_${code}` → when they scanned it. */
   const finds = new Map<string, number>();
   const patches = new Map<string, LivePatch>();
+  let appSettings: AppSettings = { ...DEFAULT_APP_SETTINGS };
   const setTimes = new Map<string, SetTimesTip>();
   const plusUntil = new Map<string, string>();
   const admin = () => !!current?.email && current.email === SUPPORT_EMAIL && verified.has(current.email);
@@ -679,6 +680,15 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     async unpublishPatch(id) {
       needAdmin();
       patches.delete(id);
+    },
+    async appSettings() {
+      if (network.down) throw new SocialError('network');
+      return { ...appSettings };
+    },
+    async setAppSettings(next) {
+      me();
+      needAdmin();
+      appSettings = { careGuide: next.careGuide === true };
     },
     async setPlus(uid, on) {
       needAdmin();

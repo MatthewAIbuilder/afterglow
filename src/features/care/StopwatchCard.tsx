@@ -27,6 +27,7 @@ export function StopwatchCard({
   onTookMore,
   onStop,
   onFeel,
+  guided = true,
 }: {
   timer: CareTimer;
   now: number;
@@ -35,9 +36,11 @@ export function StopwatchCard({
   onTookMore: () => void;
   onStop: () => void;
   onFeel: (m: Mood) => void;
+  /** False when HQ has switched the timing guide off: the stopwatch just counts. */
+  guided?: boolean;
 }) {
   const [asking, setAsking] = useState(false);
-  const entry = guideEntry(timer.guide);
+  const entry = guided ? guideEntry(timer.guide) : undefined;
   const last = lastDose(timer);
   const since = (now - last) / MIN;
   const phase = phaseAt(entry, since);

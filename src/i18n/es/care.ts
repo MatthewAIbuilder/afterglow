@@ -168,6 +168,8 @@ export const es_care: Dictionary = {
   '{name}. Usually starts in {range}': '{name}. Suele empezar en {range}',
   'Starts {range}': 'Empieza: {range}',
   'Something else, in your words': 'Otra cosa, con tus palabras',
+  'Name it so you remember what it’s for. It stays on this phone.': 'Ponle un nombre para recordar para qué es. Se queda en este teléfono.',
+  'What it’s for, in your words': 'Para qué es, con tus palabras',
   'Name it your own way': 'Ponle el nombre que quieras',
   'Start a stopwatch with your own name': 'Iniciar un cronómetro con tu propio nombre',
   Start: 'Iniciar',

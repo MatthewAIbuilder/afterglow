@@ -16,6 +16,7 @@ import { useTonight } from '../features/tonight/useTonight';
 import { useCrewUpdates } from '../state/crewUpdates';
 import { GuideList } from '../features/care/GuideList';
 import { riskyMixes } from '../features/care/guide';
+import { useAppSettings } from '../state/appSettings';
 import { StartStopwatch } from '../features/care/StartStopwatch';
 import { StopwatchCard } from '../features/care/StopwatchCard';
 import { t, tc } from '../i18n';
@@ -52,7 +53,9 @@ export default function CareScreen() {
   const { care, hydrated, start, stop, tookMore, log, undo, checkIn, setLock, setWaterEvery, setFeelEvery, clear } = useCare();
   // Every second, for the stopwatches.
   const now = useNow(1000).getTime();
-  const mixes = riskyMixes(care.timers.map((t) => t.guide).filter((g): g is string => !!g));
+  // The timing guide can be switched off for everyone from HQ: stopwatches then just count, in your own words.
+  const { careGuide } = useAppSettings();
+  const mixes = careGuide ? riskyMixes(care.timers.map((t) => t.guide).filter((g): g is string => !!g)) : [];
   const [unlocked, setUnlocked] = useState(false);
   const canLock = Platform.OS !== 'web';
   const locked = canLock && hydrated && care.lock && !unlocked;
@@ -133,7 +136,7 @@ export default function CareScreen() {
     { id: 'water', label: t('Water'), detail: water ? String(water) : undefined },
     { id: 'body', label: t('Body') },
     { id: 'help', label: t('Get help') },
-    { id: 'guide', label: t('Timing guide') },
+    ...(careGuide ? [{ id: 'guide' as const, label: t('Timing guide') }] : []),
   ];
   const tap = (kind: 'water' | 'food') => {
     haptic.tap();
@@ -207,9 +210,10 @@ export default function CareScreen() {
               onFeel={checkIn}
               onTookMore={() => tookMore(timer.id)}
               onStop={() => stop(timer.id)}
+              guided={careGuide}
             />
           ))}
-          {care.timers.length < TIMERS_MAX ? <StartStopwatch onStart={start} /> : null}
+          {care.timers.length < TIMERS_MAX ? <StartStopwatch onStart={start} guided={careGuide} /> : null}
           {/* "How are you feeling?" on the phone while a stopwatch runs. */}
           {Platform.OS !== 'web' && (care.timers.length || care.feelEvery) ? (
             <View style={styles.remind}>
@@ -287,9 +291,11 @@ export default function CareScreen() {
         ) : null}
 
         {/* The timing guide, readable with no signal. */}
-        <Part id="guide" title={t('Timing guide')} at={at}>
-          <GuideList />
-        </Part>
+        {careGuide ? (
+          <Part id="guide" title={t('Timing guide')} at={at}>
+            <GuideList />
+          </Part>
+        ) : null}
 
         {/* Privacy */}
         <Text style={styles.section}>{t('Privacy')}</Text>

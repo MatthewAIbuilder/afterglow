@@ -787,6 +787,19 @@ await t('activity: you note when you open the app; only you and the support acco
   await assertSucceeds(getCountFromServer(collection(ADMIN.firestore(), 'crewInvites')));
   await assertSucceeds(deleteDoc(doc(A.firestore(), 'activity', 'uidA')));
 });
+await t('HQ: only the support account switches the care timing guide; everyone reads it', async () => {
+  const off = { careGuide: false, by: 'uidAdmin', at: serverTimestamp() };
+  await assertSucceeds(setDoc(doc(ADMIN.firestore(), 'appSettings', 'app'), off));
+  await assertSucceeds(getDoc(doc(anon.firestore(), 'appSettings', 'app')));
+  await assertFails(setDoc(doc(A.firestore(), 'appSettings', 'app'), { ...off, by: 'uidA' }));
+  await assertFails(setDoc(doc(NOT_VERIFIED.firestore(), 'appSettings', 'app'), { ...off, by: 'uidFake' }));
+  await assertFails(setDoc(doc(ADMIN.firestore(), 'appSettings', 'other'), off));
+  await assertFails(setDoc(doc(ADMIN.firestore(), 'appSettings', 'app'), { ...off, careGuide: 'no' }));
+  await assertFails(setDoc(doc(ADMIN.firestore(), 'appSettings', 'app'), { ...off, extra: 1 }));
+  await assertSucceeds(setDoc(doc(ADMIN.firestore(), 'appSettings', 'app'), { ...off, careGuide: true }));
+  await assertFails(deleteDoc(doc(ADMIN.firestore(), 'appSettings', 'app')));
+});
+
 await t('HQ: only the support account uploads, publishes and gives Plus and flairs', async () => {
   const drop = { by: 'uidAdmin', note: 'EDC set times', files: [], status: 'waiting', createdAt: serverTimestamp(), festivalId: 'edc-orlando-26', text: 'Friday\n10:00 PM SUBTRONICS' };
   await assertSucceeds(setDoc(doc(ADMIN.firestore(), 'drops', 'd1'), drop));

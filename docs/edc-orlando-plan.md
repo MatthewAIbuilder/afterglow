@@ -25,7 +25,7 @@ The goal, set on 2026-10-09: Afterglow in people's hands at EDC Orlando
 | Oct 13–19 | App Store Connect app made (Apple id 6821236569) and first `npm run build:ios` uploaded (both Oct 10); on your iPhone through TestFlight (internal) | You | ✅ |
 | Oct 13–19 | Phone test checklist on that build; send me anything wrong (first pass Oct 10: one problem, friends in festival mode, fixed) | You | ☐ |
 | Oct 13–26 | Fixes | Me | ☐ |
-| Oct 20–26 | External TestFlight group and Apple's beta check; public link (test information submitted Oct 10, waiting on Apple's beta check, then Enable Public Link) | You | ☐ |
+| Oct 20–26 | External TestFlight group and Apple's beta check; public link (approved; public link working Oct 12, build 1.0 (3)) | You | ✅ |
 | Oct 20–26 | `npm run build:android-link`; try it on an Android phone if you can borrow one | You | ☐ |
 | Oct 20–26 | Totem dry run: tablet set up, festival places kit printed (`docs/totem.md`) | You | ☐ |
 | ~Oct 27–Nov 2 | Set times usually come out about a week before: check they appear and the plan and festival mode use them | Both | ☐ |

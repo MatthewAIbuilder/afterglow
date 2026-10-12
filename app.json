@@ -3,6 +3,14 @@
     "name": "Afterglow",
     "slug": "afterglow",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/7e42ce35-396e-476b-b50a-6b406c32976b",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -139,7 +147,8 @@
             ]
           }
         }
-      ]
+      ],
+      "expo-updates"
     ],
     "scheme": "afterglow",
     "backgroundColor": "#0A0918",

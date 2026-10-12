@@ -40,6 +40,8 @@ describe('Welcome', () => {
   };
 
   it('asks which weekend when you pick a two-weekend festival', async () => {
+    // A fixed "today" before ACL's first weekend, so both weekends are still to come.
+    jest.useFakeTimers({ now: new Date(2026, 8, 29, 12) });
     const app = await firstRun();
     await fireEvent.press(app.getByText('Get started'));
     await settle();
@@ -300,6 +302,8 @@ describe('Festivals', () => {
   });
 
   it('marks a festival you are going to, and lists it first under Going', async () => {
+    // A fixed "today" before ACL, so the list below doesn't change as festivals end.
+    jest.useFakeTimers({ now: new Date(2026, 8, 29, 12) });
     const page = await renderApp('/festival/horizon-27');
     await settle();
     await fireEvent.press(page.getByLabelText("I'm going to Horizon 2027"));

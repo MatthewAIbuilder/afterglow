@@ -92,6 +92,27 @@ Same command: `npm run build:ios`. The build number goes up by itself.
 Internal testers get it straight away. External testers usually get it within
 minutes too, because Apple only fully re-checks the first build (or a big change).
 
+## Instant updates (no new build, no Apple review)
+
+From build 4 on (the first with `expo-updates`), most fixes don't need a new
+build at all. Once a fix is merged into `main`, on your PC in the Afterglow folder:
+
+```
+git pull
+npm install
+npm run update
+```
+
+It sends the new screens and words to every copy of the app made from build 4
+or later (TestFlight, the App Store and the Android link). Each phone downloads
+it the next time Afterglow opens and uses it the time after: close Afterglow
+fully (swipe it away) and open it again to see it straight away.
+
+What still needs a new build (`npm run build:ios`): a new phone permission, a
+new Expo package, or anything else Claude says "needs a new build" for. When
+that happens, Claude also raises `version` in `app.json` (1.0.0 → 1.0.1), so
+the old builds never get an update they can't run.
+
 ## Android: a download link (no Play Store)
 
 The Play Store can't be ready by EDC Orlando (see `docs/google-play.md`), so
