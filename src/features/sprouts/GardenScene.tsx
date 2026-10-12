@@ -212,8 +212,8 @@ function Creature({ r, spot, spots, colWidth, scale, names, width, clock, runnin
   const bobC = pace.bob;
   const phase = pace.phase;
   const legs = pace.wanders;
-  // A grown gnome hops about instead of walking.
-  const hops = 'kind' in r.look && r.look.kind === 'gnome' && r.look.stage === 3;
+  // A grown gnome hops about instead of walking, and a butterfly flutters.
+  const hops = 'kind' in r.look && (r.look.kind === 'gnome' || r.look.kind === 'caterpillar') && r.look.stage === 3;
   // How far it strolls from its spot (it always comes back), staying inside the meadow.
   const reachX = colWidth * WANDER_X;
   const reachY = size * WANDER_Y * 2;

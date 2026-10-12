@@ -21,15 +21,15 @@ import { GNOME_FRIENDS } from '../profile/backdrops';
  *   full bloom it becomes a kind, decided by what grew it most, and from
  *   then on you can give sprouts of that kind too. Sprouts that arrive as a
  *   kind are already grown.
- * - Hats (the gnome): a kind that arrives as a seed (`seed`) and grows into
- *   itself, with its own stage names. Its keepers (`keepers`) give as many
+ * - Hats (the gnome, the caterpillar): a kind that arrives as a seed (`seed`)
+ *   and grows into itself, with its own stage names. Its keepers (`keepers`) give as many
  *   as they like, with no seeds, and grow one of their own. Anyone else can
  *   pass theirs on only once it's fully grown: it leaves their garden and
  *   arrives in the next one as a new hat. Nobody sees the kind until they
  *   have one.
  */
 
-export type SproutKind = 'seedling' | 'plur' | 'wanderer' | 'bass' | 'melody' | 'groove' | 'spotlight' | 'sunrise' | 'moonlight' | 'seeker' | 'gnome';
+export type SproutKind = 'seedling' | 'plur' | 'wanderer' | 'bass' | 'melody' | 'groove' | 'spotlight' | 'sunrise' | 'moonlight' | 'seeker' | 'gnome' | 'caterpillar';
 
 export type KindSpec = {
   id: SproutKind;
@@ -51,11 +51,19 @@ export type KindSpec = {
   stages?: readonly [string, string, string, string];
   /** What to say once it's fully grown (in place of "You can give them now"). */
   grown?: string;
+  /** What the give screen says about passing a grown one on, and when it isn't grown yet. */
+  passOn?: string;
+  notGrown?: string;
   /** These accounts give as many as they like (the database checks the same) and grow one of their own. */
   keepers?: readonly string[];
   /** When a keeper's own one was planted (ms): it grows from then. */
   plantedAt?: number;
 };
+
+/** Jannik: keeps the caterpillars (firestore.rules checks the same uid). */
+export const CATERPILLAR_FRIENDS: readonly string[] = ['xKdfDSjxYLSuIl37UpXGMFYGpWU2'];
+/** Accounts that keep every kept kind: give as many as they like and grow one of each (firestore.rules checks the same uids). */
+export const KEEPS_EVERY_KIND: readonly string[] = ['aC7a313susZsMUGWAM7GmRDyuRS2'];
 
 export const SPROUT_KINDS: readonly KindSpec[] = [
   { id: 'seedling', name: t('Sprout'), short: t('Sprout'), how: t('Every sprout starts here'), grows: t('Every sprout starts here'), about: t('A little green hello. Grow it and it becomes something of its own.'), body: ['#8FF0B4', '#2FB36B'], accent: '#6EE7A0' },
@@ -80,8 +88,27 @@ export const SPROUT_KINDS: readonly KindSpec[] = [
     seed: true,
     stages: [t('Gnome hat'), t('Peeking out'), t('Little gnome'), t('Gnome')],
     grown: t('Your gnome is fully grown and hopping around your garden. You can pass it on now: it leaves your garden and starts again as a hat in theirs.'),
-    keepers: GNOME_FRIENDS,
+    passOn: t('Your grown gnome leaves your garden, and they get a new hat to grow.'),
+    notGrown: t('Grow your gnome all the way first, then you can pass it on.'),
+    keepers: [...GNOME_FRIENDS, ...KEEPS_EVERY_KIND],
     plantedAt: Date.UTC(2026, 9, 8, 12),
+  },
+  {
+    id: 'caterpillar',
+    name: t('Caterpillar'),
+    short: t('Butterfly'),
+    how: t('Be given a caterpillar and grow it'),
+    grows: t('being given a caterpillar'),
+    about: t('A little caterpillar that munches, sleeps in its cocoon and turns into a butterfly who flutters around your garden. Once it’s a butterfly you can pass it on: it leaves your garden and starts again as a caterpillar in theirs.'),
+    body: ['#D8F2B8', '#3F7F2C'],
+    accent: '#B48CFF',
+    seed: true,
+    stages: [t('Caterpillar'), t('Munching'), t('Cocoon'), t('Butterfly')],
+    grown: t('Your caterpillar turned into a butterfly and is fluttering around your garden. You can pass it on now: it leaves your garden and starts again as a caterpillar in theirs.'),
+    passOn: t('Your butterfly leaves your garden, and they get a new caterpillar to grow.'),
+    notGrown: t('Wait until your caterpillar is a butterfly, then you can pass it on.'),
+    keepers: [...CATERPILLAR_FRIENDS, ...KEEPS_EVERY_KIND],
+    plantedAt: Date.UTC(2026, 9, 10, 12),
   },
 ];
 

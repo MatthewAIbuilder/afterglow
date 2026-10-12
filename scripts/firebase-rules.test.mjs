@@ -898,6 +898,30 @@ await t('gnome hats: from their keeper as many as they like, or passed on once b
   late.update(doc(P.firestore(), 'sprouts', 'gnomehat000000000001'), { passedOn: deleteField() });
   await assertFails(late.commit());
 });
+await t('caterpillars: from Jannik or the every-kind keeper as many as they like, passed on by whoever has one', async () => {
+  const JANNIK = 'xKdfDSjxYLSuIl37UpXGMFYGpWU2', ALL = 'aC7a313susZsMUGWAM7GmRDyuRS2';
+  const J = env.authenticatedContext(JANNIK), K = env.authenticatedContext(ALL), P = env.authenticatedContext('uidP'), GR = env.authenticatedContext('8EEXIUNCQghOnejeAOygGMSl6Bp1');
+  const cat = (from, over = {}) => ({ from, kind: 'caterpillar', createdAt: serverTimestamp(), ...over });
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const db = ctx.firestore();
+    await setDoc(doc(db, 'profiles', JANNIK), profile('caterkeeper'));
+    await setDoc(doc(db, 'profiles', ALL), profile('allkeeper'));
+  });
+  // Nobody else makes one from nothing (not the gnome keeper either); Jannik and the every-kind keeper do.
+  await assertFails(setDoc(doc(P.firestore(), 'sprouts', 'caterpillar000000000'), cat('uidP')));
+  await assertFails(setDoc(doc(GR.firestore(), 'sprouts', 'caterpillar000000009'), cat('8EEXIUNCQghOnejeAOygGMSl6Bp1')));
+  await assertSucceeds(setDoc(doc(J.firestore(), 'sprouts', 'caterpillar000000001'), cat(JANNIK)));
+  await assertSucceeds(setDoc(doc(K.firestore(), 'sprouts', 'caterpillar000000002'), cat(ALL)));
+  // The every-kind keeper makes gnome hats too; Jannik doesn't.
+  await assertSucceeds(setDoc(doc(K.firestore(), 'sprouts', 'gnomehat00000000all1'), { from: ALL, kind: 'gnome', createdAt: serverTimestamp() }));
+  await assertFails(setDoc(doc(J.firestore(), 'sprouts', 'gnomehat00000000jan1'), { from: JANNIK, kind: 'gnome', createdAt: serverTimestamp() }));
+  // Picked up and passed on, as a caterpillar.
+  await assertSucceeds(updateDoc(doc(P.firestore(), 'sprouts', 'caterpillar000000001'), { to: 'uidP', claimedAt: serverTimestamp() }));
+  const pass = writeBatch(P.firestore());
+  pass.set(doc(P.firestore(), 'sprouts', 'caterpillar000000003'), cat('uidP', { via: 'caterpillar000000001' }));
+  pass.update(doc(P.firestore(), 'sprouts', 'caterpillar000000001'), { passedOn: 'caterpillar000000003' });
+  await assertSucceeds(pass.commit());
+});
 await t('any sprout given to you can be given on once, as the same kind and artist', async () => {
   const R = env.authenticatedContext('uidR'), S2 = env.authenticatedContext('uidS');
   await env.withSecurityRulesDisabled(async (ctx) => {
