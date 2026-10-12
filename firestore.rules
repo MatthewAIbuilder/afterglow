@@ -314,6 +314,17 @@ service cloud.firestore {
         && shortOrAbsent(request.resource.data, 'dropId', 100);
       allow update: if false;
     }
+    // App-wide switches set from HQ (the care timing guide): every app reads them, signed in or not; only the
+    // support account changes them. One document, `app`.
+    match /appSettings/{id} {
+      allow read: if true;
+      allow create, update: if isAdmin() && id == 'app'
+        && request.resource.data.keys().hasOnly(['careGuide', 'by', 'at'])
+        && request.resource.data.careGuide is bool
+        && request.resource.data.by == me()
+        && request.resource.data.at == request.time;
+      allow delete: if false;
+    }
     // What your free plan has used: throwbacks shared (videos from past festivals). Read only by you; it moves only with
     // a throwback shared (one more) or removed (one fewer) in the same write.
     match /usage/{uid} {

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
+import { setAppSettings } from '../../state/appSettings';
 import { setLivePatches } from '../../state/livePatches';
 import { useSocial } from '../../state/social';
 
@@ -11,7 +12,8 @@ export const refreshLivePatches = () => refreshNow?.();
  * Reads the catalogue updates published from HQ when the app opens and each
  * time it comes back to the front, so a published lineup or set times shows
  * within minutes for everyone, signed in or not. A failed read keeps what
- * the phone had. Renders nothing.
+ * the phone had. The app-wide switches set from HQ (`AppSettings`, such as
+ * the care timing guide) are read at the same moments. Renders nothing.
  */
 export function LivePatchSync() {
   const { service, availability } = useSocial();
@@ -21,6 +23,7 @@ export function LivePatchSync() {
     const read = () => {
       if (busy) return;
       busy = true;
+      service.appSettings().then(setAppSettings, () => {});
       service
         .livePatches()
         .then(setLivePatches)

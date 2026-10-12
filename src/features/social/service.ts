@@ -7,7 +7,7 @@ import type { PublicResident } from '../sprouts/publicGarden';
 import type { Kandi, KandiInput, OpenKandiInput, PublicKandi } from '../kandi/kandi';
 import type { DecorId } from '../sprouts/decor';
 import type { Org, OrgCounter, OrgDay, OrgPost, OrgPostInput, OrgRequest, OrgRequestInput, OrgRequestStatus } from '../organizers/organizers';
-import type { Published, Activity, ClipComment, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic, Sprout, SproutInput, DirectChat, SetTimesTip, VideoTag } from './models';
+import type { Published, Activity, ClipComment, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, AppSettings, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic, Sprout, SproutInput, DirectChat, SetTimesTip, VideoTag } from './models';
 
 /**
  * The boundary every social backend implements. The app only talks to
@@ -131,6 +131,9 @@ export interface SocialService {
   declineSetTimes(id: string): Promise<void>;
   /** Catalogue updates published from HQ: anyone may read them (every app applies them); only the support account writes them. */
   livePatches(): Promise<LivePatch[]>;
+  /** App-wide switches set from HQ: anyone may read them; only the support account changes them. */
+  appSettings(): Promise<AppSettings>;
+  setAppSettings(next: AppSettings): Promise<void>;
   publishPatch(input: { title: string; festivalId: string; file: string; dropId?: string }): Promise<LivePatch>;
   unpublishPatch(id: string): Promise<void>;
   /** Give or take back Afterglow Plus (null takes it back) and a flair (null takes it back). Support account only. */

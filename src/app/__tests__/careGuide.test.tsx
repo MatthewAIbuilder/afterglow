@@ -29,6 +29,22 @@ afterEach(() => {
 });
 
 describe('stopwatches with the timing guide', () => {
+  it('with the guide switched off from HQ: stopwatches in your own words, no substance list, timings, mixes or guide', async () => {
+    await AsyncStorage.setItem('appSettings.v1', JSON.stringify({ careGuide: false }));
+    await AsyncStorage.setItem('care.v1', JSON.stringify({ timers: [{ id: 't1', label: 'MDMA / molly', guide: 'mdma', startedAt: START.getTime() - 40 * 60_000 }] }));
+    const app = await renderApp('/care');
+    await flush();
+    // A stopwatch started with the guide on just counts now.
+    expect(app.getByText('40:00')).toBeTruthy();
+    expect(app.queryByText('Coming up')).toBeNull();
+    expect(app.queryByLabelText(/^Timing guide/)).toBeNull();
+    await fireEvent.press(app.getByLabelText('Start a stopwatch'));
+    await flush();
+    expect(app.getByText('Name it so you remember what it’s for. It stays on this phone.')).toBeTruthy();
+    expect(app.queryByText('What did you take?')).toBeNull();
+    expect(app.queryByLabelText(/^Alcohol\. Usually starts in/)).toBeNull();
+  });
+
   it('says when it usually kicks in, warns before taking more too soon, and flags a risky mix', async () => {
     const alerts = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     const app = await renderApp('/care');

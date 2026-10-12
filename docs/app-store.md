@@ -162,7 +162,8 @@ upload ever warns about a missing reason, it names the API: add it there.
 
 ## Updates later
 
-Small fixes to screens and words can go out without a new review using
-`npx eas-cli@latest update` (ask me to set it up when you get there). New
-native features (a new permission, a new Expo module) need a new build and
-review.
+Fixes to screens and words go out without a new build or review with
+`npm run update` (set up 2026-10-12, in every build from build 4; steps in
+`docs/testflight.md`, "Instant updates"). New native features (a new
+permission, a new Expo module) need a new build and review, and a new
+`version` in `app.json`.

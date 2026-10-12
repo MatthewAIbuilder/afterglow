@@ -7,6 +7,7 @@ import { parseCatalogFile } from '../../data/file';
 import { asPatch, buildCatalog } from '../../data/merge';
 import type { CatalogSnapshot, Festival } from '../../data/models';
 import { showAlert } from '../../lib/dialog';
+import { AdminSwitches } from './AdminSwitches';
 import { haptic } from '../../lib/haptics';
 import { shareMessage } from '../../lib/share';
 import { useNow } from '../../lib/useNow';
@@ -319,6 +320,9 @@ export function AdminData() {
   return (
     <View style={styles.wrap}>
       <Text style={styles.lead}>Throw lineups and set times at Afterglow: paste text to read it now, or add pictures and PDFs for a Claude Code session.</Text>
+
+      {/* Switches for every phone (the care timing guide). */}
+      <AdminSwitches />
 
       {/* Set times fans sent: read one into the box below, check, publish (which thanks them), or decline. */}
       {tips?.length ? (

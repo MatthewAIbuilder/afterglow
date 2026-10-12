@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { beforeEach, describe, expect, it } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent } from '@testing-library/react-native';
 import { renderApp, showTab } from './appRoutes';
 
@@ -10,10 +10,21 @@ const flush = async () => {
     });
 };
 
+/** A fixed "today" (only the clock: timers stay real), so festivals that have since ended don't change what's shown. */
+const pinToday = (now: Date) =>
+  jest.useFakeTimers({
+    now,
+    doNotFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'setImmediate', 'clearImmediate', 'nextTick', 'queueMicrotask', 'requestAnimationFrame', 'cancelAnimationFrame', 'requestIdleCallback', 'cancelIdleCallback', 'performance', 'hrtime'],
+  });
+
 beforeEach(async () => {
+  pinToday(new Date(2026, 9, 6, 12));
   await AsyncStorage.clear();
   await AsyncStorage.setItem('welcomed.v1', 'true');
   await AsyncStorage.setItem('artistRatings.v1', JSON.stringify({ illenium: 'love', excision: 'love', subtronics: 'like' }));
+});
+afterEach(() => {
+  jest.useRealTimers();
 });
 
 describe('comparing festivals', () => {

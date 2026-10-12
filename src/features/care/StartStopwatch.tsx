@@ -9,8 +9,9 @@ import { GUIDE, rangeText } from './guide';
 /**
  * Starting a stopwatch: pick from the timing guide (so it can say when to
  * expect things), or name it your own way. Closed, it's one button.
+ * `guided` false (HQ switched the guide off): only your own words.
  */
-export function StartStopwatch({ onStart }: { onStart: (label: string, guide?: string) => void }) {
+export function StartStopwatch({ onStart, guided = true }: { onStart: (label: string, guide?: string) => void; guided?: boolean }) {
   const [open, setOpen] = useState(false);
   const [label, setLabel] = useState('');
   if (!open)
@@ -37,27 +38,31 @@ export function StartStopwatch({ onStart }: { onStart: (label: string, guide?: s
 
   return (
     <View style={styles.panel}>
-      <Text style={styles.title}>{t('What did you take?')}</Text>
-      <Text style={styles.sub}>{t('Picking one lets the stopwatch say when it usually starts and wears off. It stays on this phone.')}</Text>
-      <View style={styles.grid}>
-        {GUIDE.map((g) => (
-          <Pressable
-            key={g.id}
-            onPress={() => go(g.name, g.id)}
-            accessibilityRole="button"
-            accessibilityLabel={t('{name}. Usually starts in {range}', { name: g.name, range: rangeText(g.onset) })}
-            style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
-          >
-            <Text style={styles.chipText}>{g.name}</Text>
-            <Text style={styles.chipSub}>{t('Starts {range}', { range: rangeText(g.onset) })}</Text>
-          </Pressable>
-        ))}
-      </View>
+      <Text style={styles.title}>{guided ? t('What did you take?') : t('Start a stopwatch')}</Text>
+      <Text style={styles.sub}>
+        {guided ? t('Picking one lets the stopwatch say when it usually starts and wears off. It stays on this phone.') : t('Name it so you remember what it’s for. It stays on this phone.')}
+      </Text>
+      {guided ? (
+        <View style={styles.grid}>
+          {GUIDE.map((g) => (
+            <Pressable
+              key={g.id}
+              onPress={() => go(g.name, g.id)}
+              accessibilityRole="button"
+              accessibilityLabel={t('{name}. Usually starts in {range}', { name: g.name, range: rangeText(g.onset) })}
+              style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
+            >
+              <Text style={styles.chipText}>{g.name}</Text>
+              <Text style={styles.chipSub}>{t('Starts {range}', { range: rangeText(g.onset) })}</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
       <View style={styles.own}>
         <TextInput
           value={label}
           onChangeText={setLabel}
-          placeholder={t('Something else, in your words')}
+          placeholder={guided ? t('Something else, in your words') : t('What it’s for, in your words')}
           placeholderTextColor={color.moonFaint}
           accessibilityLabel={t('Name it your own way')}
           maxLength={LABEL_MAX}

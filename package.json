@@ -35,6 +35,7 @@
     "expo-sensors": "~57.0.3",
     "expo-sharing": "~57.0.22",
     "expo-status-bar": "~57.0.1",
+    "expo-updates": "~57.0.23",
     "expo-video": "~57.0.5",
     "expo-video-thumbnails": "~57.0.2",
     "expo-web-browser": "~57.0.3",
@@ -88,7 +89,8 @@
     "device": "npx eas-cli@latest device:create",
     "build:dev": "npx eas-cli@latest build --profile development --platform ios",
     "build:ios": "npx eas-cli@latest build --profile production --platform ios --auto-submit",
-    "build:android-link": "npx eas-cli@latest build --profile preview --platform android"
+    "build:android-link": "npx eas-cli@latest build --profile preview --platform android",
+    "update": "npx eas-cli@latest update --channel production --environment production --auto"
   },
   "private": true,
   "jest": {
