@@ -1,10 +1,8 @@
-import Head from 'expo-router/head';
-
-/** The browser tab's title on the website ("EDC Orlando 2026 · Afterglow"). Nothing on phones. */
-export function PageTitle({ title }: { title?: string }) {
-  return (
-    <Head>
-      <title>{title ? `${title} · Afterglow` : 'Afterglow'}</title>
-    </Head>
-  );
+/**
+ * The browser tab's title is website-only (PageTitle.web.tsx). Phones draw
+ * nothing: on iOS, expo-router's Head also publishes Handoff activities and,
+ * without a configured origin, alerts in release builds.
+ */
+export function PageTitle(_props: { title?: string }) {
+  return null;
 }

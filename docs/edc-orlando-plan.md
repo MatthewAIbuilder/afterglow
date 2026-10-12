@@ -15,14 +15,14 @@ The goal, set on 2026-10-09: Afterglow in people's hands at EDC Orlando
 
 | When | What | Who | Done |
 | --- | --- | --- | --- |
-| By Sun Oct 12 | Apple Developer welcome email | Apple | ✅ |
-| By Sun Oct 12 | Expo account, `eas login` and `eas init` (`docs/development-build.md` step 2) | You | ☐ |
+| By Sun Oct 12 | Apple Developer welcome email (arrived Oct 10) | Apple | ✅ |
+| By Sun Oct 12 | Expo account, `eas login` and `eas init` (`docs/development-build.md` step 2) | You | ✅ |
 | By Sun Oct 12 | Google Play account started (`docs/google-play.md` step 1) | You | ☐ |
 | By Sun Oct 12 | Check EDC Orlando is on Festivals at afterglowmusic.app, with its lineup | You | ☐ |
 | Oct 9 | Bigger "Open Afterglow" code on the totem | Me | ✅ |
 | Oct 9 | TestFlight and Android link set up in the code, guides written | Me | ✅ |
 | ~~Thu Oct 16~~ | ~~If there's no welcome email yet, contact Apple Developer support~~ (not needed) | You | ✅ |
-| Oct 13–19 | App Store Connect app made, first `npm run build:ios`, on your iPhone through TestFlight (internal) (done Oct 10) | You | ✅ |
+| Oct 13–19 | App Store Connect app made (Apple id 6821236569) and first `npm run build:ios` uploaded (both Oct 10); on your iPhone through TestFlight (internal) | You | ✅ |
 | Oct 13–19 | Phone test checklist on that build; send me anything wrong (first pass Oct 10: one problem, friends in festival mode, fixed) | You | ☐ |
 | Oct 13–26 | Fixes | Me | ☐ |
 | Oct 20–26 | External TestFlight group and Apple's beta check; public link (test information submitted Oct 10, waiting on Apple's beta check, then Enable Public Link) | You | ☐ |

@@ -145,6 +145,11 @@
     "backgroundColor": "#0A0918",
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "7e42ce35-396e-476b-b50a-6b406c32976b"
+      }
     }
   }
 }

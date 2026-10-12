@@ -105,6 +105,17 @@ export function webMoments(local: readonly Memory[], shared: readonly SharedMemo
   return [...shared.map(sharedAsMemory), ...local.filter((m) => !(m.sharedId && ids.has(m.sharedId)))];
 }
 
+/**
+ * Your moments in the app: the videos kept on this phone, plus the ones you
+ * shared that this phone doesn't have (posted from the website, another
+ * phone, or before a reinstall), which open as the shared video. A video kept
+ * here wins over its shared copy.
+ */
+export function appMoments(local: readonly Memory[], shared: readonly SharedMemory[]): Memory[] {
+  const kept = new Set(local.flatMap((m) => (m.sharedId ? [m.sharedId] : [])));
+  return [...local, ...shared.filter((s) => !kept.has(s.id)).map(sharedAsMemory)];
+}
+
 /** A file the browser handed over (a File, in a browser). */
 export type WebFile = { type?: string; name?: string; size: number; lastModified?: number };
 
