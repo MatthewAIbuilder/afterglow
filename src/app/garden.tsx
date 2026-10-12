@@ -517,7 +517,7 @@ function SproutSheet({ sprout, onClose: close }: { sprout?: GardenView; onClose:
             ) : s.kind === 'seedling' ? (
               <Text style={styles.body}>{t('In bloom. You can give it away now: it moves to their garden.')}</Text>
             ) : kindOf(s.kind).grown && s.stage === 3 ? (
-              <Text style={styles.body}>{KEPT_SPROUT_IDS.includes(s.id) ? t('Fully grown. This one stays in your garden, and you can give as many hats as you like.') : kindOf(s.kind).grown}</Text>
+              <Text style={styles.body}>{KEPT_SPROUT_IDS.includes(s.id) ? t('Fully grown. This one stays in your garden, and you can give as many as you like.') : kindOf(s.kind).grown}</Text>
             ) : null}
             {bloomed ? (
               <Pressable

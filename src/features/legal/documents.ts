@@ -13,7 +13,10 @@ export type LegalSection = { heading?: string; paragraphs: string[] };
 export type LegalDocument = { id: LegalDoc; title: string; updated: string; intro: string; sections: LegalSection[] };
 
 /** When these words last changed (shown as "Last updated"). */
-export const LEGAL_UPDATED = 'October 6, 2026';
+export const LEGAL_UPDATED = 'October 10, 2026';
+
+/** Who runs Afterglow, named on the Privacy Policy and the Terms. */
+export const OPERATOR = 'Matthew Smith, in Florida, United States';
 
 export const LEGAL_DOCS: LegalDoc[] = ['privacy', 'terms', 'guidelines'];
 
@@ -47,7 +50,7 @@ export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL, opts:
         id,
         title: 'Privacy Policy',
         updated: LEGAL_UPDATED,
-        intro: `${APP_NAME} is built so that most of what it knows about you stays on your phone. This explains what stays there, what leaves it when you choose to share, and what you can do about it.`,
+        intro: `${APP_NAME} is run by ${OPERATOR} (“we” and “us” here). It’s built so that most of what it knows about you stays on your phone. This explains what stays there, what leaves it when you choose to share, and what you can do about it.`,
         sections: [
           {
             heading: 'What stays on your device',
@@ -107,7 +110,7 @@ export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL, opts:
         id,
         title: 'Terms of Use',
         updated: LEGAL_UPDATED,
-        intro: `These terms apply when you use ${APP_NAME}, in the app or on the website. By using it, or by creating a profile, you agree to them.`,
+        intro: `These terms apply when you use ${APP_NAME}, in the app or on the website. ${APP_NAME} is run by ${OPERATOR} (“we” and “us” here). By using it, or by creating a profile, you agree to them.`,
         sections: [
           {
             heading: 'Using Afterglow',
@@ -134,8 +137,20 @@ export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL, opts:
           {
             heading: 'The service',
             paragraphs: [
-              'Afterglow is in beta. Features may change, pause or stop, and we can’t promise it will always be available or free of mistakes. It’s provided as it is, and to the extent the law allows we aren’t responsible for losses from using it or from relying on festival information.',
+              'Features may change, pause or stop, and we can’t promise it will always be available or free of mistakes. It’s provided as it is, and to the extent the law allows we aren’t responsible for losses from using it or from relying on festival information.',
               'You can stop using Afterglow and delete your account at any time. We may suspend or close accounts that break these terms.',
+            ],
+          },
+          {
+            heading: 'The App Store',
+            paragraphs: [
+              'If you got Afterglow from Apple’s App Store, Apple’s standard licence for apps also applies. These terms are between you and us, not Apple: Apple isn’t responsible for Afterglow, its content or its support, and has no duty to maintain it.',
+            ],
+          },
+          {
+            heading: 'Which law applies',
+            paragraphs: [
+              'These terms follow the laws of the State of Florida, United States, without regard to its rules on conflicts of law. Any dispute about them or about Afterglow is handled in the state or federal courts located in Florida, unless the law where you live gives you the right to bring it there.',
             ],
           },
           { heading: 'Changes and contact', paragraphs: ['If these terms change, the date above changes with it, and we’ll mention big changes in the app.', contact] },

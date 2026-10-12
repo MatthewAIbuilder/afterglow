@@ -128,7 +128,9 @@ upload ever warns about a missing reason, it names the API: add it there.
     or drug use or references**, which makes the app **17+**.
   - Have the timing figures in `src/features/care/guide.ts` checked against
     DanceSafe's or TripSit's own pages by someone qualified (they're typical
-    ranges written from general harm-reduction guidance).
+    ranges written from general harm-reduction guidance). On 2026-10-10 they
+    were cross-checked against TripSit's published data and widened where
+    they fell short (`docs/history.md`); that's not a qualified review.
   - In the review notes, say plainly that it's harm reduction: it doesn't sell,
     source or encourage drugs, never gives amounts, and its main message is to
     wait, not mix, and get help. Guideline 1.4.3 (drug use) is the one

@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import type { SharedMemory } from '../../social/models';
 import type { Memory } from '../models';
-import { checkWebFile, checkWebMeta, onServer, pickWebVideo, sharedAsMemory, webMoment, webMoments, webVideoFormat, WEB_MAX_CLIP_SECONDS, WEB_MAX_PART_BYTES, WEB_MAX_VIDEO_BYTES, type WebFile, type WebPickDeps } from '../webVideo';
+import { appMoments, checkWebFile, checkWebMeta, onServer, pickWebVideo, sharedAsMemory, webMoment, webMoments, webVideoFormat, WEB_MAX_CLIP_SECONDS, WEB_MAX_PART_BYTES, WEB_MAX_VIDEO_BYTES, type WebFile, type WebPickDeps } from '../webVideo';
 import { MAX_CLIP_SECONDS } from '../device';
 import { MAX_SHARE_BYTES } from '../../social/service';
 
@@ -145,5 +145,14 @@ describe('your moments on the website', () => {
     const done = local({ id: 'm1', sharedId: 'sh1', sharedBy: 'u1' });
     expect(webMoments([uploading, done], [shared]).map((m) => m.id)).toEqual(['sh1', 'm2']);
     expect(webMoments([done], []).map((m) => m.id)).toEqual(['m1']);
+  });
+
+  it('in the app: kept videos first, plus shared ones this phone lacks (the website, a reinstall)', () => {
+    const kept = local({ id: 'm1', sharedId: 'sh1', sharedBy: 'u1' });
+    const other = { ...shared, id: 'sh2', videoUrl: 'https://example.com/sh2.mp4' };
+    const list = appMoments([kept, local({ id: 'm2' })], [shared, other]);
+    expect(list.map((m) => m.id)).toEqual(['m1', 'm2', 'sh2']);
+    expect(list.map(onServer)).toEqual([false, false, true]);
+    expect(appMoments([], [shared]).map((m) => m.sharedId)).toEqual(['sh1']);
   });
 });

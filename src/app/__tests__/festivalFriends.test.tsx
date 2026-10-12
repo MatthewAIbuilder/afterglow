@@ -91,6 +91,22 @@ describe('Friends at a festival', () => {
     await app.unmount();
   });
 
+  it('keeps your friends a tap away: the orbit, tucked away, opens with See all', async () => {
+    await person('sam', 'Sam');
+    await s().signOut();
+    await person('maya', 'Maya');
+    const sam = [...mockSocial.profiles.values()].find((p) => p.handle === 'sam')!.uid;
+    await s().follow(sam);
+    const app = await renderApp('/together');
+    await flush();
+    expect(app.getByText('At Cyclops Cove 4')).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Show your friend orbit. 1 friend'));
+    await flush();
+    expect(app.getByText('Your friends')).toBeTruthy();
+    expect(app.getByLabelText('See all 1 people you follow')).toBeTruthy();
+    await app.unmount();
+  });
+
   it('without a crew there, offers to start one', async () => {
     await person('maya', 'Maya');
     const app = await renderApp('/together');

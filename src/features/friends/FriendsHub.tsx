@@ -253,6 +253,8 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
                 handle={me.handle}
                 festivals={upcoming}
                 crewsUnknown={!crewsConfirmed && crewsKeptAt === undefined && !!social.user}
+                friends={circle.profiles}
+                close={circle.close}
               />
             ) : (
               <>

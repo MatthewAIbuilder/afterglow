@@ -478,7 +478,7 @@ service cloud.firestore {
         && id.matches('^[a-z0-9]{12,40}$')
         && request.resource.data.keys().hasOnly(['from', 'kind', 'note', 'festivalId', 'artistId', 'artistName', 'theme', 'via', 'createdAt'])
         && request.resource.data.from == me()
-        && request.resource.data.kind in ['seedling', 'plur', 'wanderer', 'bass', 'melody', 'groove', 'spotlight', 'sunrise', 'moonlight', 'seeker', 'gnome']
+        && request.resource.data.kind in ['seedling', 'plur', 'wanderer', 'bass', 'melody', 'groove', 'spotlight', 'sunrise', 'moonlight', 'seeker', 'gnome', 'caterpillar']
         // Given on from your garden (`via`): a sprout given to you, of this kind (or a plain one that grew into
         // it) and the same artist, not given on already, and marked given on as this one in the same write.
         && (!('via' in request.resource.data) || (request.resource.data.via is string
@@ -487,9 +487,10 @@ service cloud.firestore {
           && get(path('sprouts', request.resource.data.via)).data.get('artistId', '') == request.resource.data.get('artistId', '')
           && !('passedOn' in get(path('sprouts', request.resource.data.via)).data)
           && getAfter(path('sprouts', request.resource.data.via)).data.get('passedOn', '') == id))
-        // Gnome hats come from their keeper (features/sprouts/sprouts.ts, GNOME_FRIENDS), as many as they like, or
-        // are given on that way.
-        && (request.resource.data.kind != 'gnome' || me() == '8EEXIUNCQghOnejeAOygGMSl6Bp1' || 'via' in request.resource.data)
+        // Gnome hats and caterpillars come from their keepers (features/sprouts/sprouts.ts: GNOME_FRIENDS,
+        // CATERPILLAR_FRIENDS, KEEPS_EVERY_KIND), as many as they like, or are given on that way.
+        && (request.resource.data.kind != 'gnome' || me() in ['8EEXIUNCQghOnejeAOygGMSl6Bp1', 'aC7a313susZsMUGWAM7GmRDyuRS2'] || 'via' in request.resource.data)
+        && (request.resource.data.kind != 'caterpillar' || me() in ['xKdfDSjxYLSuIl37UpXGMFYGpWU2', 'aC7a313susZsMUGWAM7GmRDyuRS2'] || 'via' in request.resource.data)
         && (!('note' in request.resource.data) || (request.resource.data.note is string && request.resource.data.note.size() <= 60))
         && (!('festivalId' in request.resource.data) || (request.resource.data.festivalId is string && request.resource.data.festivalId.size() <= 120))
         // An artist's sprout names the artist (id and name, together).

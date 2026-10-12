@@ -8,19 +8,21 @@ import { color, glowA, radius, space, type } from '../../theme/tokens';
 import { CrewHelpAlerts } from '../crews/CrewHelpAlerts';
 import { CrewInvitesCard } from '../crews/CrewInvitesCard';
 import { FriendAddsList } from '../friends/FriendAddsList';
+import { FriendsCircle } from '../friends/FriendsCircle';
 import { MessagesList } from '../friends/MessagesList';
 import { QuickActions } from '../friends/QuickActions';
 import { SectionHeader } from '../friends/SectionHeader';
 import { LastUpdated } from '../offline/LastUpdated';
 import { SideQuestsCard } from '../quests/SideQuestsCard';
-import type { Crew } from '../social/models';
+import type { Crew, Profile } from '../social/models';
 import { t } from '../../i18n';
 import { CrewNightCard } from './CrewNightCard';
 import { isShowEvent } from './showEvent';
 
 /**
  * The Friends tab at a festival or show, laid out for the night: the round
- * buttons first (find people, your code, scan, sprout, invite), then your
+ * buttons first (find people, your code, scan, sprout, invite), the friends
+ * you just scanned and your friend orbit (tucked away until tapped), then your
  * crew as one card each (its chat, where everyone is, checking in in one
  * tap, the meeting spot), then your other messages, and tonight's extras
  * last (side quests, badges to collect, looking after yourself, your plan).
@@ -32,6 +34,8 @@ export function FestivalFriends({
   handle,
   festivals,
   crewsUnknown,
+  friends,
+  close,
 }: {
   festival: Festival;
   /** Your crews at this festival. */
@@ -41,6 +45,10 @@ export function FestivalFriends({
   festivals: readonly Festival[];
   /** No signal and nothing kept yet: your crews couldn't be read. */
   crewsUnknown: boolean;
+  /** The people you follow, for the orbit (undefined until read). */
+  friends: Profile[] | undefined;
+  /** Your close friends among them. */
+  close: readonly string[];
 }) {
   return (
     <View style={styles.wrap}>
@@ -48,6 +56,9 @@ export function FestivalFriends({
         <QuickActions handle={handle} festivals={festivals} />
         <FriendAddsList />
       </View>
+
+      {/* Your friends, a tap away: the same orbit as the full Friends tab, folded. */}
+      <FriendsCircle profiles={friends} close={close} folded />
 
       <Group title={crews.length > 1 ? t('Your crews') : t('Your crew')}>
         {/* A crewmate asking for help, or an invite to a crew: before anything else. */}

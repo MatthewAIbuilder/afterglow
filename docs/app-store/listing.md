@@ -15,7 +15,8 @@ The step-by-step guide (builds, TestFlight, review questions) is
 
 | Name | Characters |
 | --- | --- |
-| Afterglow | 9 |
+| ~~Afterglow~~ (taken) | 9 |
+| **Afterglow: Festival Sets** (chosen 2026-10-10) | 24 |
 | Afterglow: Festival Sets | 24 |
 | Afterglow: Live Sets & Lineups | 30 |
 
@@ -207,8 +208,6 @@ them later with captures from the development build on your iPhone.
 6. Make the App Review test account and write the review notes
    (`docs/app-store.md`, step 4).
 7. Make sure someone reads reports every day once the app is live.
-8. Decide about the two demo festivals the app still ships with (Solstice
-   2026 and Horizon 2027, from `src/data/mock`): they're made up, and a
-   reviewer or a new user can see them in the festival lists and Discover.
-   Hiding them before launch is a small change; ask for it when you're ready.
+8. ~~Decide about the two demo festivals~~ Done: hidden since 2026-10-05
+   (`DEMO_FESTIVALS` in `src/data/bundled.ts`).
 9. After the app is live, set `APP_STORE_URL` in `src/config/app.ts`.
