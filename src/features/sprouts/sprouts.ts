@@ -21,7 +21,7 @@ import { GNOME_FRIENDS } from '../profile/backdrops';
  *   full bloom it becomes a kind, decided by what grew it most, and from
  *   then on you can give sprouts of that kind too. Sprouts that arrive as a
  *   kind are already grown.
- * - Hats (the gnome, the caterpillar): a kind that arrives as a seed (`seed`)
+ * - Hats (the gnome, the caterpillar, the raccoon): a kind that arrives as a seed (`seed`)
  *   and grows into itself, with its own stage names. Its keepers (`keepers`) give as many
  *   as they like, with no seeds, and grow one of their own. Anyone else can
  *   pass theirs on only once it's fully grown: it leaves their garden and
@@ -29,7 +29,7 @@ import { GNOME_FRIENDS } from '../profile/backdrops';
  *   have one.
  */
 
-export type SproutKind = 'seedling' | 'plur' | 'wanderer' | 'bass' | 'melody' | 'groove' | 'spotlight' | 'sunrise' | 'moonlight' | 'seeker' | 'gnome' | 'caterpillar';
+export type SproutKind = 'seedling' | 'plur' | 'wanderer' | 'bass' | 'melody' | 'groove' | 'spotlight' | 'sunrise' | 'moonlight' | 'seeker' | 'gnome' | 'caterpillar' | 'raccoon';
 
 export type KindSpec = {
   id: SproutKind;
@@ -56,12 +56,16 @@ export type KindSpec = {
   notGrown?: string;
   /** These accounts give as many as they like (the database checks the same) and grow one of their own. */
   keepers?: readonly string[];
+  /** Keepers named by @handle instead (the database looks the handle up the same way). */
+  keeperHandles?: readonly string[];
   /** When a keeper's own one was planted (ms): it grows from then. */
   plantedAt?: number;
 };
 
 /** Jannik: keeps the caterpillars (firestore.rules checks the same uid). */
 export const CATERPILLAR_FRIENDS: readonly string[] = ['xKdfDSjxYLSuIl37UpXGMFYGpWU2'];
+/** Yulian (@nyxara): keeps the raccoons. By handle: firestore.rules looks up `handles/nyxara` the same way. */
+export const RACCOON_FRIENDS: readonly string[] = ['nyxara'];
 /** Accounts that keep every kept kind: give as many as they like and grow one of each (firestore.rules checks the same uids). */
 export const KEEPS_EVERY_KIND: readonly string[] = ['aC7a313susZsMUGWAM7GmRDyuRS2'];
 
@@ -110,23 +114,44 @@ export const SPROUT_KINDS: readonly KindSpec[] = [
     keepers: [...CATERPILLAR_FRIENDS, ...KEEPS_EVERY_KIND],
     plantedAt: Date.UTC(2026, 9, 10, 12),
   },
+  {
+    id: 'raccoon',
+    name: t('Trash can'),
+    short: t('Raccoon'),
+    how: t('Be given a trash can and wait'),
+    grows: t('being given a trash can'),
+    about: t('A little trash can with something inside. First two tiny paws grip the rim, then a masked face peeks out, then the whole raccoon climbs out and wanders your garden. Once it’s out you can pass it on: it leaves your garden and starts again as a trash can in theirs.'),
+    body: ['#C9D6E4', '#6E8299'],
+    accent: '#B48CFF',
+    seed: true,
+    stages: [t('Trash can'), t('Little paws'), t('Peeking out'), t('Raccoon')],
+    grown: t('Your raccoon climbed all the way out and is wandering your garden. You can pass it on now: it leaves your garden and starts again as a trash can in theirs.'),
+    passOn: t('Your raccoon leaves your garden, and they get a new trash can.'),
+    notGrown: t('Wait until your raccoon is all the way out, then you can pass it on.'),
+    keepers: [...KEEPS_EVERY_KIND],
+    keeperHandles: RACCOON_FRIENDS,
+    plantedAt: Date.UTC(2026, 9, 13, 12),
+  },
 ];
+
+/** Whether this account keeps a kind: by its uid, or by its @handle. */
+const keeps = (k: KindSpec, uid: string | undefined, handle?: string) => (!!uid && !!k.keepers?.includes(uid)) || (!!uid && !!handle && !!k.keeperHandles?.includes(handle.toLowerCase()));
 
 export const kindOf = (id: string): KindSpec => SPROUT_KINDS.find((k) => k.id === id) ?? SPROUT_KINDS[0];
 export const isKind = (k: unknown): k is SproutKind => typeof k === 'string' && SPROUT_KINDS.some((s) => s.id === k);
 
 /** The kinds this account gives as many of as it likes (and grows one of its own). */
-export const keptKinds = (uid: string | undefined): SproutKind[] => (uid ? SPROUT_KINDS.filter((k) => k.keepers?.includes(uid)).map((k) => k.id) : []);
+export const keptKinds = (uid: string | undefined, handle?: string): SproutKind[] => SPROUT_KINDS.filter((k) => keeps(k, uid, handle)).map((k) => k.id);
 /** A keeper's own one, in their garden. */
 export const keptSproutId = (kind: SproutKind) => `kept-${kind}`;
 /** Every keeper's own sprout id (kept with the garden like the first sprout). */
-export const KEPT_SPROUT_IDS: readonly string[] = SPROUT_KINDS.filter((k) => k.keepers).map((k) => keptSproutId(k.id));
+export const KEPT_SPROUT_IDS: readonly string[] = SPROUT_KINDS.filter((k) => k.keepers || k.keeperHandles).map((k) => keptSproutId(k.id));
 /**
  * A keeper's own: one of each kind they keep, growing from when it was
  * planted (or from when they started, if that was later).
  */
-export function keptSprouts(uid: string | undefined, starterAt: number): GardenSprout[] {
-  return keptKinds(uid).map((kind) => ({ id: keptSproutId(kind), kind, from: '', name: 'Afterglow', at: Math.max(starterAt, kindOf(kind).plantedAt ?? 0) }));
+export function keptSprouts(uid: string | undefined, starterAt: number, handle?: string): GardenSprout[] {
+  return keptKinds(uid, handle).map((kind) => ({ id: keptSproutId(kind), kind, from: '', name: 'Afterglow', at: Math.max(starterAt, kindOf(kind).plantedAt ?? 0) }));
 }
 /** A stage's name: the kind's own (a gnome's "Gnome hat"), or the usual ones. */
 export const stageName = (kind: SproutKind, stage: Stage) => kindOf(kind).stages?.[stage] ?? STAGE_NAMES[stage];
@@ -135,7 +160,7 @@ export const grownName = (kind: SproutKind) => kindOf(kind).stages?.[3] ?? kindO
 /** How a given one looks as it arrives: a plain sprout a little grown, a hat as a hat, any other kind grown. */
 export const giftStage = (kind: SproutKind): Stage => (kind === 'seedling' ? 2 : kindOf(kind).seed ? 0 : 3);
 /** Whether a kind shows in lists of kinds to collect: every kind, but a kept one only once you have it or keep it. */
-export const kindListed = (k: KindSpec, have: ReadonlySet<SproutKind>, uid?: string) => !k.keepers || have.has(k.id) || (!!uid && k.keepers.includes(uid));
+export const kindListed = (k: KindSpec, have: ReadonlySet<SproutKind>, uid?: string, handle?: string) => !(k.keepers || k.keeperHandles) || have.has(k.id) || keeps(k, uid, handle);
 
 /** Seeds to give each day (days turn over at 4 AM, like quests), and on a festival day you're at. */
 export const SEEDS_PER_DAY = 5;
@@ -461,8 +486,8 @@ export const isReceived = (s: GardenSprout) => !!s.from && s.id !== STARTER_ID &
 export const toPass = (view: readonly GardenView[], kind: SproutKind, artistId?: string) => passable(view).find((s) => (artistId ? s.artist?.id === artistId : !s.artist && s.shown === kind));
 
 /** Kinds you can give: a new plain sprout (from your seeds) always, the kinds a keeper keeps, and every kind you have one of to give away. */
-export function givableKinds(view: readonly GardenView[], uid?: string): SproutKind[] {
-  const kept = keptKinds(uid);
+export function givableKinds(view: readonly GardenView[], uid?: string, handle?: string): SproutKind[] {
+  const kept = keptKinds(uid, handle);
   const have = new Set(passable(view).flatMap((s) => (s.artist ? [] : [s.shown])));
   return SPROUT_KINDS.map((k) => k.id).filter((k) => k === 'seedling' || kept.includes(k) || have.has(k));
 }

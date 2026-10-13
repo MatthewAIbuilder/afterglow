@@ -309,6 +309,8 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
   const loaded = useRef(false);
   const [tick, setTick] = useState(0);
   const account = social.user?.uid;
+  // A keeper can be named by @handle (the raccoon's).
+  const myHandle = social.profile?.handle;
   const ready = social.availability.ok && !!account && !!social.profile;
   // The latest state and account, for async work that outlives a render.
   const storedRef = useRef(stored);
@@ -664,7 +666,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
           from = pick('seedling', cleanArtist.id);
           if (!from) return { problem: 'not-yours' };
         }
-      } else if (kind !== 'seedling' && !keptKinds(me).includes(kind)) {
+      } else if (kind !== 'seedling' && !keptKinds(me, profileRef.current.profile?.handle).includes(kind)) {
         from = pick(kind);
         if (!from) return { problem: 'not-yours' };
       }
@@ -751,9 +753,9 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
     const mine = account ? stored.garden.filter((g) => g.account === account && !g.passed) : [];
     const starter: GardenSprout[] = stored.starterAt ? [{ id: STARTER_ID, kind: 'seedling', from: '', name: 'Afterglow', at: stored.starterAt }] : [];
     // A keeper's own hat (the gnome's).
-    const kept = stored.starterAt ? keptSprouts(account, stored.starterAt) : [];
+    const kept = stored.starterAt ? keptSprouts(account, stored.starterAt, myHandle) : [];
     return [...mine, ...(stored.wild ?? []), ...kept, ...starter].filter(here);
-  }, [stored.garden, stored.gifts, stored.gone, stored.starterAt, stored.wild, account]);
+  }, [stored.garden, stored.gifts, stored.gone, stored.starterAt, stored.wild, account, myHandle]);
   // A wild sprout on each festival night you're at (once loaded, so one's never found twice).
   const wildId = tonight && here ? `${WILD_PREFIX}${tonightKey(tonight.festival.id, tonight.at)}` : undefined;
   const wildName = tonight?.festival.name;
@@ -775,7 +777,7 @@ export function SproutsProvider({ children }: { children: ReactNode }) {
       setStored((s) => ({ ...s, bloomed: { ...fresh, ...s.bloomed }, bloomedAt: { ...Object.fromEntries(Object.keys(fresh).map((id) => [id, at])), ...s.bloomedAt } })),
     );
   }, [garden, stored.bloomed]);
-  const givable = useMemo(() => givableKinds(garden, account), [garden, account]);
+  const givable = useMemo(() => givableKinds(garden, account, myHandle), [garden, account, myHandle]);
   const blooms = useMemo(
     () => garden.flatMap((g) => (stored.bloomed[g.id] && stored.bloomedAt?.[g.id] ? [{ id: g.id, kind: stored.bloomed[g.id], at: stored.bloomedAt[g.id] }] : [])),
     [garden, stored.bloomed, stored.bloomedAt],
