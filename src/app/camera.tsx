@@ -1,6 +1,6 @@
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useIsFocused, useLocalSearchParams, useNavigation } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
@@ -26,7 +26,7 @@ import { OrgWatermark } from '../features/organizers/OrgWatermark';
 import { color, radius, space, type, glowA, accentEdge } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { t } from '../i18n';
-import { GlassFill } from '../components/LiquidGlass';
+import { GlassFill, OverLiveView } from '../components/LiquidGlass';
 import { isShowEvent } from '../features/festivalMode/showEvent';
 import { useTonight } from '../features/tonight/useTonight';
 
@@ -38,6 +38,9 @@ import { useTonight } from '../features/tonight/useTonight';
  * back. Videos stay on the phone unless you share them.
  */
 /** Who you're filming, when the camera was opened from their page ("Film the set"): passed on to the tagging sheet. */
+/** How long the camera waits for the screen's opening slide before starting anyway. */
+const SETTLE_MS = 350;
+
 function useFilming(): Record<string, string> | undefined {
   const { artist, show } = useLocalSearchParams<{ artist?: string; show?: string }>();
   return useMemo(() => (artist ? { artist, ...(show ? { show } : {}) } : undefined), [artist, show]);
@@ -194,6 +197,21 @@ function Camera() {
   );
 
   const allowed = !!camPerm?.granted;
+  // The camera starts once the screen has finished sliding in (never mid-transition), and pauses while
+  // another screen covers it.
+  const focused = useIsFocused();
+  const navigation = useNavigation();
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    const done = () => setSettled(true);
+    const off = navigation.addListener('transitionEnd' as never, done);
+    // Some ways in have no transition: start anyway shortly after.
+    const timer = setTimeout(done, SETTLE_MS);
+    return () => {
+      off();
+      clearTimeout(timer);
+    };
+  }, [navigation, setSettled]);
   const askAll = async () => {
     haptic.select();
     const c = await askCam();
@@ -201,14 +219,17 @@ function Camera() {
   };
 
   return (
+    // Buttons over the live camera use a plain surface, never a blur or glass sampling it.
+    <OverLiveView>
     <GestureDetector gesture={swipeBack}>
       <View style={styles.root}>
         <PageTitle title={t('Camera')} />
         <StatusBar style="light" />
-        {allowed ? (
+        {allowed && settled ? (
           <CameraView
             ref={cam}
             style={StyleSheet.absoluteFill}
+            active={focused}
             facing={facing}
             mode="video"
             mute={!micPerm?.granted}
@@ -331,6 +352,7 @@ function Camera() {
         </View>
       </View>
     </GestureDetector>
+    </OverLiveView>
   );
 }
 

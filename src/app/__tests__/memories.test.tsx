@@ -104,6 +104,8 @@ describe('adding a memory from Discover', () => {
     await flush();
     await act(async () => holdClip());
     await flush();
+    // The camera starts once its screen has slid in.
+    await flush();
     expect(app.getByText('New memory')).toBeTruthy();
     expect(app.getByText('Sat, Dec 5 · 10:30 PM · Boca Raton')).toBeTruthy();
     // Date and city agree: Cyclops Cove 4, Saturday, already chosen.
@@ -127,6 +129,8 @@ describe('adding a memory from Discover', () => {
     await flush();
     await act(async () => holdClip());
     await flush();
+    // The camera starts once its screen has slid in.
+    await flush();
     expect(app.getByRole('button', { name: 'Not at a festival or show', selected: true })).toBeTruthy();
     await fireEvent.press(app.getByLabelText('Save to Memories'));
     await flush();
@@ -141,6 +145,8 @@ describe('adding a memory from Discover', () => {
     const app = await renderApp('/');
     await flush();
     await act(async () => holdClip());
+    await flush();
+    // The camera starts once its screen has slid in.
     await flush();
     const record = app.getByLabelText('Record a video');
     await fireEvent(record, 'pressIn');
@@ -171,6 +177,8 @@ describe('adding a memory from Discover', () => {
     await flush();
     await act(async () => holdClip());
     await flush();
+    // The camera starts once its screen has slid in.
+    await flush();
     await fireEvent(app.getByLabelText('Record a video'), 'pressIn');
     await settle(7000);
     await fireEvent(app.getByLabelText('Stop recording'), 'pressOut');
@@ -195,6 +203,8 @@ describe('adding a memory from Discover', () => {
     const app = await renderApp('/');
     await flush();
     await act(async () => holdClip());
+    await flush();
+    // The camera starts once its screen has slid in.
     await flush();
     expect(alert).toHaveBeenCalledWith('That video is too long', 'Choose a clip of a minute or less.');
     expect(app.queryByText('New memory')).toBeNull();
