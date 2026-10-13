@@ -42,7 +42,7 @@ Waiting on the user (don't redo, remind when relevant):
 - **Discover params**: clear handled params with the screen's own `navigation.setParams` (the global one throws before navigation is ready). Openers that run by themselves (welcome, Tonight, What's new) only open over a tab.
 - **Outboxes**: anything sent from the phone (crew updates, chat, friend adds, sprouts, likes) is kept on the phone, sent oldest first when there's signal, keeps the time it happened (`at`), separates no-signal tries from refusals, and is per account.
 - **Privacy**: music tokens only in the secure store; care data never leaves the phone; never log private data; never commit secrets.
-- **Instant updates** (`expo-updates`, `npm run update`, channel `production` for the App Store/TestFlight and the Android link): `runtimeVersion` follows `version` in `app.json`, so raise `version` whenever a change needs a new build (a native package, a config plugin, a permission); otherwise old builds would get JavaScript they can't run.
+- **Instant updates and builds ship by themselves** (`.github/workflows/app.yml`, needs the `EXPO_TOKEN` secret; `expo-updates`, channel `production` for the App Store/TestFlight and the Android link): every checked push to `main` sends an `eas update`; raising `version` in `app.json` also builds the iPhone app and sends it to TestFlight. `runtimeVersion` follows `version`, so raise `version` (1.0.0 → 1.0.1) in any change that needs a new build (a native package, a config plugin, a permission), and only then; otherwise old builds get JavaScript they can't run, or builds pile up.
 - **Git in cloud sessions**: pushes cancel running CI on the same branch, so batch them. No model names in commits or PRs.
 
 ## Product principles

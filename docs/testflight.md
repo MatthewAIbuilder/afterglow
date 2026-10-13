@@ -113,6 +113,35 @@ new Expo package, or anything else Claude says "needs a new build" for. When
 that happens, Claude also raises `version` in `app.json` (1.0.0 → 1.0.1), so
 the old builds never get an update they can't run.
 
+## Shipping by itself (set up once)
+
+After this, merging a pull request is all it takes. `.github/workflows/app.yml` runs
+after the website's checks pass on `main`:
+
+- **Every merge** sends an instant update to every copy of the app from build 4 on.
+- **When Claude raises `version` in `app.json`** (it does whenever a change needs a new
+  build), it also makes a new iPhone build on Expo and sends it to TestFlight. Apple emails
+  you when it's ready, and testers get it like any new build.
+- **By hand:** GitHub → Actions → **App** → **Run workflow** makes an iPhone build now
+  (tick "Android too" for a new Android link, once you've made the first one with
+  `npm run build:android-link`).
+
+The one thing it needs is an Expo key in GitHub:
+
+1. Go to **expo.dev**, sign in, click your avatar (top right) → **Account settings** →
+   **Access tokens** → **Create token**. Name it `github`, create it and copy it (it's
+   shown only once).
+2. Go to the afterglow repository on **github.com** → **Settings** → **Secrets and
+   variables** → **Actions** → **New repository secret**. Name: `EXPO_TOKEN`. Secret:
+   paste the token. **Add secret**.
+
+That's all. If a TestFlight upload ever fails with a question about an App Store Connect
+key, run `npm run build:ios` once on your PC and say yes to making the key; after that
+it's remembered.
+
+Expo's free plan includes a limited number of iPhone builds a month (instant updates
+don't count), so new builds only happen when a change needs one.
+
 ## Android: a download link (no Play Store)
 
 The Play Store can't be ready by EDC Orlando (see `docs/google-play.md`), so
