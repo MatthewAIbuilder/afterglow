@@ -6,6 +6,7 @@ import { type ArtistLook, shinyLook } from './artistLook';
 import { Collectible, MOVES_FROM } from './Collectible';
 import { CaterpillarSprout } from './Caterpillar';
 import { GnomeHat } from './Gnome';
+import { RaccoonSprout } from './Raccoon';
 import { blinkOf, CLOCK_MS, glanceOf, type Pace, paceOf, sine } from './motion';
 import { kindOf, type SproutKind, type Stage } from './sprouts';
 
@@ -32,6 +33,7 @@ const LOOKS: Record<SproutKind, Look> = {
   seeker: { body: ['#ECF6BE', '#B4D25E', '#6A8A26'], leaf: ['#DCEFA0', '#6E8E2C'], face: 'sparkle', leafShape: 'pointed' },
   gnome: { body: ['#D8F2B8', '#8CC860', '#3F7F2C'], leaf: ['#B8E08C', '#3F7A30'], face: 'joy', leafShape: 'round' },
   caterpillar: { body: ['#D8F2B8', '#8CC860', '#3F7F2C'], leaf: ['#B8E08C', '#3F7A30'], face: 'joy', leafShape: 'round' },
+  raccoon: { body: ['#D8F2B8', '#8CC860', '#3F7F2C'], leaf: ['#B8E08C', '#3F7A30'], face: 'joy', leafShape: 'round' },
 };
 const GREY: Look = { body: ['#7C7A92', '#5A5870', '#3A3850'], leaf: ['#7A7890', '#4A4860'], face: 'smile', leafShape: 'round' };
 const INK = '#0E2A1A';
@@ -130,11 +132,13 @@ export type SproutProps = {
  * An artist's passes `artist` (their look, from `artistLook`) and is drawn as
  * their collectible instead (Collectible.tsx), with `tier` for its level. A
  * gnome hat is drawn as it grows into a gnome (Gnome.tsx), a caterpillar as
- * it turns into a butterfly (Caterpillar.tsx).
+ * it turns into a butterfly (Caterpillar.tsx), a trash can as a raccoon
+ * climbs out of it (Raccoon.tsx).
  */
 export function Sprout({ artist, tier, shiny, ...props }: SproutProps) {
   if (artist) return <Collectible look={shiny ? shinyLook(artist) : artist} shiny={shiny} tier={tier} size={props.size} still={props.still} locked={props.locked} scene={props.scene} driven={props.driven} />;
   if (props.kind === 'gnome') return <GnomeHat stage={props.stage} size={props.size} still={props.still} locked={props.locked} scene={props.scene} driven={props.driven} />;
+  if (props.kind === 'raccoon') return <RaccoonSprout stage={props.stage} size={props.size} still={props.still} locked={props.locked} scene={props.scene} driven={props.driven} />;
   if (props.kind === 'caterpillar') return <CaterpillarSprout stage={props.stage} size={props.size} still={props.still} locked={props.locked} scene={props.scene} driven={props.driven} />;
   return <Plant {...props} />;
 }

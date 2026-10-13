@@ -1015,4 +1015,13 @@ export const es_sprouts: Dictionary = {
   'Your caterpillar turned into a butterfly and is fluttering around your garden. You can pass it on now: it leaves your garden and starts again as a caterpillar in theirs.': 'Tu oruga se ha convertido en mariposa y revolotea por tu jardín. Ya puedes pasarla: se va de tu jardín y vuelve a empezar como oruga en el suyo.',
   'Your butterfly leaves your garden, and they get a new caterpillar to grow.': 'Tu mariposa se va de tu jardín, y recibe una oruga nueva para hacerla crecer.',
   'Wait until your caterpillar is a butterfly, then you can pass it on.': 'Espera a que tu oruga sea mariposa, y luego podrás pasarla.',
+  'Trash can': 'Cubo de basura',
+  'Raccoon': 'Mapache',
+  'Little paws': 'Patitas',
+  'Be given a trash can and wait': 'Recibe un cubo de basura y espera',
+  'being given a trash can': 'recibir un cubo de basura',
+  'A little trash can with something inside. First two tiny paws grip the rim, then a masked face peeks out, then the whole raccoon climbs out and wanders your garden. Once it’s out you can pass it on: it leaves your garden and starts again as a trash can in theirs.': 'Un cubito de basura con algo dentro. Primero dos patitas se agarran al borde, luego asoma una carita con antifaz y al final sale el mapache entero y pasea por tu jardín. Cuando ya esté fuera puedes pasarlo: se va de tu jardín y vuelve a empezar como cubo de basura en el suyo.',
+  'Your raccoon climbed all the way out and is wandering your garden. You can pass it on now: it leaves your garden and starts again as a trash can in theirs.': 'Tu mapache ya salió del todo y pasea por tu jardín. Ya puedes pasarlo: se va de tu jardín y vuelve a empezar como cubo de basura en el suyo.',
+  'Your raccoon leaves your garden, and they get a new trash can.': 'Tu mapache se va de tu jardín, y recibe un cubo de basura nuevo.',
+  'Wait until your raccoon is all the way out, then you can pass it on.': 'Espera a que tu mapache salga del todo, y luego podrás pasarlo.',
 };

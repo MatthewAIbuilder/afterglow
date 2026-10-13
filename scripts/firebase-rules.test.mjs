@@ -935,6 +935,29 @@ await t('caterpillars: from Jannik or the every-kind keeper as many as they like
   pass.update(doc(P.firestore(), 'sprouts', 'caterpillar000000001'), { passedOn: 'caterpillar000000003' });
   await assertSucceeds(pass.commit());
 });
+await t('raccoons: from @nyxara (by handle) or the every-kind keeper as many as they like, passed on by whoever has one', async () => {
+  const ALL = 'aC7a313susZsMUGWAM7GmRDyuRS2';
+  const Y = env.authenticatedContext('uidYulian'), K = env.authenticatedContext(ALL), Q = env.authenticatedContext('uidQ'), IMP = env.authenticatedContext('uidImpostor');
+  const coon = (from, over = {}) => ({ from, kind: 'raccoon', createdAt: serverTimestamp(), ...over });
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const db = ctx.firestore();
+    await setDoc(doc(db, 'profiles', 'uidYulian'), profile('nyxara'));
+    await setDoc(doc(db, 'handles', 'nyxara'), { uid: 'uidYulian' });
+    await setDoc(doc(db, 'profiles', 'uidQ'), profile('quinn'));
+    await setDoc(doc(db, 'profiles', 'uidImpostor'), profile('nyxara2'));
+  });
+  // Nobody else makes one from nothing; whoever holds @nyxara and the every-kind keeper do.
+  await assertFails(setDoc(doc(Q.firestore(), 'sprouts', 'raccoon0000000000000'), coon('uidQ')));
+  await assertFails(setDoc(doc(IMP.firestore(), 'sprouts', 'raccoon0000000000009'), coon('uidImpostor')));
+  await assertSucceeds(setDoc(doc(Y.firestore(), 'sprouts', 'raccoon0000000000001'), coon('uidYulian')));
+  await assertSucceeds(setDoc(doc(K.firestore(), 'sprouts', 'raccoon0000000000002'), coon(ALL)));
+  // Picked up and passed on, as a new trash can.
+  await assertSucceeds(updateDoc(doc(Q.firestore(), 'sprouts', 'raccoon0000000000001'), { to: 'uidQ', claimedAt: serverTimestamp() }));
+  const pass = writeBatch(Q.firestore());
+  pass.set(doc(Q.firestore(), 'sprouts', 'raccoon0000000000003'), coon('uidQ', { via: 'raccoon0000000000001' }));
+  pass.update(doc(Q.firestore(), 'sprouts', 'raccoon0000000000001'), { passedOn: 'raccoon0000000000003' });
+  await assertSucceeds(pass.commit());
+});
 await t('any sprout given to you can be given on once, as the same kind and artist', async () => {
   const R = env.authenticatedContext('uidR'), S2 = env.authenticatedContext('uidS');
   await env.withSecurityRulesDisabled(async (ctx) => {

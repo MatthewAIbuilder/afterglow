@@ -225,7 +225,7 @@ export default function GiveSproutScreen() {
                   <Sprout kind={kind} stage={giftStage(kind)} size={150} />
                   <Text style={styles.heroName}>{k.name}</Text>
                   <Text style={styles.body}>{k.about}</Text>
-                  {keptKinds(social.user?.uid).includes(kind) ? (
+                  {keptKinds(social.user?.uid, social.profile?.handle).includes(kind) ? (
                     <Text style={styles.body}>{t('You can give as many as you like, and they don’t use seeds.')}</Text>
                   ) : k.passOn ? (
                     <Text style={styles.body}>{k.passOn}</Text>

@@ -117,7 +117,7 @@ export default function GardenScreen() {
   const freshDecor = bloom || fresh || !seenDecor || !decorInputsReady ? undefined : decor.find((d) => !seenDecor.includes(d));
   const plain = sprouts.garden.filter((g) => !g.artist);
   const givenArtists: GivenArtistSprout[] = sprouts.garden.flatMap((g) => (g.artist ? [{ id: g.id, artist: g.artist, from: g.id === STARTER_ID || g.foundAt ? fromLine(g) : (giverOf(g) ?? t('someone')), at: g.at }] : []));
-  const kinds = SPROUT_KINDS.filter((k) => k.id !== 'seedling' && kindListed(k, sprouts.collected, social.user?.uid));
+  const kinds = SPROUT_KINDS.filter((k) => k.id !== 'seedling' && kindListed(k, sprouts.collected, social.user?.uid, social.profile?.handle));
   const collected = kinds.filter((k) => sprouts.collected.has(k.id)).length;
   const artistOf = (a: { id: string; name: string }): Artist => catalog.artist(a.id) ?? ({ id: a.id, name: a.name, sound: {} } as Artist);
 

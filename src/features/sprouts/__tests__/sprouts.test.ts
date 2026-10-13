@@ -4,6 +4,8 @@ import { GNOME_FRIENDS } from '../../profile/backdrops';
 import { bloomNotices, sproutNotices, wildNotices, claimsToSend, cleanClaims, cleanGifts, CLAIM_KEEP_MS, GIFT_REFUSED_MAX, giftsToSend, giftTried, nextDue, passingOn, queueClaim, retryDelay, seedGifts, tidy, type Gift } from '../outbox';
 import {
   CATERPILLAR_FRIENDS,
+  KEPT_SPROUT_IDS,
+  RACCOON_FRIENDS,
   KEEPS_EVERY_KIND,
   cleanBloomed,
   festivalDaysOf,
@@ -255,11 +257,11 @@ describe('the bell', () => {
     const jannik = CATERPILLAR_FRIENDS[0];
     const all = KEEPS_EVERY_KIND[0];
     expect(keptKinds(jannik)).toEqual(['caterpillar']);
-    expect(keptKinds(all)).toEqual(['gnome', 'caterpillar']);
+    expect(keptKinds(all)).toEqual(['gnome', 'caterpillar', 'raccoon']);
     expect(keptKinds(GNOME_FRIENDS[0])).toEqual(['gnome']);
-    expect(keptSprouts(all, at(1, 1)).map((s) => s.id)).toEqual(['kept-gnome', 'kept-caterpillar']);
+    expect(keptSprouts(all, at(1, 1)).map((s) => s.id)).toEqual(['kept-gnome', 'kept-caterpillar', 'kept-raccoon']);
     expect(givableKinds([], jannik)).toEqual(['seedling', 'caterpillar']);
-    expect(givableKinds([], all)).toEqual(['seedling', 'gnome', 'caterpillar']);
+    expect(givableKinds([], all)).toEqual(['seedling', 'gnome', 'caterpillar', 'raccoon']);
     const given = { id: 'cat1', kind: 'caterpillar' as const, from: jannik, name: 'Jannik', at: at(10, 10) };
     expect(garden([given], none, {}, at(10, 11))[0]).toMatchObject({ shown: 'caterpillar', stage: 0 });
     expect(stageName('caterpillar', 0)).toBe('Caterpillar');
@@ -274,6 +276,29 @@ describe('the bell', () => {
     expect(kindListed(kindOf('caterpillar'), new Set())).toBe(false);
     expect(kindListed(kindOf('caterpillar'), new Set(), all)).toBe(true);
     expect(kindListed(kindOf('gnome'), new Set(), all)).toBe(true);
+  });
+  it('raccoons: kept by @nyxara (by handle) and the every-kind keeper; a trash can grows until the raccoon is out', () => {
+    const all = KEEPS_EVERY_KIND[0];
+    // By handle, whatever the account id, and whatever the case.
+    expect(keptKinds('uidYulian', RACCOON_FRIENDS[0])).toEqual(['raccoon']);
+    expect(keptKinds('uidYulian', 'NyXara')).toEqual(['raccoon']);
+    expect(keptKinds('uidYulian', 'someone')).toEqual([]);
+    expect(keptKinds(undefined, 'nyxara')).toEqual([]);
+    expect(keptSprouts('uidYulian', at(1, 1), 'nyxara').map((s) => s.id)).toEqual(['kept-raccoon']);
+    expect(givableKinds([], 'uidYulian', 'nyxara')).toEqual(['seedling', 'raccoon']);
+    expect(givableKinds([], all)).toContain('raccoon');
+    expect(kindListed(kindOf('raccoon'), new Set())).toBe(false);
+    expect(kindListed(kindOf('raccoon'), new Set(), 'uidYulian', 'nyxara')).toBe(true);
+    expect(KEPT_SPROUT_IDS).toContain('kept-raccoon');
+    const given = { id: 'coon1', kind: 'raccoon' as const, from: all, name: 'Matt', at: at(10, 10) };
+    expect(garden([given], none, {}, at(10, 11))[0]).toMatchObject({ shown: 'raccoon', stage: 0 });
+    expect([0, 1, 2, 3].map((n) => stageName('raccoon', n as 0 | 1 | 2 | 3))).toEqual(['Trash can', 'Little paws', 'Peeking out', 'Raccoon']);
+    expect(grownName('raccoon')).toBe('Raccoon');
+    expect(giftStage('raccoon')).toBe(0);
+    const j: Journey = { ...none, festivalDays: [at(10, 11), at(10, 12), at(10, 13), at(10, 14), at(10, 15)] };
+    const out = garden([given], j, {}, at(10, 16));
+    expect(out[0]).toMatchObject({ shown: 'raccoon', stage: 3 });
+    expect(givableKinds(out, 'someone')).toEqual(['seedling', 'raccoon']);
   });
   it('a hat on its way to someone has left your garden, uses no seed, and is kept until someone has it', () => {
     const hat: Gift = { id: 'passaaaaaaaaaaaaaaaa', kind: 'gnome', via: 'hat1aaaaaaaaaaaaaaaa', at: at(10, 1), sent: true, tries: 0 };
