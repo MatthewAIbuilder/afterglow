@@ -262,6 +262,31 @@ export function reachEllipse(at: Point, km: number): { rx: number; ry: number } 
 /** A region of the world as native maps take it: a centre and how many degrees it spans. */
 export type Region = { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
 
+/** Apple's map keeps a region's centre this far from the poles. */
+const POLE_MARGIN = 5;
+/** The widest region Apple's map takes, in degrees across (it allows 360; a little less leaves room for rounding). */
+const MAX_LON_DELTA = 350;
+/** The smallest span, in degrees (deeper than street level). */
+const MIN_DELTA = 0.0005;
+
+/**
+ * A region Apple's map always accepts. MapKit stops the whole app ("Invalid
+ * Region") for a region more than 180° tall or 360° wide, one reaching past a
+ * pole, or one with a centre that isn't a number, and festivals spread across
+ * the world (with the frame's padding) can ask for exactly that. The centre
+ * stays put where it can; the span shrinks to fit.
+ */
+export function safeRegion(r: Region): Region {
+  const finite = (v: number, fallback: number) => (Number.isFinite(v) ? v : fallback);
+  const latitude = Math.max(-(90 - POLE_MARGIN), Math.min(90 - POLE_MARGIN, finite(r.latitude, 0)));
+  const lon = finite(r.longitude, 0);
+  const longitude = lon >= -180 && lon <= 180 ? lon : ((((lon + 180) % 360) + 360) % 360) - 180;
+  const maxLat = 2 * (90 - Math.abs(latitude)) - 1;
+  const latitudeDelta = Math.max(MIN_DELTA, Math.min(maxLat, finite(r.latitudeDelta, 1)));
+  const longitudeDelta = Math.max(MIN_DELTA, Math.min(MAX_LON_DELTA, finite(r.longitudeDelta, 1)));
+  return { latitude, longitude, latitudeDelta, longitudeDelta };
+}
+
 /** The region covering a box. */
 export function regionOf(box: Box): Region {
   const c = unproject({ x: (box.x0 + box.x1) / 2, y: (box.y0 + box.y1) / 2 });

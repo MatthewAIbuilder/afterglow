@@ -12,6 +12,8 @@ import {
   landDots,
   mapMarkers,
   project,
+  regionOf,
+  safeRegion,
   unplacedLine,
   unproject,
   arcPath,
@@ -133,5 +135,33 @@ describe('near you on the map', () => {
     expect(r.rx).toBeCloseTo(r.ry, 1); // true scale at 38°N
     const north = reachEllipse({ lat: 55, lon: 0 }, 500);
     expect(north.rx).toBeGreaterThan(north.ry);
+  });
+});
+
+describe('safeRegion: a region Apple’s map always takes', () => {
+  it('shrinks a frame wider than the world, or taller than pole to pole', () => {
+    const r = safeRegion({ latitude: 10, longitude: -20, latitudeDelta: 240, longitudeDelta: 420 });
+    expect(r.longitudeDelta).toBeLessThanOrEqual(350);
+    expect(r.latitude + r.latitudeDelta / 2).toBeLessThan(90);
+    expect(r.latitude - r.latitudeDelta / 2).toBeGreaterThan(-90);
+    expect(r.longitude).toBe(-20);
+  });
+
+  it('keeps the centre off the poles, wraps the longitude, and never passes NaN on', () => {
+    expect(safeRegion({ latitude: 89, longitude: 190, latitudeDelta: 10, longitudeDelta: 10 })).toMatchObject({ latitude: 85, longitude: -170 });
+    const r = safeRegion({ latitude: NaN, longitude: Infinity, latitudeDelta: NaN, longitudeDelta: -5 });
+    for (const v of Object.values(r)) expect(Number.isFinite(v)).toBe(true);
+    expect(r.longitudeDelta).toBeGreaterThan(0);
+  });
+
+  it('leaves an ordinary region alone', () => {
+    const ok = { latitude: 28.5, longitude: -81.4, latitudeDelta: 3, longitudeDelta: 3 };
+    expect(safeRegion(ok)).toEqual(ok);
+  });
+
+  it('frames festivals from California to Australia without breaking the map', () => {
+    const r = safeRegion(regionOf(boxAround([project({ lat: 34, lon: -118 }), project({ lat: -33.9, lon: 151.2 }), project({ lat: 51, lon: 4 })])));
+    expect(r.longitudeDelta).toBeLessThanOrEqual(350);
+    expect(r.latitude + r.latitudeDelta / 2).toBeLessThan(90);
   });
 });

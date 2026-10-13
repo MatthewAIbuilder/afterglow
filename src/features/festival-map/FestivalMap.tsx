@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import MapView, { Circle, type LatLng, Marker, Polyline } from 'react-native-maps';
-import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import { useReducedMotion } from 'react-native-reanimated';
 import { NEAR_KM } from '../festivals/near';
 import type { Point } from '../festivals/near';
 import { haptic } from '../../lib/haptics';
@@ -21,6 +21,7 @@ import {
   project,
   pxPerUnit,
   regionOf,
+  safeRegion,
   unproject,
 } from './map';
 import { SPREAD_ZOOM, sameSpot, spreadMarkers } from './explore';
@@ -90,7 +91,7 @@ export function FestivalMap({
   const map = useRef<MapView>(null);
   const [ready, setReady] = useState(false);
   const points = useMemo(() => [...markers.map((m) => m.at), ...(shows ?? []).map((p) => p.at), ...(here ? [project(here)] : [])], [markers, shows, here]);
-  const [first] = useState(() => regionOf(boxAround(points)));
+  const [first] = useState(() => safeRegion(regionOf(boxAround(points))));
   const [region, setRegion] = useState<Region>(first);
   // Moved by hand since it was last framed: offer to show everything again.
   const [moved, setMoved] = useState(false);
@@ -108,7 +109,7 @@ export function FestivalMap({
         m.fitToCoordinates(points.map(toLatLng), { edgePadding: { top: 36, right: 56, bottom: 36, left: 56 }, animated });
       } else {
         const r = points.length ? { ...toLatLng(points[0]), latitudeDelta: SINGLE_DELTA, longitudeDelta: SINGLE_DELTA } : regionOf(DEFAULT_BOX);
-        m.animateToRegion(r, animated ? duration : 0);
+        m.animateToRegion(safeRegion(r), animated ? duration : 0);
       }
       setMoved(false);
       onView?.(undefined);
@@ -146,7 +147,7 @@ export function FestivalMap({
     answered.current = toHere;
     touched.current = false;
     const span = Math.min(region.longitudeDelta, 10);
-    map.current?.animateToRegion({ ...pointLatLng(here), latitudeDelta: span * 0.8, longitudeDelta: span }, duration);
+    map.current?.animateToRegion(safeRegion({ ...pointLatLng(here), latitudeDelta: span * 0.8, longitudeDelta: span }), duration);
   }, [ready, toHere, here, region.longitudeDelta, duration]);
 
   const street = useRef(false);
@@ -218,7 +219,7 @@ export function FestivalMap({
           ))}
           {here ? (
             <Marker coordinate={pointLatLng(here)} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false} zIndex={1}>
-              <HereDot reduced={reduced} />
+              <HereDot />
             </Marker>
           ) : null}
           {/* An artist's club shows: small lights, under the festivals'. */}
@@ -241,7 +242,6 @@ export function FestivalMap({
               cluster={c}
               chosen={c.members.some((m) => m.festival.id === selected)}
               named={allNamed || c.lead.tone === 'going'}
-              reduced={reduced}
               onPress={() => {
                 haptic.select();
                 lastGlide.current = c.lead.festival.id;
@@ -250,7 +250,7 @@ export function FestivalMap({
                 // A cluster opens up: festivals at one spot fan out; others are framed until they split.
                 if (c.members.length > 1 && sameSpot(c.members)) {
                   const spot = pointLatLng(c.members[0].point);
-                  map.current?.animateToRegion({ ...spot, latitudeDelta: SPREAD_ZOOM * 0.8, longitudeDelta: SPREAD_ZOOM }, duration);
+                  map.current?.animateToRegion(safeRegion({ ...spot, latitudeDelta: SPREAD_ZOOM * 0.8, longitudeDelta: SPREAD_ZOOM }), duration);
                 } else if (c.members.length > 1) {
                   map.current?.fitToCoordinates(
                     c.members.map((m) => pointLatLng(m.point)),
@@ -307,15 +307,13 @@ function useTracking(key: string) {
 }
 
 /** A festival's light: a glowing core in its colour, a halo, a ring when chosen, a slow pulse when you're going. */
-function Light({ cluster, chosen, named, reduced, onPress }: { cluster: Cluster; chosen: boolean; named: boolean; reduced: boolean; onPress: () => void }) {
+function Light({ cluster, chosen, named, onPress }: { cluster: Cluster; chosen: boolean; named: boolean; onPress: () => void }) {
   const { lead, members } = cluster;
   const tone = lead.tone;
   const tint = TONE_COLOR[tone];
   const core = tone === 'going' ? 13 : tone === 'love' ? 10 + Math.min(4, lead.loved) : tone === 'more' ? 8 : 6;
   const showName = named || chosen;
   const track = useTracking(`${chosen}|${showName}|${members.length}`);
-  // The pulse lives on iPhone, where markers are real views (Google Maps draws them as still pictures).
-  const pulses = tone === 'going' && !reduced && Platform.OS === 'ios';
   const what = tone === 'going' ? t('You’re going.') : tone === 'over' ? t('It’s over.') : lead.loved ? t('{n} you’d love.', { n: lead.loved }) : '';
   const label = `${members.length > 1 ? t('{festival} and {n} more here.', { festival: lead.festival.name, n: members.length - 1 }) : t('{festival}, {dates}, {place}.', { festival: lead.festival.name, dates: datesLine(lead.festival), place: lead.festival.location })} ${what}`;
   return (
@@ -337,7 +335,8 @@ function Light({ cluster, chosen, named, reduced, onPress }: { cluster: Cluster;
       >
         <View style={styles.lightHit}>
           {tone !== 'over' ? <View style={[styles.halo, { backgroundColor: tint, width: core * 3, height: core * 3, borderRadius: core * 1.5 }]} /> : null}
-          {pulses ? <Pulse tint={tint} /> : tone === 'going' ? <View style={[styles.pulse, { borderColor: tint, opacity: 0.45 }]} /> : null}
+          {/* A still ring: animations inside map pins crash Apple's map in a real build. */}
+          {tone === 'going' ? <View style={[styles.pulse, { borderColor: tint, opacity: 0.45 }]} /> : null}
           {chosen ? <View style={[styles.ring, { borderColor: tint }]} /> : null}
           <View style={[styles.core, { width: core, height: core, borderRadius: core / 2, backgroundColor: tint, shadowColor: tint }]} />
           {members.length > 1 ? (
@@ -377,20 +376,11 @@ function ShowLight({ pin, chosen, onPress }: { pin: ShowPin; chosen: boolean; on
   );
 }
 
-function Pulse({ tint }: { tint: string }) {
-  const p = useSharedValue(0);
-  useEffect(() => {
-    p.set(withRepeat(withTiming(1, { duration: 2200, easing: Easing.out(Easing.quad) }), -1, false));
-  }, [p]);
-  const style = useAnimatedStyle(() => ({ opacity: (1 - p.get()) * 0.7, transform: [{ scale: 0.6 + p.get() * 1.3 }] }));
-  return <Animated.View style={[styles.pulse, { borderColor: tint }, style]} />;
-}
-
 /** Where you are, when Near you is on: a cool blue dot. */
-function HereDot({ reduced }: { reduced: boolean }) {
+function HereDot() {
   return (
     <View style={styles.lightHit} accessible accessibilityLabel={t('You are here, roughly')} collapsable={false}>
-      {reduced || Platform.OS !== 'ios' ? <View style={[styles.pulse, { borderColor: HERE_COLOR, opacity: 0.4 }]} /> : <Pulse tint={HERE_COLOR} />}
+      <View style={[styles.pulse, { borderColor: HERE_COLOR, opacity: 0.4 }]} />
       <View style={styles.here} />
     </View>
   );

@@ -35,7 +35,7 @@ import { useNearby } from '../state/nearby';
 import { useWeekends } from '../state/weekends';
 import { color, radius, space, type, nightA, glowA } from '../theme/tokens';
 import { t, tn } from '../i18n';
-import { GlassFill } from '../components/LiquidGlass';
+import { GlassFill, OverLiveView } from '../components/LiquidGlass';
 
 const CARD_GAP = 12;
 const CARDS_H = 132;
@@ -163,6 +163,8 @@ export default function FestivalMapScreen() {
   ];
 
   return (
+    // Buttons over Apple's live map use a plain surface, never a blur or glass sampling it.
+    <OverLiveView>
     <View style={styles.root}>
       <PageTitle title={t('Festival map')} />
       <FestivalMap
@@ -325,6 +327,7 @@ export default function FestivalMapScreen() {
         </View>
       )}
     </View>
+    </OverLiveView>
   );
 }
 

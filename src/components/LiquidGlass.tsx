@@ -1,7 +1,7 @@
 import { BlurView } from 'expo-blur';
 import { GlassView, isGlassEffectAPIAvailable, isLiquidGlassAvailable } from 'expo-glass-effect';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useSyncExternalStore } from 'react';
+import { createContext, useContext, useSyncExternalStore, type ReactNode } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { color, GLASS, glowA, glowDeepA, raisedA, tintA } from '../theme/tokens';
 
@@ -20,6 +20,16 @@ import { color, GLASS, glowA, glowDeepA, raisedA, tintA } from '../theme/tokens'
  * Drawn as the first child of its parent, filling it with the parent's
  * corner `radius`, so whatever the parent holds sits on top.
  */
+/**
+ * Over a live native picture (the camera, Apple's map), glass draws a plain
+ * tinted surface: no blur and no Apple glass sampling the moving layer
+ * underneath, which real builds can't always take.
+ */
+const OverLive = createContext(false);
+export function OverLiveView({ children }: { children: ReactNode }) {
+  return <OverLive.Provider value>{children}</OverLive.Provider>;
+}
+
 export function GlassFill({ radius, lit, tint = 0.4, hue, deep, frost = true }: {
   /** The parent's corner radius (the glass needs its own to bend at the edges). */
   radius: number;
@@ -35,8 +45,16 @@ export function GlassFill({ radius, lit, tint = 0.4, hue, deep, frost = true }: 
   frost?: boolean;
 }) {
   const solid = useReduceTransparency();
+  const overLive = useContext(OverLive);
   const shape = { borderRadius: radius };
   const light = (alpha: number) => (hue ? tintA(hue, alpha) : glowA(alpha));
+  if (overLive && !solid) {
+    return (
+      <View pointerEvents="none" testID="glass-over-live" style={[StyleSheet.absoluteFill, shape, styles.clip, styles.plainEdge, hue && { borderColor: tintA(hue, 0.45) }, lit && { borderColor: light(0.8) }]}>
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: lit ? light(deep ? 0.3 : 0.4) : raisedA(Math.max(tint, deep ? 0.7 : 0.55)) }]} />
+      </View>
+    );
+  }
   if (solid) {
     return <View pointerEvents="none" testID="glass-solid" style={[StyleSheet.absoluteFill, shape, { backgroundColor: raisedA(0.96) }, lit && { backgroundColor: hue ? tintA(hue, 0.5) : glowDeepA(0.9) }]} />;
   }
