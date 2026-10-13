@@ -20,6 +20,10 @@ on:
         description: 'Android too (a new download link)'
         type: boolean
         default: false
+      send_latest:
+        description: 'Only send the latest finished iPhone build to TestFlight (no new build)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -75,11 +79,15 @@ jobs:
           msg=$(git log -1 --format=%s | head -c 200)
           npx --yes eas-cli@latest update --channel production --environment production --non-interactive --message "$msg"
 
+      - name: Send the latest iPhone build to TestFlight
+        if: env.HAS_EXPO == 'true' && inputs.send_latest
+        run: npx --yes eas-cli@latest submit --platform ios --profile production --latest --non-interactive --no-wait
+
       - name: iPhone build, sent to TestFlight
-        if: env.HAS_EXPO == 'true' && steps.need.outputs.build == 'true'
+        if: env.HAS_EXPO == 'true' && steps.need.outputs.build == 'true' && !inputs.send_latest
         run: npx --yes eas-cli@latest build --platform ios --profile production --auto-submit --non-interactive --no-wait
 
       - name: Android download link
         # By hand only (the first Android build asks set-up questions, so it's made once with npm run build:android-link).
-        if: env.HAS_EXPO == 'true' && steps.need.outputs.build == 'true' && inputs.android
+        if: env.HAS_EXPO == 'true' && steps.need.outputs.build == 'true' && inputs.android && !inputs.send_latest
         run: npx --yes eas-cli@latest build --platform android --profile preview --non-interactive --no-wait

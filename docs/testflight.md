@@ -135,6 +135,9 @@ The one thing it needs is an Expo key in GitHub:
    variables** → **Actions** → **New repository secret**. Name: `EXPO_TOKEN`. Secret:
    paste the token. **Add secret**.
 
+If a build finished on Expo but didn't reach TestFlight, **Run workflow** with "Only send
+the latest finished iPhone build" ticked sends it without making a new one.
+
 That's all. If a TestFlight upload ever fails with a question about an App Store Connect
 key, run `npm run build:ios` once on your PC and say yes to making the key; after that
 it's remembered.
