@@ -1,0 +1,85 @@
+# The app on phones (TestFlight, the App Store, the Android link), shipped by itself once main is checked:
+# - every push to main that passed the Website checks sends an instant update (eas update) to every
+#   build made from build 4 on, so screens and words change within minutes, no build, no review;
+# - when `version` in app.json changes (Claude raises it whenever a change needs a new build: a native
+#   package, a config plugin, a permission), a new iPhone build is made on Expo's computers and sent
+#   to TestFlight by itself;
+# - "Run workflow" on the Actions tab makes an iPhone build by hand (tick "Android too" for a new Android link).
+# Needs the EXPO_TOKEN secret (docs/testflight.md, "Shipping by itself"); without it, this does nothing.
+# Builds run on Expo, not here (--no-wait), so this uses about a minute of GitHub time.
+name: App
+
+on:
+  workflow_run:
+    workflows: [Website]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      android:
+        description: 'Android too (a new download link)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-release
+  cancel-in-progress: false
+
+jobs:
+  ship:
+    # Only after a push to main whose checks passed (not the nightly catalogue run, not pull requests), or by hand.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    env:
+      HAS_EXPO: ${{ secrets.EXPO_TOKEN != '' }}
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - name: No Expo token yet
+        if: env.HAS_EXPO != 'true'
+        run: echo "Add the EXPO_TOKEN secret to ship the app by itself (docs/testflight.md, 'Shipping by itself')."
+
+      - uses: actions/checkout@v4
+        if: env.HAS_EXPO == 'true'
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 2
+
+      - uses: actions/setup-node@v4
+        if: env.HAS_EXPO == 'true'
+        with:
+          node-version: 22
+          cache: npm
+
+      - if: env.HAS_EXPO == 'true'
+        run: npm ci
+
+      # A new build when the app's version changed in this push (the previous main had another one), or by hand.
+      - name: Does this need a new build?
+        id: need
+        if: env.HAS_EXPO == 'true'
+        run: |
+          now=$(node -p "require('./app.json').expo.version")
+          before=$(git show HEAD~1:app.json 2>/dev/null | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{console.log(JSON.parse(s).expo.version)}catch{console.log('')}})")
+          echo "version $before -> $now"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ -n "$before" -a "$before" != "$now" ]; then echo "build=true" >> "$GITHUB_OUTPUT"; else echo "build=false" >> "$GITHUB_OUTPUT"; fi
+
+      # Every checked push: the new screens and words to every phone on this version.
+      - name: Instant update to every phone
+        if: env.HAS_EXPO == 'true' && github.event_name != 'workflow_dispatch'
+        run: |
+          msg=$(git log -1 --format=%s | head -c 200)
+          npx --yes eas-cli@latest update --channel production --environment production --non-interactive --message "$msg"
+
+      - name: iPhone build, sent to TestFlight
+        if: env.HAS_EXPO == 'true' && steps.need.outputs.build == 'true'
+        run: npx --yes eas-cli@latest build --platform ios --profile production --auto-submit --non-interactive --no-wait
+
+      - name: Android download link
+        # By hand only (the first Android build asks set-up questions, so it's made once with npm run build:android-link).
+        if: env.HAS_EXPO == 'true' && steps.need.outputs.build == 'true' && inputs.android
+        run: npx --yes eas-cli@latest build --platform android --profile preview --non-interactive --no-wait
