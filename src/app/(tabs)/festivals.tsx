@@ -59,6 +59,9 @@ const SHELF_TILE = 168;
 const MORE_PAGE = 20;
 /** Shows listed in search results. */
 const SHOWS_FOUND = 8;
+/** How much of the next Up next card shows at the edge, and the widest a card gets (a tablet or the website). */
+const UP_PEEK = 28;
+const MAX_UP_W = 520;
 
 /**
  * An event organizer's account sees its own events here (its studio adds
@@ -101,8 +104,12 @@ function FestivalsScreen({ onlyOurs }: { onlyOurs?: () => void }) {
   // The festival you're going to next leads the page; any others you're going to follow it.
   // Set times out for one of them: your set-to-set plan leads instead.
   const ready = readyFestival(groups.going, today);
-  const upNext = groups.going.find((f) => !isOver(f, today) && f !== ready);
-  const alsoGoing = groups.going.filter((f) => f !== upNext && f !== ready);
+  const upcoming = groups.going.filter((f) => !isOver(f, today) && f !== ready);
+  const upNext = upcoming[0];
+  const alsoGoing = groups.going.filter((f) => !upcoming.includes(f) && f !== ready);
+  // Going to more than one: their cards side by side, the next one peeking in to swipe to.
+  const { width: screenW } = useWindowDimensions();
+  const upCardW = Math.min(screenW, MAX_UP_W) - space.lg * 2 - UP_PEEK;
   // Everything else, soonest first, month by month: nothing hidden, a page at a time.
   const shownAbove = new Set([...(shelf?.festivals ?? []), ...near.map((n) => n.festival)].map((f) => f.id));
   const rest = bySoonest(groups.others.filter((f) => !shownAbove.has(f.id)), today);
@@ -248,7 +255,22 @@ function FestivalsScreen({ onlyOurs }: { onlyOurs?: () => void }) {
         ) : (
           <>
             {ready ? <LineupReadyCard festival={ready} /> : null}
-            {upNext ? <NextUpCard festival={upNext} /> : null}
+            {upcoming.length > 1 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                snapToInterval={upCardW + space.md}
+                decelerationRate="fast"
+                contentContainerStyle={styles.upShelf}
+                style={styles.upShelfWrap}
+              >
+                {upcoming.map((f, i) => (
+                  <NextUpCard key={f.id} festival={f} first={i === 0} style={[styles.upCard, { width: upCardW }]} />
+                ))}
+              </ScrollView>
+            ) : upNext ? (
+              <NextUpCard festival={upNext} />
+            ) : null}
             {/* Events Afterglow HQ is promoting for organizers, labelled as such. */}
             <PromotedEvents />
             {/* The week before a festival you're going to: a door a day. */}
@@ -549,6 +571,9 @@ const styles = StyleSheet.create({
   sectionTitle: { ...type.headline, fontSize: 20, textTransform: 'none', letterSpacing: 0, color: color.moon, paddingRight: 0, marginBottom: space.sm },
   sectionCount: { ...type.label, color: color.moonFaint, fontVariant: ['tabular-nums'] },
   shelfWrap: { flexGrow: 0, marginBottom: space.md },
+  upShelfWrap: { flexGrow: 0, marginBottom: space.xl },
+  upShelf: { paddingHorizontal: space.lg, gap: space.md },
+  upCard: { marginHorizontal: 0, marginBottom: 0 },
   shelf: { paddingHorizontal: space.lg, gap: space.md },
   showMore: {
     alignSelf: 'center',

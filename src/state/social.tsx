@@ -221,7 +221,7 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
   }, [service]);
 
   // What your profile may publish, from your plans and your live taste.
-  const { going } = useGoing();
+  const { going, hydrated: goingLoaded, fresh: goingFresh, restore: restoreGoing } = useGoing();
   const { artists } = useCatalog();
   const { taste, informed } = useTaste();
   const sounds = useMemo(
@@ -256,11 +256,18 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
     [service, published, keepProfile],
   );
 
+  // A new install (or a phone new to this account) starts with no festivals picked: bring back the ones
+  // your profile shows, rather than publishing the empty list over them.
+  const waitingToRestore = goingFresh && !!profile?.festivals.length && !isSupportAccount(user);
+  useEffect(() => {
+    if (goingLoaded && waitingToRestore && profile) restoreGoing(profile.festivals);
+  }, [goingLoaded, waitingToRestore, profile, restoreGoing]);
+
   // Keep "Going to" and "My sound" current (a few seconds after they settle, only when they changed).
   // Never on the support account: plans and taste are this phone's, so switching to HQ would publish yours there.
   // Not from this phone's copy: an old copy must never be published over a newer profile.
   useEffect(() => {
-    if (!profile || profileKeptAt !== undefined || isSupportAccount(user) || !publishedChanged(profile, published.festivals, published.sounds, published.artists, published.shows)) return;
+    if (!profile || !goingLoaded || waitingToRestore || profileKeptAt !== undefined || isSupportAccount(user) || !publishedChanged(profile, published.festivals, published.sounds, published.artists, published.shows)) return;
     const t = setTimeout(() => {
       const input: ProfileInput = { handle: profile.handle, displayName: profile.displayName, bio: profile.bio, showFestivals: profile.showFestivals, showSound: profile.showSound, showArtists: profile.showArtists, socials: profile.socials ?? {} };
       service
@@ -269,7 +276,7 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
         .catch(() => {});
     }, 3000);
     return () => clearTimeout(t);
-  }, [profile, profileKeptAt, published, service, user, keepProfile]);
+  }, [profile, goingLoaded, waitingToRestore, profileKeptAt, published, service, user, keepProfile]);
 
   const signUp = useCallback(async (email: string, password: string) => void (await service.signUp(email, password)), [service]);
   const signIn = useCallback(async (email: string, password: string) => void (await service.signIn(email, password)), [service]);

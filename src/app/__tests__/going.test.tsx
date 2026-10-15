@@ -59,3 +59,33 @@ describe('who else is going', () => {
     expect(app.queryByText(/is going|are going/)).toBeNull();
   });
 });
+
+describe('the festivals you’re going to, at the top of Festivals', () => {
+  it('one card each, side by side: a countdown, your top artists there and who’s going', async () => {
+    jest.useFakeTimers({ now: new Date(2026, 9, 15, 12) });
+    const maya = await person('maya', 'Maya', ['edc-orlando-26']);
+    await person('robin', 'Robin', []);
+    await s().follow(maya);
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['edc-orlando-26', 'cyclops-cove-4']));
+    const app = await renderApp('/festivals');
+    await flush();
+    expect(app.getByLabelText(/^Up next: EDC Orlando 2026, .*Maya is going/)).toBeTruthy();
+    expect(app.getByLabelText(/^Up next: Cyclops Cove 4, /)).toBeTruthy();
+    expect(app.getByText('Up next')).toBeTruthy();
+    expect(app.getAllByText('Your top artists here').length).toBeGreaterThan(0);
+    expect(app.getByText('Maya is going')).toBeTruthy();
+  });
+
+  it('a new install brings back the festivals your profile shows, instead of publishing none over them', async () => {
+    jest.useFakeTimers({ now: new Date(2026, 9, 15, 12) });
+    // Your account, with EDC and Cyclops Cove on its profile, signed in on a phone with nothing saved.
+    const me = await person('jordan', 'Jordan', ['edc-orlando-26', 'cyclops-cove-4']);
+    const app = await renderApp('/festivals');
+    await flush();
+    await settle(4000);
+    await flush();
+    expect(app.getByLabelText(/^Up next: EDC Orlando 2026, /)).toBeTruthy();
+    expect(JSON.parse((await AsyncStorage.getItem('going.v1')) ?? '[]')).toEqual(['edc-orlando-26', 'cyclops-cove-4']);
+    expect((await s().profileOf(me))?.festivals).toEqual(['edc-orlando-26', 'cyclops-cove-4']);
+  });
+});
