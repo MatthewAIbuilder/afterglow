@@ -62,6 +62,7 @@ import StayScreen from '../stay/[id]';
 import YourArtistsScreen from '../your-artists';
 import SettingsScreen from '../settings';
 import CareScreen from '../care';
+import TrailScreen from '../trail';
 import CheckInScreen from '../check-in';
 import FriendsScreen from '../friends';
 import TonightScreen from '../tonight';
@@ -146,6 +147,7 @@ export const APP_ROUTES = {
   'your-artists': YourArtistsScreen,
   settings: SettingsScreen,
   care: CareScreen,
+  trail: TrailScreen,
   'check-in': CheckInScreen,
   friends: FriendsScreen,
   tonight: TonightScreen,

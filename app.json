@@ -2,7 +2,7 @@
   "expo": {
     "name": "Afterglow",
     "slug": "afterglow",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -97,7 +97,12 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Afterglow uses where you are to show festivals near you and, when you record, to work out which festival you're at."
+          "locationWhenInUsePermission": "Afterglow uses where you are to show festivals near you and, when you record, to work out which festival you're at.",
+          "locationAlwaysAndWhenInUsePermission": "Afterglow can keep a trail of where you walk on festival days, only if you turn it on. It stays on your phone and stops when the festival is over.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true,
+          "locationAlwaysPermission": "Afterglow can keep a trail of where you walk on festival days, only if you turn it on. It stays on your phone and stops when the festival is over."
         }
       ],
       [
