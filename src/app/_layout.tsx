@@ -7,6 +7,7 @@ import { DialogHost } from '../components/DialogHost';
 import { LikeSync } from '../features/community/LikeSync';
 import { OfflineNotice } from '../features/offline/OfflineNotice';
 import { ReminderSync } from '../features/notifications/ReminderSync';
+import { PushRegistration } from '../features/notifications/PushRegistration';
 import { TonightLauncher } from '../features/tonight/TonightLauncher';
 import { QuestTracker } from '../features/quests/QuestTracker';
 import { DailyQuestTracker } from '../features/quests/DailyQuestTracker';
@@ -260,6 +261,7 @@ export default function RootLayout() {
       <DailyQuestTracker />
       <LevelSync />
       <ReminderSync />
+      <PushRegistration />
       <LikeSync />
       <QuestToast />
       <SunriseWatcher />

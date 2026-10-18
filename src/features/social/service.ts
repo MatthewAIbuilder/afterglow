@@ -1,4 +1,4 @@
-import { t } from '../../i18n';
+import { t, type Language } from '../../i18n';
 import type { PastEvent } from '../memories/past';
 import type { ShowTag } from '../memories/show';
 import type { ClipWindow } from '../memories/trim';
@@ -297,6 +297,15 @@ export interface SocialService {
   watchCrewReads(crewId: string, listener: (reads: Record<string, string>) => void, onError?: (e: SocialError) => void): () => void;
   /** Remove a chat message: your own, or anyone's in a crew you own. */
   deleteCrewMessage(crewId: string, id: string): Promise<void>;
+  /**
+   * This phone's push address (an Expo push token), kept where the people who
+   * may notify you can read it: in each of your crews and 1-to-1 chats, and on
+   * its own for friends both ways and support. Crew chat, crew updates, the
+   * meeting spot, crew invites and support replies then reach your phone.
+   */
+  registerPush(token: string, lang: Language): Promise<void>;
+  /** Take this phone's push address away again, everywhere it was kept (before signing out). */
+  unregisterPush(token: string): Promise<void>;
   /**
    * Open the 1-to-1 chat with a friend (made the first time): only between two
    * people who follow each other, and not if they've blocked you. With `org`

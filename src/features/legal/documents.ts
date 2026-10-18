@@ -13,7 +13,7 @@ export type LegalSection = { heading?: string; paragraphs: string[] };
 export type LegalDocument = { id: LegalDoc; title: string; updated: string; intro: string; sections: LegalSection[] };
 
 /** When these words last changed (shown as "Last updated"). */
-export const LEGAL_UPDATED = 'October 10, 2026';
+export const LEGAL_UPDATED = 'October 18, 2026';
 
 /** Who runs Afterglow, named on the Privacy Policy and the Terms. */
 export const OPERATOR = 'Matthew Smith, in Florida, United States';
@@ -59,7 +59,7 @@ export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL, opts:
               'Your memories (videos you add) stay on your phone until you choose to share one. When you add a video, Afterglow may read when and where it was filmed to guess the festival and set. Only the city and region are kept, on your phone; exact coordinates are not stored.',
               'If you turn on festivals near you, Afterglow asks for your location, rounds it to about a kilometre and keeps it on your phone (or in your browser) to show how far festivals are. Your phone’s maps service may be asked which town that is, and where a festival’s venue is. It isn’t sent to us, and you can turn it off on the Festivals tab.',
               'If you connect Spotify or Apple Music, your sign-in is kept in your phone’s secure storage and a summary of your library (which artists, not song titles or playlists) is kept on your phone to shape your recommendations. None of it is sent to us. Disconnecting removes it.',
-              'Reminders are scheduled on your phone. We don’t send push notifications.',
+              'Reminders are scheduled on your phone. If you allow notifications and are signed in, your phone’s notification address is stored with your account: in each crew and 1-to-1 chat you’re in (so the people there can notify you of their messages, check-ins and meeting spot), and on its own for friends who follow you back (crew invites) and Afterglow support (replies to your messages). Turning notifications off in your phone’s settings stops them, and signing out removes this phone’s address.',
               'Messages you write in a crew’s chat are seen only by the people in that crew, with when you wrote them and when they arrived; leaving the crew removes yours and ending it removes them all. 1-to-1 messages are seen only by the two of you, and deleting your account removes yours. Afterglow support can read crew chats and 1-to-1 messages, and does so only when handling a report or a safety issue; it can remove messages that break the rules. Joining a crew also records that you agreed to its chat rules and how you were invited.',
               'Photos you send to a crew go only to the people in that crew, stored with the crew\u2019s updates; they never appear on Discover or your profile, and leaving the crew removes the ones you sent.',
               'When you’re signed in: the days and times you open the app, which kind of phone or the website, and the app version. This tells us how many people use Afterglow and keeps old versions in view; it never includes what you watch or do, and only you and Afterglow support can read it. It’s removed with your account.',
@@ -86,6 +86,7 @@ export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL, opts:
             heading: 'Who else is involved',
             paragraphs: [
               'Accounts, shared videos and the website are run on Google Firebase (Authentication, Cloud Firestore, Cloud Storage and Hosting), with data stored in the United States. Google processes it for us under its own terms.',
+              'Notifications go through Expo’s push service (650 Industries) and Apple’s or Google’s, which carry a notification’s words (for a chat message, its first lines) to your phone.',
               'Clips in Discover play in YouTube’s own player, so YouTube (Google) receives what any embedded YouTube video receives and applies its own privacy policy. Spotify and Apple Music sign-ins happen on their own pages.',
               ...(partners ? [PARTNER_PRIVACY] : []),
               'We don’t sell your data, show ads, or use advertising or third-party analytics trackers.',

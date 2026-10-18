@@ -18,6 +18,7 @@ import { defaultSocialService } from '../features/social/services';
 import { tasteMix } from '../features/taste/lean';
 import { showAlert } from '../lib/dialog';
 import { t } from '../i18n';
+import { PUSH_REGISTERED_KEY, readPushRegistered } from '../features/notifications/push';
 import { useCatalog } from './catalog';
 import { useFollowedArtists } from './followedArtists';
 import { useGoing } from './going';
@@ -52,6 +53,8 @@ type Ctx = {
   signUp: (email: string, password: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  /** Take this phone's push address off the signed-in account (before switching to another). */
+  releasePush: () => Promise<void>;
   deleteAccount: (password: string) => Promise<void>;
   saveProfile: (input: ProfileInput) => Promise<Profile>;
   setAvatar: (uri: string | null) => Promise<void>;
@@ -280,7 +283,19 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
 
   const signUp = useCallback(async (email: string, password: string) => void (await service.signUp(email, password)), [service]);
   const signIn = useCallback(async (email: string, password: string) => void (await service.signIn(email, password)), [service]);
-  const signOut = useCallback(() => service.signOut(), [service]);
+  // This phone stops getting the account's notifications (a few seconds at most: no signal never blocks
+  // signing out or switching). It registers again with the next account (PushRegistration).
+  const releasePush = useCallback(async () => {
+    const registered = readPushRegistered(await AsyncStorage.getItem(PUSH_REGISTERED_KEY).catch(() => null));
+    if (registered && registered.uid === currentUid.current) {
+      await Promise.race([service.unregisterPush(registered.token).catch(() => {}), new Promise((done) => setTimeout(done, 3000))]);
+    }
+    await AsyncStorage.removeItem(PUSH_REGISTERED_KEY).catch(() => {});
+  }, [service]);
+  const signOut = useCallback(async () => {
+    await releasePush();
+    await service.signOut();
+  }, [service, releasePush]);
   const deleteAccount = useCallback(
     async (password: string) => {
       const uid = user?.uid;
@@ -506,8 +521,8 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
   const report = useCallback((target: ReportTarget, reason: ReportReason, note?: string) => service.report(target, reason, note), [service]);
 
   const value = useMemo<Ctx>(
-    () => ({ availability, ready, user, profile, profileStatus, reloadProfile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, setBackdrop, share, unshare, sharing, waiting, blocked, setBlocked, following, setFollowing, noteFollowing, report }),
-    [availability, ready, user, profile, profileStatus, reloadProfile, service, signUp, signIn, signOut, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, setBackdrop, share, unshare, sharing, waiting, blocked, setBlocked, following, setFollowing, noteFollowing, report],
+    () => ({ availability, ready, user, profile, profileStatus, reloadProfile, service, signUp, signIn, signOut, releasePush, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, setBackdrop, share, unshare, sharing, waiting, blocked, setBlocked, following, setFollowing, noteFollowing, report }),
+    [availability, ready, user, profile, profileStatus, reloadProfile, service, signUp, signIn, signOut, releasePush, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, setBackdrop, share, unshare, sharing, waiting, blocked, setBlocked, following, setFollowing, noteFollowing, report],
   );
   return <SocialContext.Provider value={value}>{children}</SocialContext.Provider>;
 }

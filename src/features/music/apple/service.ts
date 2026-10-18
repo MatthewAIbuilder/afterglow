@@ -8,9 +8,10 @@ import { normalizeAppleMusic } from './normalize';
 /**
  * The Apple Music adapter. Apple-specific code stays in this folder.
  *
- * Two tokens: the developer token (fetched from `tokenUrl`, a service you
- * host that signs it with the MusicKit key; kept in memory only) and the
- * person's Music User Token (from MusicKit; kept in the secure store).
+ * Two tokens: the developer token (from MusicKit itself, or fetched from
+ * `tokenUrl`, a service you host that signs it with the MusicKit key, when
+ * one is set; kept in memory only) and the person's Music User Token (from
+ * MusicKit; kept in the secure store).
  */
 export function appleMusicService(opts: {
   authorizer: AppleMusicAuthorizer;
@@ -24,6 +25,13 @@ export function appleMusicService(opts: {
 
   async function getDeveloperToken(): Promise<string> {
     if (developerToken) return developerToken;
+    const fromMusicKit = !opts.tokenUrl && opts.authorizer.developerToken;
+    if (fromMusicKit) {
+      const token = await fromMusicKit().catch(() => undefined);
+      if (typeof token !== 'string' || !token) throw new MusicServiceError('unavailable', 'MusicKit gave no developer token');
+      developerToken = token;
+      return token;
+    }
     if (!opts.tokenUrl.startsWith('https://')) throw new MusicServiceError('unavailable', 'No Apple Music token link');
     const token = field(await requestJson(opts.fetch, opts.tokenUrl, undefined, 'Apple Music developer token'), 'token');
     if (typeof token !== 'string' || !token) throw new MusicServiceError('unavailable', 'The developer token link gave no token');
@@ -36,7 +44,7 @@ export function appleMusicService(opts: {
     availability() {
       if (!opts.isIOS) return { ok: false, reason: 'not-on-this-device' };
       if (!opts.authorizer.isSupported()) return { ok: false, reason: 'needs-full-app' };
-      if (!opts.tokenUrl) return { ok: false, reason: 'not-set-up' };
+      if (!opts.tokenUrl && !opts.authorizer.developerToken) return { ok: false, reason: 'not-set-up' };
       return { ok: true };
     },
     async connect() {

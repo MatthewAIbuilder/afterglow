@@ -45,6 +45,15 @@ service cloud.firestore {
         && (d.members[0] in get(path('orgs', d.org)).data.get('uids', []) || d.members[1] in get(path('orgs', d.org)).data.get('uids', []));
     }
     // An optional short text field: absent, or a string of at most `max` characters.
+    // A push address record (features/notifications/push.ts): up to five Expo push tokens (one per phone),
+    // the language the phone speaks, at the server's time.
+    function pushShape(d) {
+      return d.keys().hasOnly(['tokens', 'lang', 'at'])
+        && d.tokens is list && d.tokens.size() > 0 && d.tokens.size() <= 5
+        && d.tokens[0] is string && d.tokens[0].size() <= 200
+        && d.lang in ['en', 'es']
+        && d.at == request.time;
+    }
     function shortOrAbsent(data, field, max) { return !(field in data) || (data[field] is string && data[field].size() <= max); }
 
     // Profiles: anyone signed in can read; only you can write yours, and only
@@ -828,6 +837,13 @@ service cloud.firestore {
         allow delete: if signedIn() && me() == uid;
       }
 
+      // Each person's push address, for the other one to notify them: read by the two of them, written by its owner.
+      match /push/{uid} {
+        allow read: if signedIn() && me() in get(path('dms', id)).data.members;
+        allow create, update: if signedIn() && me() == uid && me() in get(path('dms', id)).data.members && pushShape(request.resource.data);
+        allow delete: if signedIn() && me() == uid;
+      }
+
       match /chat/{messageId} {
         allow read: if (signedIn() && me() in get(path('dms', id)).data.members) || isAdmin();
         allow create: if signedIn() && me() in get(path('dms', id)).data.members
@@ -927,6 +943,14 @@ service cloud.firestore {
         allow delete: if signedIn() && (me() == uid || get(path('crews', id)).data.owner == me());
       }
 
+      // Each member's push address, for the crew to notify them: members read them, each writes their own
+      // while in the crew; removed by that member or the owner (removing someone, ending the crew).
+      match /push/{uid} {
+        allow read: if signedIn() && me() in get(path('crews', id)).data.members;
+        allow create, update: if signedIn() && me() == uid && me() in get(path('crews', id)).data.members && pushShape(request.resource.data);
+        allow delete: if signedIn() && (me() == uid || get(path('crews', id)).data.owner == me());
+      }
+
       // The crew's chat: members read it and write as themselves. `atMs` is when it was written on the
       // phone (no later than now, no older than a week); `sentAt` is the server's time. Never edited;
       // removed by the writer or the owner. The support account can read any message (the rules can't tell
@@ -993,6 +1017,14 @@ service cloud.firestore {
         allow update: if false;
         allow delete: if signedIn() && (resource.data.uid == me() || get(path('crews', id)).data.owner == me());
       }
+    }
+
+    // Your push address on its own: for crew invites from friends (both ways) and support replies (the support
+    // account). Only you write it.
+    match /pushTokens/{uid} {
+      allow read: if signedIn() && (me() == uid || isAdmin() || friendsBothWays(me(), uid));
+      allow create, update: if signedIn() && me() == uid && pushShape(request.resource.data);
+      allow delete: if signedIn() && me() == uid;
     }
 
     // Reports: anyone signed in can file one (open, at the server's time, so it can't be dated to sink

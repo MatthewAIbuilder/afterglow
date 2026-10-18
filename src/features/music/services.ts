@@ -1,7 +1,7 @@
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { Platform } from 'react-native';
 import { APPLE_MUSIC_TOKEN_URL, SPOTIFY_CLIENT_ID } from '../../config/music';
-import { noMusicKit } from './apple/musicKit';
+import { nativeMusicKit } from './apple/nativeMusicKit';
 import { appleMusicService } from './apple/service';
 import type { FetchLike } from './http';
 import type { MusicProviderId } from './models';
@@ -30,7 +30,7 @@ export function defaultMusicServices(): MusicServices {
       needsOwnApp: Constants.executionEnvironment === ExecutionEnvironment.StoreClient,
     }),
     'apple-music': appleMusicService({
-      authorizer: noMusicKit,
+      authorizer: nativeMusicKit(),
       tokenUrl: APPLE_MUSIC_TOKEN_URL,
       secrets: secureSecrets,
       fetch: fetchFn,
