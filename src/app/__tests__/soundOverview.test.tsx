@@ -27,15 +27,23 @@ describe('My Sound overview', () => {
     expect(app.getByLabelText('Overview').props.accessibilityState).toEqual({ selected: true });
     expect(app.getByText('Where you might start')).toBeTruthy();
     expect(app.getByText('Sounds to try next')).toBeTruthy();
+    expect(app.getByText('Every sound')).toBeTruthy();
+    // Every sound is a tile in a grid: ten of them, each opening its own page.
+    expect(app.getAllByLabelText(/Opens everything about this sound|^.+\. /).length).toBeGreaterThan(5);
+    // Tips are folded into one row until you open it.
     expect(app.getByText('Find your sound faster')).toBeTruthy();
+    expect(app.queryByText('Play This or that')).toBeNull();
+    await fireEvent.press(app.getByText('Find your sound faster'));
     expect(app.getByText('Play This or that')).toBeTruthy();
-    // The top sound is open; the others open on a tap.
-    expect(app.getAllByText('Listen for')).toHaveLength(1);
-    await fireEvent.press(app.getAllByLabelText(/^How .+ sounds, and how it differs$/)[0]);
-    expect(app.getAllByText('Listen for')).toHaveLength(2);
-    // Every other sound opens in place.
-    await fireEvent.press(app.getByLabelText(/^Rock: /));
+    // Tap a sound: its own page, with all of it.
+    await fireEvent.press(app.getByLabelText(/^Rock, |^Rock\. /));
+    await flush();
+    expect(app.getByText('Listen for')).toBeTruthy();
     expect(app.getByText('Distorted guitar riffs')).toBeTruthy();
+    expect(app.getByText('How it differs')).toBeTruthy();
+    expect(app.getByText('Your best matches')).toBeTruthy();
+    await act(async () => router.back());
+    await flush();
     // The map is a toggle away.
     await fireEvent.press(app.getByLabelText('Bubble map'));
     await flush();

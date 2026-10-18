@@ -296,4 +296,18 @@ export const es_sound: Dictionary = {
   'Swinging, head-nodding drums': 'Baterías con swing para mover la cabeza',
   'Samples and deep bass lines': 'Samples y líneas de bajo profundas',
   'Song and lyrics first, where trap at a festival is drop first.': 'Primero la canción y la letra, mientras que el trap de festival va primero al drop.',
+  // The sound grid and a sound's own page
+  'Tap a sound to see everything about it.': 'Toca un sonido para ver todo sobre él.',
+  'A few quick ways to teach your map.': 'Unas formas rápidas de enseñarle a tu mapa.',
+  '{n} quick ways to teach your map': '{n} formas rápidas de enseñarle a tu mapa',
+  'Opens everything about this sound': 'Abre todo sobre este sonido',
+  'That sound isn’t here.': 'Ese sonido no está aquí.',
+  'Not part of your sound yet': 'Aún no es parte de tu sonido',
+  'How it differs': 'En qué se diferencia',
+  'Close to {sound}. Open it.': 'Cerca de {sound}. Ábrelo.',
+  'Your best matches': 'Tus mejores afinidades',
+  'Festivals with the most {sound}': 'Festivales con más {sound}',
+  '{n} {sound} acts': '{n} artistas de {sound}',
+  'Watch live sets': 'Ver sets en vivo',
+  'Back to My Sound': 'Volver a Mi Sonido',
 };

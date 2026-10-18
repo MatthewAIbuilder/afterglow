@@ -32,7 +32,9 @@ import { color, radius, space, type, glowA, pageColumn } from '../../theme/token
 import { goBack } from '../../lib/nav';
 import { LastUpdated } from '../../features/offline/LastUpdated';
 import { CrewOrb } from '../../features/friends/CrewOrb';
-import { t } from '../../i18n';
+import { t, tn } from '../../i18n';
+import { useToday } from '../../lib/useToday';
+import { countdown } from '../../features/festivals/when';
 import { useEventLookup } from '../../features/festivalMode/useEvent';
 import { eventPath } from '../../features/festivalMode/showEvent';
 
@@ -263,6 +265,9 @@ function Member({
   const [editing, setEditing] = useState(fresh && owner);
   const [name, setName] = useState(crew.name);
   const [saving, setSaving] = useState(false);
+  // The person whose picks are open in the list of people.
+  const [openUid, setOpenUid] = useState<string | undefined>();
+  const today = useToday();
   const who = nameOf(profiles);
 
   // Your own picks are your stars right now (what the crew gets a moment later).
@@ -364,81 +369,103 @@ function Member({
 
   return (
     <>
-      {/* The crew's picture: its people's faces round a ring of light. */}
-      <View style={styles.orb}>
-        <CrewOrb
-          name={crew.name}
-          people={others.map((u) => profiles[u]).filter((x): x is Profile => !!x).map((x) => ({ name: x.displayName, url: x.avatarUrl }))}
-          total={others.length}
-          size={84}
-        />
-      </View>
-      {festival ? (
-        <Pressable
-          onPress={() => router.push(eventPath(festival))}
-          accessibilityRole="link"
-          accessibilityLabel={t('{festival}. Open the festival.', { festival: festival.name })}
-          style={styles.festivalLink}
-        >
-          <Text style={styles.kicker}>{festival.name}</Text>
-          <ChevronIcon color={color.glow} size={10} />
-        </Pressable>
-      ) : null}
-      {editing ? (
-        <View style={{ gap: space.sm }}>
-          <TextInput
-            value={name}
-            onChangeText={setName}
-            autoFocus
-            maxLength={CREW_NAME_MAX + 10}
-            placeholder={t('Crew name')}
-            placeholderTextColor={color.moonFaint}
-            accessibilityLabel={t('Crew name')}
-            returnKeyType="done"
-            onSubmitEditing={() => void saveName()}
-            style={styles.input}
+      {/* The crew at a glance: its picture, name, the festival and how soon, and the one thing you do most: invite. */}
+      <View style={styles.hero}>
+        <View style={styles.heroTop}>
+          <CrewOrb
+            name={crew.name}
+            people={others.map((u) => profiles[u]).filter((x): x is Profile => !!x).map((x) => ({ name: x.displayName, url: x.avatarUrl }))}
+            total={others.length}
+            size={72}
           />
-          {problem && name.trim() ? <Text style={styles.note}>{problem}</Text> : null}
-          <View style={styles.editRow}>
-            <Pressable
-              onPress={() => {
-                setName(crew.name);
-                setEditing(false);
-              }}
-              accessibilityRole="button"
-              style={styles.quietButton}
-            >
-              <Text style={styles.quietText}>{t('Cancel')}</Text>
-            </Pressable>
-            <Pressable onPress={() => void saveName()} disabled={!!problem || saving} accessibilityRole="button" accessibilityLabel={t('Save name')} style={[styles.smallPrimary, (!!problem || saving) && styles.dim]}>
-              <Text style={styles.primaryText}>{t('Save')}</Text>
-            </Pressable>
+          <View style={styles.heroText}>
+            {festival ? (
+              <Pressable
+                onPress={() => router.push(eventPath(festival))}
+                accessibilityRole="link"
+                accessibilityLabel={t('{festival}. Open the festival.', { festival: festival.name })}
+                style={styles.festivalLink}
+              >
+                <Text style={styles.kicker} numberOfLines={1}>
+                  {festival.name}
+                </Text>
+                <ChevronIcon color={color.glow} size={10} />
+              </Pressable>
+            ) : null}
+            {editing ? (
+              <TextInput
+                value={name}
+                onChangeText={setName}
+                autoFocus
+                maxLength={CREW_NAME_MAX + 10}
+                placeholder={t('Crew name')}
+                placeholderTextColor={color.moonFaint}
+                accessibilityLabel={t('Crew name')}
+                returnKeyType="done"
+                onSubmitEditing={() => void saveName()}
+                style={styles.input}
+              />
+            ) : (
+              <Pressable
+                disabled={!owner}
+                onPress={() => setEditing(true)}
+                accessibilityRole={owner ? 'button' : 'header'}
+                accessibilityLabel={owner ? t('{crew}. Rename the crew.', { crew: crew.name }) : crew.name}
+              >
+                <Text style={styles.heroTitle} numberOfLines={2}>
+                  {crew.name}
+                </Text>
+              </Pressable>
+            )}
+            {festival ? (
+              <Text style={styles.meta} numberOfLines={2}>
+                {whereWhen(festival)}
+              </Text>
+            ) : null}
+            <Text style={styles.meta} numberOfLines={1}>
+              {[festival ? countdown(festival, today) : undefined, tn(crew.members.length, '{n} person', '{n} people')].filter(Boolean).join(' · ')}
+            </Text>
           </View>
         </View>
-      ) : (
-        <Pressable
-          disabled={!owner}
-          onPress={() => setEditing(true)}
-          accessibilityRole={owner ? 'button' : 'header'}
-          accessibilityLabel={owner ? t('{crew}. Rename the crew.', { crew: crew.name }) : crew.name}
-        >
-          <Text style={styles.title}>{crew.name}</Text>
-          {owner ? <Text style={styles.link}>{t('Rename')}</Text> : null}
-        </Pressable>
-      )}
-      {festival ? <Text style={styles.meta}>{whereWhen(festival)}</Text> : null}
-      <LastUpdated at={readAt} live={!kept} />
-
-      <Pressable onPress={invite} accessibilityRole="button" accessibilityLabel={t('Invite friends')} style={({ pressed }) => [styles.primary, styles.inviteRow, pressed && styles.pressed]}>
-        <ShareIcon color={color.moon} size={16} />
-        <Text style={styles.primaryText}>{t('Invite friends')}</Text>
-      </Pressable>
+        {editing ? (
+          <View style={{ gap: space.sm }}>
+            {problem && name.trim() ? <Text style={styles.note}>{problem}</Text> : null}
+            <View style={styles.editRow}>
+              <Pressable
+                onPress={() => {
+                  setName(crew.name);
+                  setEditing(false);
+                }}
+                accessibilityRole="button"
+                style={styles.quietButton}
+              >
+                <Text style={styles.quietText}>{t('Cancel')}</Text>
+              </Pressable>
+              <Pressable onPress={() => void saveName()} disabled={!!problem || saving} accessibilityRole="button" accessibilityLabel={t('Save name')} style={[styles.smallPrimary, (!!problem || saving) && styles.dim]}>
+                <Text style={styles.primaryText}>{t('Save')}</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.heroActions}>
+            <Pressable onPress={invite} accessibilityRole="button" accessibilityLabel={t('Invite friends')} style={({ pressed }) => [styles.primary, styles.inviteRow, styles.heroInvite, pressed && styles.pressed]}>
+              <ShareIcon color={color.moon} size={16} />
+              <Text style={styles.primaryText}>{t('Invite friends')}</Text>
+            </Pressable>
+            {owner ? (
+              <Pressable onPress={() => setEditing(true)} accessibilityRole="button" accessibilityLabel={t('Rename the crew')} style={({ pressed }) => [styles.heroSecondary, pressed && styles.pressed]}>
+                <Text style={styles.quietText}>{t('Rename')}</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        )}
+        <LastUpdated at={readAt} live={!kept} />
+      </View>
       {!others.length ? <Text style={styles.note}>{t('Crews are invite only. Invite friends in the app or send them the invite link, up to {n} people.', { n: CREW_MAX })}</Text> : null}
 
       <CrewChatCard crew={crew} nameOf={who} />
-      {festival ? <CrewStayCard crew={crew} event={festival} /> : null}
 
-      {/* Where everyone last was, while the festival is on or coming up. */}
+      {/* Where everyone is, while the festival is on or coming up. */}
       <CrewLatest crew={crew} nameOf={who} />
       <MeetSpotCard crew={crew} />
 
@@ -459,32 +486,56 @@ function Member({
         <CrewRouteSection festival={forYou(festival)} me={me} members={crew.members} stars={stars} nameOf={who} crewName={crew.name} />
       ) : null}
 
-      <Text style={styles.section}>{t('Everyone’s picks')}</Text>
-      {[...(me ? [me] : []), ...others].map((uid) => {
-        const list = together.byMember[uid] ?? [];
-        const mine = uid === me;
-        return (
-          <View key={uid} style={styles.memberCard}>
-            <View style={styles.memberHead}>
-              <Face profile={profiles[uid]} first size={28} />
-              <Text style={styles.memberName} numberOfLines={1}>
-                {mine ? t('You') : (profiles[uid]?.displayName ?? t('Someone'))}
-                {uid === crew.owner ? <Text style={styles.ownerTag}>{`  · ${t('started the crew')}`}</Text> : null}
-              </Text>
-              {owner && !mine ? (
-                <Pressable onPress={() => remove(uid)} accessibilityRole="button" accessibilityLabel={profiles[uid]?.displayName ? t('Remove {name} from the crew', { name: profiles[uid].displayName }) : t('Remove them from the crew')} hitSlop={8}>
-                  <Text style={styles.removeText}>{t('Remove')}</Text>
-                </Pressable>
+      {/* Everyone in the crew: a row each, opening to show their starred sets. */}
+      <Text style={styles.section}>{t('People')}</Text>
+      <View style={styles.people}>
+        {[...(me ? [me] : []), ...others].map((uid, i, all) => {
+          const list = together.byMember[uid] ?? [];
+          const mine = uid === me;
+          const open = openUid === uid;
+          const name = mine ? t('You') : (profiles[uid]?.displayName ?? t('Someone'));
+          return (
+            <View key={uid} style={[styles.person, i === all.length - 1 && styles.personLast]}>
+              <Pressable
+                onPress={() => {
+                  haptic.select();
+                  setOpenUid(open ? undefined : uid);
+                }}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: open }}
+                accessibilityLabel={`${name}${uid === crew.owner ? `, ${t('started the crew')}` : ''}, ${tn(list.length, '{n} pick', '{n} picks')}`}
+                style={({ pressed }) => [styles.personHead, pressed && { opacity: 0.8 }]}
+              >
+                <Face profile={profiles[uid]} first size={34} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.memberName} numberOfLines={1}>
+                    {name}
+                  </Text>
+                  {uid === crew.owner ? <Text style={styles.ownerTag}>{t('started the crew')}</Text> : null}
+                </View>
+                <Text style={styles.pickCount}>{tn(list.length, '{n} pick', '{n} picks')}</Text>
+                <ChevronIcon color={color.moonFaint} size={11} direction={open ? 'up' : 'down'} />
+              </Pressable>
+              {open ? (
+                <View style={styles.personBody}>
+                  {list.length ? (
+                    <Text style={styles.picks}>{list.map((aid) => artist(aid)?.name ?? aid).join(' · ')}</Text>
+                  ) : (
+                    <Text style={styles.quiet}>{mine ? t('Star sets on the festival page to share them with your crew.') : t('No starred sets yet.')}</Text>
+                  )}
+                  {owner && !mine ? (
+                    <Pressable onPress={() => remove(uid)} accessibilityRole="button" accessibilityLabel={profiles[uid]?.displayName ? t('Remove {name} from the crew', { name: profiles[uid].displayName }) : t('Remove them from the crew')} hitSlop={8}>
+                      <Text style={styles.removeText}>{t('Remove from the crew')}</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
               ) : null}
             </View>
-            {list.length ? (
-              <Text style={styles.picks}>{list.map((aid) => artist(aid)?.name ?? aid).join(' · ')}</Text>
-            ) : (
-              <Text style={styles.quiet}>{mine ? t('Star sets on the festival page to share them with your crew.') : t('No starred sets yet.')}</Text>
-            )}
-          </View>
-        );
-      })}
+          );
+        })}
+      </View>
+
+      {festival ? <CrewStayCard crew={crew} event={festival} /> : null}
       {mineNote(festival?.name)}
 
       <Pressable onPress={leave} accessibilityRole="button" style={styles.leave}>
@@ -518,9 +569,22 @@ const styles = StyleSheet.create({
   back: { position: 'absolute', left: space.lg },
   title: { ...type.largeTitle, color: color.moon },
   kicker: { ...type.label, color: color.glow, fontWeight: '600' },
+  hero: { gap: space.md, padding: space.lg, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
+  heroTop: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
+  heroText: { flex: 1, minWidth: 0, gap: 2 },
+  heroTitle: { ...type.title, fontSize: 24, lineHeight: 29, color: color.moon },
+  heroActions: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  heroInvite: { flex: 1, marginTop: 0 },
+  heroSecondary: { paddingHorizontal: space.lg, paddingVertical: space.md },
+  people: { borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim, overflow: 'hidden' },
+  person: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: color.hairline },
+  personLast: { borderBottomWidth: 0 },
+  personHead: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md },
+  personBody: { gap: space.sm, paddingHorizontal: space.lg, paddingBottom: space.md },
+  pickCount: { ...type.caption, color: color.moonDim },
   orb: { marginBottom: space.md },
   festivalLink: { flexDirection: 'row', alignItems: 'center', gap: space.xs, alignSelf: 'flex-start' },
-  meta: { ...type.body, color: color.moonDim, marginTop: -space.xs },
+  meta: { ...type.caption, color: color.moonDim },
   body: { ...type.body, color: color.moonDim },
   note: { ...type.caption, color: color.moonFaint },
   quiet: { ...type.label, color: color.moonDim },

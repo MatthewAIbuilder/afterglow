@@ -126,3 +126,35 @@ export function soundTips({ shaped, canConnect, hasFestivals }: { shaped: boolea
   const order: SoundTip['id'][] = shaped ? ['explore', ...(hasFestivals ? (['festival'] as const) : []), 'react', 'pick'] : ['this-or-that', ...(canConnect ? (['connect'] as const) : []), 'react', 'pick'];
   return order.slice(0, 3).map((id) => all[id]);
 }
+
+/** The sound an artist is mostly known for (the biggest weight), when they have one. */
+export function mainSound(artist: { sound?: Partial<Record<SoundTag, number>> }): SoundTag | undefined {
+  let best: SoundTag | undefined;
+  let top = 0;
+  for (const [tag, w] of Object.entries(artist.sound ?? {}) as [SoundTag, number][]) {
+    if (w > top) {
+      top = w;
+      best = tag;
+    }
+  }
+  return best;
+}
+
+/**
+ * The festivals with the most of a sound on their lineup: how many of their artists are mostly this sound,
+ * most first (at least `min`, so one stray act doesn't make a festival "a house festival"). Pure.
+ */
+export function festivalsWith<F extends { id: string; lineup: readonly string[] }>(
+  tag: SoundTag,
+  festivals: readonly F[],
+  artistById: (id: string) => { sound?: Partial<Record<SoundTag, number>> } | undefined,
+  n = 3,
+  min = 3,
+): { festival: F; count: number }[] {
+  return festivals
+    .map((festival) => ({ festival, count: festival.lineup.filter((id) => { const a = artistById(id); return !!a && mainSound(a) === tag; }).length }))
+    .filter((x) => x.count >= min)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, n);
+}
+

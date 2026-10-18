@@ -102,6 +102,7 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.night } }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="artist/[id]" />
+        <Stack.Screen name="sound-guide/[tag]" />
         <Stack.Screen name="festival/[id]" />
         <Stack.Screen name="show/[id]" />
         <Stack.Screen name="shows" />

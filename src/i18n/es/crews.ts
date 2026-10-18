@@ -409,4 +409,10 @@ export const es_crews: Dictionary = {
   '{name} is at {stage}': '{name} está en {stage}',
   '{name} checked in': '{name} dijo dónde está',
   '{name} set the meeting spot: {text}': '{name} fijó el punto de encuentro: {text}',
+  // The crew page
+  'Rename the crew': 'Cambiar el nombre del grupo',
+  'Remove from the crew': 'Quitar del grupo',
+  '{n} person': '{n} persona',
+  '{n} pick': '{n} elección',
+  '{n} picks': '{n} elecciones',
 };

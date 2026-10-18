@@ -26,6 +26,7 @@ import AddFriendScreen from '../add/[handle]';
 import AccountScreen from '../account';
 import CameraScreen from '../camera';
 import ArtistScreen from '../artist/[id]';
+import SoundGuideScreen from '../sound-guide/[tag]';
 import DiscoverFocusScreen from '../discover-focus';
 import FestivalScreen from '../festival/[id]';
 import ShowScreen from '../show/[id]';
@@ -117,6 +118,7 @@ export const APP_ROUTES = {
   collection: CollectionScreen,
   'add/[handle]': AddFriendScreen,
   'artist/[id]': ArtistScreen,
+  'sound-guide/[tag]': SoundGuideScreen,
   'festival/[id]': FestivalScreen,
   'show/[id]': ShowScreen,
   shows: ShowsScreen,
