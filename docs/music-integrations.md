@@ -122,6 +122,8 @@ Built in version 1.0.1 (2026-10-18). The native part is a small local Expo modul
 
 Test on an iPhone with an Apple Music subscription: Profile → Music connections → Apple Music → Connect → Apple's prompt → Allow → it syncs.
 
+Since 1.0.2 a failed connect says why (`musicKitProblem` in `apple/musicKit.ts`; MusicKit's error names come back from the module): **not-ready** (MusicKit gave no developer token: MusicKit not ticked, or Apple still switching it on), **music-app** (the Music app was never opened: accept Apple's welcome screen), **signed-out** (nobody signed in to Apple Music), **no-library** (`MusicSubscription.hasCloudLibraryEnabled` is off: no subscription or Sync Library off). Before 1.0.2 all of these said "Not available in this version of Afterglow yet." or "didn't connect".
+
 Apple's API has no list of favourite artists, so Apple Music reads library songs, library artists (for catalogue ids and genres), heavy rotation and recently played; `followed` stays unknown.
 
 ## Testing

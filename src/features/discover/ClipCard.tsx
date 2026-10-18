@@ -68,6 +68,7 @@ import { useCommentCount } from '../social/useCommentCount';
 import { commentCaption } from '../social/copy';
 import { t } from '../../i18n';
 import { crowdPlace, shownClipTitle } from '../community/clips';
+import { TrackLine } from '../memories/TrackLine';
 import { OrgWatermark } from '../organizers/OrgWatermark';
 import { eventPath } from '../festivalMode/showEvent';
 import { useEventLookup } from '../festivalMode/useEvent';
@@ -583,6 +584,7 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
         {upNextPill}
         {placeTitle(tall ? 1 : undefined)}
         {artistButton}
+        {community?.track ? <TrackLine track={community.track} /> : null}
         {community ? null : metaLine(!!tall)}
         {community ? (
           // Who filmed it is their photo on the rail; the menu sits beside where they play.

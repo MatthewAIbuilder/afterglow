@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { appleMusicClient, readAppleMusicLibrary } from '../apple/api';
-import { noMusicKit, type AppleMusicAuthorizer } from '../apple/musicKit';
+import { MusicKitError, musicKitProblem, noMusicKit, type AppleMusicAuthorizer } from '../apple/musicKit';
+import { connectProblem } from '../copy';
 import { readAuthorization } from '../apple/nativeMusicKit';
 import { normalizeAppleMusic, type AppleMusicLibrary } from '../apple/normalize';
 import { appleMusicService } from '../apple/service';
@@ -193,7 +194,8 @@ describe('Apple Music service', () => {
   it('MusicKit giving no developer token (MusicKit off for the app) can’t connect', async () => {
     const musicKit: AppleMusicAuthorizer = { isSupported: () => true, developerToken: async () => Promise.reject(new Error('no')), authorize: async () => ({ status: 'authorized', userToken: 'x' }) };
     const { service, secrets } = make({ authorizer: musicKit, tokenUrl: '' });
-    expect(await service.connect()).toEqual({ ok: false, reason: 'unavailable' });
+    // Said as such ("Apple hasn't switched on Apple Music for Afterglow yet"), not as "not available".
+    expect(await service.connect()).toEqual({ ok: false, reason: 'not-ready' });
     expect(secrets.items.size).toBe(0);
   });
 });
@@ -207,3 +209,26 @@ describe('MusicKit’s answer', () => {
     expect(readAuthorization(null)).toEqual({ status: 'cancelled' });
   });
 });
+
+describe('why Apple Music didn’t connect', () => {
+  it('MusicKit’s errors, as something the person can fix', () => {
+    expect(musicKitProblem('developerToken: MusicTokenRequestError.developerTokenRequestFailed')).toBe('not-ready');
+    expect(musicKitProblem('privacyAcknowledgementRequired')).toBe('music-app');
+    expect(musicKitProblem('userNotSignedIn')).toBe('signed-out');
+    expect(musicKitProblem('no-library')).toBe('no-library');
+    expect(musicKitProblem('something else')).toBe('unknown');
+    expect(readAuthorization({ status: 'failed', reason: 'privacyAcknowledgementRequired' })).toEqual({ status: 'failed', problem: 'music-app' });
+  });
+
+  it('connect says which: no developer token, no library', async () => {
+    const secrets = memorySecrets();
+    const net = fakeFetch(APPLE_ROUTES);
+    const noToken: AppleMusicAuthorizer = { isSupported: () => true, developerToken: async () => Promise.reject(new MusicKitError('not-ready')), authorize: async () => ({ status: 'authorized', userToken: 'x' }) };
+    expect(await appleMusicService({ authorizer: noToken, tokenUrl: '', secrets, fetch: net.fetch, isIOS: true }).connect()).toEqual({ ok: false, reason: 'not-ready' });
+    const noLibrary: AppleMusicAuthorizer = { isSupported: () => true, developerToken: async () => 'dev', authorize: async () => ({ status: 'failed', problem: 'no-library' }) };
+    expect(await appleMusicService({ authorizer: noLibrary, tokenUrl: '', secrets, fetch: net.fetch, isIOS: true }).connect()).toEqual({ ok: false, reason: 'no-library' });
+    expect(secrets.items.size).toBe(0);
+    expect(connectProblem('apple-music', 'music-app')).toBe('Open the Music app once and accept Apple’s welcome screen, then try again.');
+  });
+});
+

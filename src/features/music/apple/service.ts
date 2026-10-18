@@ -2,7 +2,7 @@ import { field, requestJson, type FetchLike } from '../http';
 import { SECRET_KEY, type SecretStore } from '../secrets';
 import { errorKind, MusicServiceError, type MusicService } from '../service';
 import { appleMusicClient, readAppleMusicLibrary } from './api';
-import type { AppleMusicAuthorizer } from './musicKit';
+import { MusicKitError, type AppleMusicAuthorizer } from './musicKit';
 import { normalizeAppleMusic } from './normalize';
 
 /**
@@ -27,8 +27,12 @@ export function appleMusicService(opts: {
     if (developerToken) return developerToken;
     const fromMusicKit = !opts.tokenUrl && opts.authorizer.developerToken;
     if (fromMusicKit) {
-      const token = await fromMusicKit().catch(() => undefined);
-      if (typeof token !== 'string' || !token) throw new MusicServiceError('unavailable', 'MusicKit gave no developer token');
+      // Why it couldn't (Apple Music not switched on for the app yet, most often) is what the screen explains.
+      const token = await fromMusicKit().catch((e: unknown) => {
+        const problem = e instanceof MusicKitError ? e.problem : 'not-ready';
+        throw new MusicServiceError(problem === 'unknown' ? 'not-ready' : problem, 'MusicKit gave no developer token');
+      });
+      if (typeof token !== 'string' || !token) throw new MusicServiceError('not-ready', 'MusicKit gave no developer token');
       developerToken = token;
       return token;
     }
@@ -55,6 +59,7 @@ export function appleMusicService(opts: {
           await opts.secrets.set(SECRET_KEY['apple-music'], r.userToken);
           return { ok: true };
         }
+        if (r.status === 'failed') return { ok: false, reason: r.problem };
         return { ok: false, reason: r.status === 'cancelled' ? 'cancelled' : 'denied' };
       } catch (e) {
         return { ok: false, reason: errorKind(e) };

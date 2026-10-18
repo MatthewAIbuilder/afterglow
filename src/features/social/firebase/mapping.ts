@@ -1,3 +1,4 @@
+import { trackFromFields } from '../../memories/track';
 import { cleanArtistName, noteArtist } from '../../../data/extraArtists';
 import { cleanSocials } from '../socials';
 import { cleanPast } from '../../memories/past';
@@ -107,6 +108,7 @@ export function memoryFromDoc(id: string, d: unknown): SharedMemory | null {
     past: str(o.festivalId) ? undefined : cleanPast({ name: o.pastName, year: o.pastYear, city: o.pastCity, seriesId: o.seriesId }),
     show: str(o.festivalId) || str(o.pastName) ? undefined : cleanShow({ name: o.showName, date: o.showDate, city: o.showCity, showId: o.showId }),
     clip: cleanClip({ start: o.clipStart, end: o.clipEnd }),
+    ...(trackFromFields(o) ? { track: trackFromFields(o) } : {}),
     capturedAt,
     durationSec: num(o.durationSec),
     width: num(o.width),

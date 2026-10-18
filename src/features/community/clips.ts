@@ -55,6 +55,7 @@ export function communityClip(m: SharedMemory, artists: ReadonlySet<string>): Cl
       vertical,
       ...(m.clip ? { clip: m.clip } : {}),
       ...(m.withArtistIds?.length ? { withArtistIds: m.withArtistIds } : {}),
+      ...(m.track ? { track: m.track } : {}),
     },
   };
 }

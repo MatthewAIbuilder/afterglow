@@ -1,3 +1,4 @@
+import type { Track } from '../memories/track';
 import type { Socials } from './socials';
 import type { SoundTag } from '../../data/models';
 import type { PastEvent } from '../memories/past';
@@ -85,6 +86,8 @@ export type SharedMemory = {
   show?: ShowTag;
   /** The part that plays, when it was trimmed (seconds into the file). */
   clip?: ClipWindow;
+  /** The song playing in it, as the person who filmed it confirmed. */
+  track?: Track;
   capturedAt: string;
   durationSec?: number;
   /** The video's size, so upright clips get a tall player. */
