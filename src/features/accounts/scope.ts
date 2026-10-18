@@ -30,6 +30,7 @@ export const ACCOUNT_KEYS = [
   'setReminders.v1',
   'dayHours.v1',
   'prep.v1',
+  'prepCustom.v1',
   'festivalWeek.v1',
   'quests.v1',
   'dailyQuests.v1',

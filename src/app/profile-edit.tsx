@@ -1,8 +1,7 @@
 import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Image as RNImage, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../components/GlassCircleButton';
 import { PageActions } from '../components/PageActions';
@@ -29,6 +28,7 @@ import { useShowLevel, setShowLevel } from '../state/showLevel';
 import { useDailyQuests } from '../features/quests/useDailyQuests';
 import { LEVEL_SHOWN_FROM } from '../features/quests/daily';
 import { type CropSource, PhotoCropper } from '../features/profile/PhotoCropper';
+import { pickToCrop } from '../features/profile/pickToCrop';
 import { goBack } from '../lib/nav';
 import { AnimatedBackdrop } from '../features/profile/AnimatedBackdrop';
 import { backdropOf, shownBackdrop } from '../features/profile/backdrops';
@@ -491,17 +491,3 @@ const styles = StyleSheet.create({
 });
 
 /** A photo from the library at full size, to be framed in the app (the system's own editor crops covers square on iPhone). */
-async function pickToCrop(): Promise<CropSource | undefined> {
-  const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: false, quality: 1 });
-  const a = r.canceled ? undefined : r.assets?.[0];
-  if (!a) return undefined;
-  if (a.width > 0 && a.height > 0) return { uri: a.uri, width: a.width, height: a.height };
-  // Some browsers don't say how big the photo is: measure it.
-  return new Promise((resolve) =>
-    RNImage.getSize(
-      a.uri,
-      (width, height) => resolve({ uri: a.uri, width, height }),
-      () => resolve(undefined),
-    ),
-  );
-}

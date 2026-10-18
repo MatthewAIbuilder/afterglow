@@ -292,6 +292,9 @@ export type MeetSpot = { text: string; by: string; at: string };
 /** Meeting spots are at most this long. */
 export const MEET_SPOT_MAX = 80;
 
+/** A crew's group photo (any member can set it): the picture's link, who put it there and when. Shown only to the crew. */
+export type CrewCover = { url: string; by: string; at: string };
+
 /** Check-in words are at most this long. */
 export const CREW_NOTE_MAX = 80;
 /** Stage names in an update are at most this long. */

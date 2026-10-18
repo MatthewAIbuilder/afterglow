@@ -1,6 +1,6 @@
 import { cleanTrack } from '../../memories/track';
 import { throwbackShares } from '../../memories/throwbackLimit';
-import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, type ClipComment, type Comment, validClipId, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Drop, type LivePatch, type AppSettings, DEFAULT_APP_SETTINGS, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX, type Sprout, type DirectChat, directRoom, isDirectRoom, otherInRoom, SUPPORT_REPLIES_MAX, type SetTimesTip, type VideoTag, VIDEO_TAGS_MAX } from '../models';
+import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, type ClipComment, type Comment, validClipId, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type CrewCover, type AdminPresence, type Drop, type LivePatch, type AppSettings, DEFAULT_APP_SETTINGS, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX, type Sprout, type DirectChat, directRoom, isDirectRoom, otherInRoom, SUPPORT_REPLIES_MAX, type SetTimesTip, type VideoTag, VIDEO_TAGS_MAX } from '../models';
 import { cleanBackdrop } from '../../profile/backdrops';
 import { cleanArtistName } from '../../../data/extraArtists';
 import { canGiveThemes, isGiftTheme } from '../../themes/gifts';
@@ -102,6 +102,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   };
   /** Each crew's meeting spot. */
   const meets = new Map<string, MeetSpot>();
+  const covers = new Map<string, CrewCover>();
   const reports: { id: string; by: string; target: ReportTarget; reason: ReportReason; note?: string; createdAt: string; status: 'open' | 'resolved' }[] = [];
   /** Support messages, and which emails have been confirmed (the support account needs it). */
   const support = new Map<string, SupportMessage>();
@@ -942,6 +943,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       dropChat(id);
       crewCodes.delete(id);
       meets.delete(id);
+      covers.delete(id);
     },
     async renameCrew(id, raw) {
       const c = memberOf(id);
@@ -1121,6 +1123,23 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       const spot = { text, by: me().uid, at: now() };
       meets.set(crewId, spot);
       return spot;
+    },
+    async crewCover(crewId) {
+      readable();
+      if (network.down) throw new SocialError('network');
+      memberOf(crewId);
+      return covers.get(crewId) ?? null;
+    },
+    async setCrewCover(crewId, uri) {
+      if (network.down) throw new SocialError('network');
+      memberOf(crewId);
+      if (!uri) {
+        covers.delete(crewId);
+        return null;
+      }
+      const cover = { url: uri.startsWith('http') ? uri : `https://files.test/crews/${crewId}/${me().uid}/cover.jpg`, by: me().uid, at: now() };
+      covers.set(crewId, cover);
+      return cover;
     },
     async forgetCrewVideos(crewId, ids) {
       if (network.down) throw new SocialError('network');
@@ -1530,5 +1549,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     reads.set(`${crewId}/${uid}`, now());
     readsChanged(crewId);
   };
-  return { service, gardens, glows, gardenBackups, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, orgs, orgMembers, orgRequests, orgViews, orgPosts, currentUser: () => current, ticketTaps, pushes };
+  return { service, gardens, glows, gardenBackups, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, covers, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, orgs, orgMembers, orgRequests, orgViews, orgPosts, currentUser: () => current, ticketTaps, pushes };
 }

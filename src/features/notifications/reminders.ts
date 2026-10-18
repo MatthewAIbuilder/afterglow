@@ -1,7 +1,7 @@
 import type { Festival } from '../../data/models';
 import type { Going } from '../festivals/going';
 import { runsOf } from '../festivals/when';
-import { t } from '../../i18n';
+import { t, tn } from '../../i18n';
 
 /**
  * Reminders the phone shows even when the app is closed: a week before and
@@ -71,3 +71,40 @@ export function reminderChanges(wanted: Reminder[], scheduledIds: string[]) {
     schedule: wanted.filter((r) => !have.has(r.id)),
   };
 }
+
+/** The checklist reminder the evening before arrives at this hour, and the one on the morning of at the other. */
+export const PREP_EVE_HOUR = 18;
+export const PREP_DAY_HOUR = 8;
+
+/**
+ * Your Get ready checklist, twice for each festival you're going to (each weekend of a two-weekend one): the
+ * evening before, to pack and sort the last things, and the morning it starts. Each says how many things are
+ * left (their ids carry that number, so a tick moves them on) and opens the checklist. Pure.
+ */
+export function prepReminders(festivals: Festival[], going: Going, progressOf: (festival: Festival) => { done: number; total: number }, now: Date): Reminder[] {
+  const out: Reminder[] = [];
+  for (const id of going) {
+    const f = festivals.find((x) => x.id === id);
+    const runs = f ? runsOf(f) : [];
+    if (!f || !runs.length) continue;
+    const { done, total } = progressOf(f);
+    const left = Math.max(0, total - done);
+    const body =
+      left > 0
+        ? tn(left, '{n} thing left on your checklist. Tap to finish it.', '{n} things left on your checklist. Tap to finish it.')
+        : t('Your checklist is all done. Have a great one.');
+    runs.forEach((run, i) => {
+      const [y, m, d] = run.start.split('-').map(Number);
+      const when = [
+        { key: 'eve', at: new Date(y, m - 1, d - 1, PREP_EVE_HOUR, 0, 0, 0), title: i > 0 ? t('Packed for {festival} weekend {w}?', { festival: f.name, w: i + 1 }) : t('Packed for {festival}?', { festival: f.name }) },
+        { key: 'day', at: new Date(y, m - 1, d, PREP_DAY_HOUR, 0, 0, 0), title: i > 0 ? t('{festival} weekend {w} starts today', { festival: f.name, w: i + 1 }) : t('{festival} starts today', { festival: f.name }) },
+      ];
+      for (const w of when) {
+        if (w.at.getTime() <= now.getTime()) continue;
+        out.push({ id: `${REMINDER_PREFIX}prep:${f.id}:${run.start}:${w.key}:${left}:${w.at.getTime()}`, festivalId: f.id, at: w.at, title: w.title, body, href: `/prep/${f.id}` });
+      }
+    });
+  }
+  return out.sort((a, b) => a.at.getTime() - b.at.getTime());
+}
+

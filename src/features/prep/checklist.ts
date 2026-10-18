@@ -18,6 +18,8 @@ export type PrepItem = {
   action?: 'tune' | 'festival' | 'tickets';
   /** A partner link under the item while it isn't ticked: where to stay, or where to buy it. */
   link?: { url: string; label: string };
+  /** Added by you (the user, 2026-10-19: "add their own items to the checklist"): it can be taken off again. */
+  custom?: boolean;
 };
 export type PrepSection = { title: string; items: PrepItem[] };
 
@@ -34,7 +36,48 @@ export type PrepInput = {
   ticked: ReadonlySet<string>;
   /** Shop links for pack items (item id -> https link); none by default. */
   shop?: Readonly<Record<string, string>>;
+  /** Items you added yourself. */
+  custom?: readonly CustomItem[];
 };
+
+/** Something you added to a festival's checklist. */
+export type CustomItem = { id: string; text: string };
+/** At most this many of your own items per festival. */
+export const CUSTOM_MAX = 30;
+/** The longest an item can be. */
+export const CUSTOM_TEXT_MAX = 60;
+
+/** What you typed, tidied (one line, trimmed, not too long); empty when there's nothing to add. */
+export const cleanCustomText = (raw: string): string => raw.replace(/\s+/g, ' ').trim().slice(0, CUSTOM_TEXT_MAX);
+
+/** Your list with one more item (a new id from `makeId`), unless it's empty, already there (any case) or the list is full. */
+export function withCustomItem(list: readonly CustomItem[], raw: string, makeId: () => string): CustomItem[] {
+  const text = cleanCustomText(raw);
+  if (!text || list.length >= CUSTOM_MAX || list.some((x) => x.text.toLowerCase() === text.toLowerCase())) return [...list];
+  return [...list, { id: makeId(), text }];
+}
+
+/** Your own items read back from storage: festival id -> items, bad ones dropped. */
+export function cleanCustom(raw: unknown): Record<string, CustomItem[]> {
+  if (!raw || typeof raw !== 'object') return {};
+  const out: Record<string, CustomItem[]> = {};
+  for (const [festivalId, v] of Object.entries(raw)) {
+    if (!Array.isArray(v)) continue;
+    const seen = new Set<string>();
+    const items: CustomItem[] = [];
+    for (const x of v) {
+      const o = x && typeof x === 'object' ? (x as Record<string, unknown>) : {};
+      const id = typeof o.id === 'string' && /^c[A-Za-z0-9_-]{2,40}$/.test(o.id) ? o.id : undefined;
+      const text = typeof o.text === 'string' ? cleanCustomText(o.text) : '';
+      if (id && text && !seen.has(id) && items.length < CUSTOM_MAX) {
+        seen.add(id);
+        items.push({ id, text });
+      }
+    }
+    if (items.length) out[festivalId] = items;
+  }
+  return out;
+}
 
 /** Enough of the lineup rated to shape a good plan. */
 export const RATED_ENOUGH = 10;
@@ -80,11 +123,19 @@ export function prepChecklist(i: PrepInput): PrepSection[] {
     const url = i.shop?.[p.id];
     return { ...p, done: tick(p.id), ...(url ? { link: { url, label: t('Shop') } } : {}) };
   });
+  const own: PrepItem[] = (i.custom ?? []).map((c) => ({ id: c.id, label: c.text, done: tick(c.id), custom: true }));
   return [
     { title: t('Your plan'), items: plan },
     { title: t('Before you go'), items: before },
     { title: t('Pack'), items: pack },
+    // Your own things: always there, so there's a place to add one (the screen shows its field under it).
+    { title: t('Yours'), items: own },
   ];
+}
+
+/** How far along a festival's checklist is (done, of how many), from the same facts the list is built from. */
+export function prepProgressOf(i: PrepInput): { done: number; total: number } {
+  return prepProgress(prepChecklist(i));
 }
 
 /**
