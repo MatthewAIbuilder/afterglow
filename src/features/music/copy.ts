@@ -118,6 +118,14 @@ export function connectProblem(provider: MusicProviderId, reason: MusicErrorKind
       return t('{service} is busy right now. Try again in a few minutes.', { service: name });
     case 'unavailable':
       return UNAVAILABLE['not-set-up'];
+    case 'not-ready':
+      return t('Apple hasn’t switched on Apple Music for Afterglow yet. This can take a few hours after it’s set up. Try again later.');
+    case 'music-app':
+      return t('Open the Music app once and accept Apple’s welcome screen, then try again.');
+    case 'signed-out':
+      return t('Sign in to Apple Music on this iPhone (Settings, then Music), then try again.');
+    case 'no-library':
+      return t('Your Apple Music library isn’t on. It needs an Apple Music subscription and Sync Library on (Settings, then Music). Then try again.');
     default:
       return t('{service} didn’t connect. Try again.', { service: name });
   }

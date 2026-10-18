@@ -7,6 +7,8 @@ import { SearchField } from '../components/SearchField';
 import { CheckIcon } from '../components/TabIcons';
 import type { Artist, Festival } from '../data/models';
 import { matchesName, normalize, searchFestivals } from '../features/festivals/search';
+import { trackArtistOn, type Track } from '../features/memories/track';
+import { TrackSuggestion } from '../features/memories/TrackSuggestion';
 import { cleanArtistName, newArtistId, noteArtist } from '../data/extraArtists';
 import { useHqRequests } from '../features/memories/useHqRequests';
 import { festivalsAround, isMany } from '../features/festivals/shelves';
@@ -260,6 +262,11 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
     };
   }, [draftUri, draftLength, draftBytes, clipMax, setClip]);
 
+  // The song playing, once you keep the one Shazam heard (it shows on the video wherever it's shared).
+  const [track, setTrack] = useState<Track | undefined>(existing?.track);
+  // The song's artist, when they're on Afterglow and nobody's tagged yet: maybe it was their own set.
+  const trackArtist = useMemo(() => (track && !chosenArtist ? trackArtistOn(track, catalog.artists, normalize) : undefined), [track, chosenArtist, catalog.artists]);
+
   // People in it, tagged once it's on Discover (it shows on their profiles; they can hide it).
   const [people, setPeople] = useState<string[]>(() => existing?.people ?? []);
   const touchedPeople = useRef(false);
@@ -274,6 +281,7 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
     artistName: chosenArtist && !onAfterglow.has(chosenArtist) ? named[chosenArtist] : undefined,
     ...(draft || fresh ? { clip } : {}),
     people: people.length ? people : undefined,
+    track,
   };
 
   // Share to Discover: on by default once it's tagged and you have a profile; always your choice.
@@ -764,6 +772,16 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
             </View>
           )}
         </View>
+        <TrackSuggestion
+          uri={sharedMemory ? undefined : videoUri}
+          track={track}
+          onChange={setTrack}
+          headingStyle={styles.section}
+          artistToTag={trackArtist}
+          onTagArtist={(artistId) => {
+            if (!chosenList.includes(artistId)) toggleArtist(artistId);
+          }}
+        />
         {social.availability.ok && social.profile && (shareOn || sharedCopy) ? (
           <>
             <Text style={styles.section}>{t('Who’s in it?')}</Text>

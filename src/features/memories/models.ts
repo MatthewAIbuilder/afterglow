@@ -1,3 +1,4 @@
+import type { Track } from './track';
 import type { PastEvent } from './past';
 import type { ShowTag } from './show';
 import type { ClipWindow } from './trim';
@@ -42,10 +43,12 @@ export type Memory = {
   people?: string[];
   /** The part that plays, when the video was trimmed (seconds into the file). */
   clip?: ClipWindow;
+  /** The song playing in it (found by Shazam, kept only once you said it's right). */
+  track?: Track;
   /** Once shared to your profile: the shared copy's id, and whose profile it's on. */
   sharedId?: string;
   sharedBy?: string;
 };
 
 /** What the tagging sheet saves onto a memory. */
-export type MemoryTagInput = Pick<Memory, 'festivalId' | 'night' | 'artistId' | 'withArtistIds' | 'artistName' | 'past' | 'show' | 'clip' | 'people'>;
+export type MemoryTagInput = Pick<Memory, 'festivalId' | 'night' | 'artistId' | 'withArtistIds' | 'artistName' | 'past' | 'show' | 'clip' | 'people' | 'track'>;

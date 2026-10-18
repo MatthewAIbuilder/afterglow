@@ -371,6 +371,7 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
             past: m.past,
             show: m.show,
             clip: m.clip,
+            track: m.track,
             capturedAt: m.capturedAt,
             // A trimmed video is as long as the part that plays.
             durationSec: m.clip ? Math.max(1, Math.round(m.clip.end - m.clip.start)) : m.durationSec,

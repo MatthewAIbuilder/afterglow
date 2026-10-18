@@ -7,7 +7,34 @@
  */
 export type MusicKitAuthorization =
   | { status: 'authorized'; userToken: string }
-  | { status: 'denied' | 'restricted' | 'cancelled' };
+  | { status: 'denied' | 'restricted' | 'cancelled' }
+  | { status: 'failed'; problem: MusicKitProblem };
+
+/** Why MusicKit couldn't connect, in the words the screen explains. */
+export type MusicKitProblem = 'not-ready' | 'music-app' | 'signed-out' | 'no-library' | 'unknown';
+
+/**
+ * MusicKit's own error, by name (its `MusicTokenRequestError` case, or the
+ * module's own words), as a problem the person can fix. Pure.
+ */
+export function musicKitProblem(reason: unknown): MusicKitProblem {
+  const r = typeof reason === 'string' ? reason : '';
+  if (/developerToken/i.test(r)) return 'not-ready';
+  if (/privacyAcknowledgement/i.test(r)) return 'music-app';
+  if (/userNotSignedIn/i.test(r)) return 'signed-out';
+  if (/no-library/i.test(r)) return 'no-library';
+  return 'unknown';
+}
+
+/** A developer token MusicKit couldn't give, with why. */
+export class MusicKitError extends Error {
+  readonly problem: MusicKitProblem;
+  constructor(problem: MusicKitProblem) {
+    super(`MusicKit: ${problem}`);
+    this.name = 'MusicKitError';
+    this.problem = problem;
+  }
+}
 
 export type AppleMusicAuthorizer = {
   /** MusicKit exists in this build. */

@@ -1,4 +1,5 @@
 import { t, type Language } from '../../i18n';
+import type { Track } from '../memories/track';
 import type { PastEvent } from '../memories/past';
 import type { ShowTag } from '../memories/show';
 import type { ClipWindow } from '../memories/trim';
@@ -38,6 +39,8 @@ export type ShareInput = {
   show?: ShowTag;
   /** The part that plays, when it was trimmed. */
   clip?: ClipWindow;
+  /** The song playing in it, when you kept the one Shazam found. */
+  track?: Track;
   capturedAt: string;
   durationSec?: number;
   width?: number;
@@ -45,7 +48,7 @@ export type ShareInput = {
 };
 
 /** What can change on a video once it's shared: where it's from and who was playing. */
-export type SharedTags = Pick<ShareInput, 'festivalId' | 'night' | 'artistId' | 'withArtistIds' | 'artistName' | 'past' | 'show'>;
+export type SharedTags = Pick<ShareInput, 'festivalId' | 'night' | 'artistId' | 'withArtistIds' | 'artistName' | 'past' | 'show' | 'track'>;
 
 export type FollowCounts = { followers: number; following: number };
 

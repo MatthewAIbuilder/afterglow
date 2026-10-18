@@ -264,6 +264,8 @@ export type CommunityClipSource = {
   clip?: { start: number; end: number };
   /** Playing back to back with the clip's artist. */
   withArtistIds?: string[];
+  /** The song playing, as the person who filmed it confirmed (Shazam). */
+  track?: { title: string; artist: string; appleMusicUrl?: string };
 };
 
 /**

@@ -131,7 +131,11 @@ service cloud.firestore {
         // Back to back: up to three more artists, only with a main one.
         && (!('withArtistIds' in d) || ('artistId' in d && d.withArtistIds is list && d.withArtistIds.size() <= 3))
         // An artist not on Afterglow yet: their name as typed, only with their id.
-        && (!('artistName' in d) || ('artistId' in d && d.artistName is string && d.artistName.size() > 0 && d.artistName.size() <= 60));
+        && (!('artistName' in d) || ('artistId' in d && d.artistName is string && d.artistName.size() > 0 && d.artistName.size() <= 60))
+        // The song playing (found by Shazam, kept by the person who filmed it): a title and an artist, and maybe its Apple Music link.
+        && (!('trackTitle' in d) || ('trackArtist' in d && d.trackTitle is string && d.trackTitle.size() > 0 && d.trackTitle.size() <= 120))
+        && (!('trackArtist' in d) || ('trackTitle' in d && d.trackArtist is string && d.trackArtist.size() > 0 && d.trackArtist.size() <= 120))
+        && (!('trackUrl' in d) || ('trackTitle' in d && d.trackUrl is string && d.trackUrl.size() <= 300 && d.trackUrl.matches('^https://music[.]apple[.]com/.*')));
       }
       // Throwbacks are counted: the count moves on by one in the same write, and stops at 3 without Afterglow Plus.
       function throwbackCounted(id) {
@@ -141,7 +145,7 @@ service cloud.firestore {
       }
       allow read: if signedIn();
       allow create: if signedIn() && request.resource.data.uid == me()
-        && request.resource.data.keys().hasOnly(['uid', 'handle', 'memoryId', 'videoPath', 'videoUrl', 'thumbPath', 'thumbUrl', 'festivalId', 'night', 'artistId', 'withArtistIds', 'artistName', 'pastName', 'pastYear', 'pastCity', 'seriesId', 'showName', 'showDate', 'showCity', 'showId', 'clipStart', 'clipEnd', 'capturedAt', 'durationSec', 'width', 'height', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['uid', 'handle', 'memoryId', 'videoPath', 'videoUrl', 'thumbPath', 'thumbUrl', 'festivalId', 'night', 'artistId', 'withArtistIds', 'artistName', 'pastName', 'pastYear', 'pastCity', 'seriesId', 'showName', 'showDate', 'showCity', 'showId', 'clipStart', 'clipEnd', 'trackTitle', 'trackArtist', 'trackUrl', 'capturedAt', 'durationSec', 'width', 'height', 'createdAt'])
         && request.resource.data.handle == get(path('profiles', me())).data.handle
         && request.resource.data.videoPath.matches('^memories/' + me() + '/' + id + '[.](mp4|mov|m4v)$')
         // The links are this owner's own uploads for this memory: Firebase Storage download links to memories/<uid>/<id>.
@@ -166,7 +170,7 @@ service cloud.firestore {
       // Only you change your own video's tags (where it's from, who was playing); nothing else about it.
       // A throwback stays a throwback (its year and name can change), and nothing else becomes one, so the count holds.
       allow update: if signedIn() && resource.data.uid == me()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['festivalId', 'night', 'artistId', 'withArtistIds', 'artistName', 'pastName', 'pastYear', 'pastCity', 'seriesId', 'showName', 'showDate', 'showCity', 'showId'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['festivalId', 'night', 'artistId', 'withArtistIds', 'artistName', 'pastName', 'pastYear', 'pastCity', 'seriesId', 'showName', 'showDate', 'showCity', 'showId', 'trackTitle', 'trackArtist', 'trackUrl'])
         && memoryTagsOk(request.resource.data)
         && (('pastName' in request.resource.data) == ('pastName' in resource.data));
       allow delete: if (signedIn() && resource.data.uid == me()) || isAdmin();

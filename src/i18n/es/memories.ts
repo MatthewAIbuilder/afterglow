@@ -265,4 +265,21 @@ export const es_memories: Dictionary = {
   'Keep in drafts': 'Guardar en borradores',
   'Keep in Memories': 'Guardar en Recuerdos',
   'Drafts · {n}': 'Borradores · {n}',
+  // Track ID (Shazam)
+  'Track: {title} by {artist}': 'Canción: {title} de {artist}',
+  'Track: {title} by {artist}. Opens in Apple Music.': 'Canción: {title} de {artist}. Se abre en Apple Music.',
+  Track: 'Canción',
+  '{artist} was playing': 'Estaba tocando {artist}',
+  'Remove the track': 'Quitar la canción',
+  'Shazam hears': 'Shazam escucha',
+  'Add {title} by {artist} as the track': 'Añadir {title} de {artist} como la canción',
+  'Add it': 'Añadirla',
+  'Not it': 'No es esa',
+  'Listening for the track…': 'Escuchando la canción…',
+  'Shazam didn’t recognise the track. Unreleased IDs and edits often aren’t known yet.': 'Shazam no reconoció la canción. Los temas inéditos y los edits a menudo aún no se conocen.',
+  // Apple Music: why it didn't connect
+  'Apple hasn’t switched on Apple Music for Afterglow yet. This can take a few hours after it’s set up. Try again later.': 'Apple aún no ha activado Apple Music para Afterglow. Puede tardar unas horas después de configurarlo. Inténtalo más tarde.',
+  'Open the Music app once and accept Apple’s welcome screen, then try again.': 'Abre la app Música una vez y acepta la pantalla de bienvenida de Apple. Luego inténtalo de nuevo.',
+  'Sign in to Apple Music on this iPhone (Settings, then Music), then try again.': 'Inicia sesión en Apple Music en este iPhone (Ajustes y luego Música). Luego inténtalo de nuevo.',
+  'Your Apple Music library isn’t on. It needs an Apple Music subscription and Sync Library on (Settings, then Music). Then try again.': 'Tu biblioteca de Apple Music no está activada. Necesita una suscripción a Apple Music y Sincronizar biblioteca activado (Ajustes y luego Música). Luego inténtalo de nuevo.',
 };

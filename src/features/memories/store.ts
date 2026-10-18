@@ -1,3 +1,4 @@
+import { cleanTrack } from './track';
 import type { Memory, MemoryTagInput } from './models';
 import { cleanPast } from './past';
 import { cleanShow } from './show';
@@ -36,6 +37,7 @@ export function tagMemory(list: Memory[], id: string, tag: MemoryTagInput): Memo
           artistName: tag.artistId ? cleanArtistName(tag.artistName) : undefined,
           clip: 'clip' in tag ? tag.clip : m.clip,
           people: 'people' in tag ? tag.people : m.people,
+          track: 'track' in tag ? cleanTrack(tag.track) : m.track,
         }
       : m,
   );
@@ -88,6 +90,7 @@ export function cleanMemories(raw: unknown): Memory[] {
       show: str(o.festivalId) || cleanPast(o.past) ? undefined : cleanShow(o.show),
       clip: cleanClip(o.clip),
       people: cleanPeople(o.people),
+      ...(cleanTrack(o.track) ? { track: cleanTrack(o.track) } : {}),
       night: str(o.night),
       artistId: str(o.artistId),
       withArtistIds: str(o.artistId) ? cleanWith(o.withArtistIds, str(o.artistId)) : undefined,

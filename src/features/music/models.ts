@@ -97,6 +97,14 @@ export type MusicErrorKind =
   | 'rate-limited'
   /** This version of the app can't connect to the service (not set up, or needs the full app). */
   | 'unavailable'
+  /** Apple hasn't switched Apple Music on for Afterglow (MusicKit gave no developer token). */
+  | 'not-ready'
+  /** The Music app has never been opened on this iPhone (Apple's welcome and privacy screen first). */
+  | 'music-app'
+  /** Nobody is signed in to Apple Music on this iPhone. */
+  | 'signed-out'
+  /** No Apple Music library on this iPhone (no subscription, or Sync Library off). */
+  | 'no-library'
   | 'unknown';
 
 /** Where one service stands on this phone. Saved without any token: tokens live in the secure store only. */

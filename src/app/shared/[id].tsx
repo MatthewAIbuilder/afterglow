@@ -35,6 +35,7 @@ import { showAlert } from '../../lib/dialog';
 import { goBack } from '../../lib/nav';
 import { pagerIds, VerticalPager } from '../../components/VerticalPager';
 import { t } from '../../i18n';
+import { TrackLine } from '../../features/memories/TrackLine';
 
 /**
  * A memory someone shared on their profile, full screen. Like it (the same
@@ -264,6 +265,7 @@ function SharedMemoryPage({ id, active }: { id: string; active: boolean }) {
               <Text style={styles.match}>{t('{pct}% match', { pct })}</Text>
             </Pressable>
           ) : null}
+          {m.track ? <TrackLine track={m.track} /> : null}
           {where ? <Text style={styles.where}>{where}</Text> : null}
           <Pressable onPress={() => router.push({ pathname: '/u/[handle]', params: { handle: m.handle } })} accessibilityRole="button">
             <Text style={styles.by}>@{m.handle}</Text>

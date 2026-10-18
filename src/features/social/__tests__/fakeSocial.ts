@@ -1,3 +1,4 @@
+import { cleanTrack } from '../../memories/track';
 import { throwbackShares } from '../../memories/throwbackLimit';
 import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, type ClipComment, type Comment, validClipId, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type AdminPresence, type Drop, type LivePatch, type AppSettings, DEFAULT_APP_SETTINGS, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX, type Sprout, type DirectChat, directRoom, isDirectRoom, otherInRoom, SUPPORT_REPLIES_MAX, type SetTimesTip, type VideoTag, VIDEO_TAGS_MAX } from '../models';
 import { cleanBackdrop } from '../../profile/backdrops';
@@ -360,6 +361,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         past: input.festivalId ? undefined : input.past,
         show: input.festivalId || input.past ? undefined : input.show,
         clip: input.clip,
+        ...(cleanTrack(input.track) ? { track: cleanTrack(input.track) } : {}),
         capturedAt: input.capturedAt,
         durationSec: input.durationSec,
         width: input.width,
@@ -423,6 +425,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         artistName: tags.artistId ? cleanArtistName(tags.artistName) : undefined,
         past,
         show: festivalId || past ? undefined : tags.show,
+        track: 'track' in tags ? cleanTrack(tags.track) : m.track,
       };
       memories.set(id, next);
       return next;

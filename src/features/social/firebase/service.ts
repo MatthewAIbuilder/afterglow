@@ -23,6 +23,7 @@ import { cleanDecor } from '../../sprouts/decor';
 import { cleanNote, cleanPublicKandi, cleanWord, isCharm, isPattern, KANDI_ID, kandiFrom, PUBLIC_KANDI_MAX } from '../../kandi/kandi';
 import { cleanArtistName } from '../../../data/extraArtists';
 import { cutVideoPart } from '../../memories/cutPart';
+import { trackFields } from '../../memories/track';
 import { cleanPushAddress, PUSH_ENDPOINT, pushMessages, updatePushKind, withToken, type PushAddress, type PushEvent } from '../../notifications/push';
 import { profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc, orgRequestFromDoc, orgDayFromDoc, orgPostFromDoc } from './mapping';
 
@@ -577,6 +578,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
               : {}),
             // A trimmed video: the part that plays.
             ...(clip ? { clipStart: clip.start, clipEnd: clip.end } : {}),
+            // The song playing, when the person who filmed it kept the one Shazam found.
+            ...trackFields(input.track),
             capturedAt: input.capturedAt,
             ...(input.durationSec ? { durationSec: input.durationSec } : {}),
             ...(input.width && input.height ? { width: input.width, height: input.height } : {}),
@@ -634,6 +637,13 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           showDate: set(show?.date),
           showCity: set(show?.city),
           showId: set(show?.showId),
+          // The song changes only when the tags say something about it.
+          ...('track' in tags
+            ? (() => {
+                const f = trackFields(tags.track);
+                return { trackTitle: set(f.trackTitle), trackArtist: set(f.trackArtist), trackUrl: set(f.trackUrl) };
+              })()
+            : {}),
         });
         return memoryFromDoc(id, (await getDoc(ref)).data())!;
       }),

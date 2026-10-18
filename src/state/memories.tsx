@@ -149,6 +149,7 @@ export function MemoriesProvider({ children, files: given }: { children: ReactNo
           ...(tag.artistId && tag.artistName ? { artistName: tag.artistName } : {}),
           clip: tag.clip,
           people: tag.people?.length ? tag.people : undefined,
+          ...(tag.track ? { track: tag.track } : {}),
         };
         setMemories((l) => addMemory(l, m));
         return m;

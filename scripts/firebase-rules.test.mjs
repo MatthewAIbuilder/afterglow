@@ -110,6 +110,18 @@ await t('a shared memory’s links must be the owner’s own uploads for that me
   await assertFails(setDoc(doc(A.firestore(), 'memories', 'url10'), mem('url10', 'uidA', { thumbPath: 'memories/uidA/url10.jpg', thumbUrl: fileUrl('memories/uidA/url10.mov') })));
   await assertSucceeds(setDoc(doc(A.firestore(), 'memories', 'url11'), mem('url11', 'uidA', { thumbPath: 'memories/uidA/url11.jpg', thumbUrl: fileUrl('memories/uidA/url11.jpg') })));
 });
+await t('a shared memory’s track (Shazam): a title and an artist, a link only to Apple Music; changed by its owner only', async () => {
+  const track = { trackTitle: 'Rumble', trackArtist: 'Skrillex', trackUrl: 'https://music.apple.com/us/album/rumble/1?i=2' };
+  await assertSucceeds(setDoc(doc(A.firestore(), 'memories', 'trk1'), mem('trk1', 'uidA', { artistId: 'subtronics', ...track })));
+  await assertSucceeds(setDoc(doc(A.firestore(), 'memories', 'trk2'), mem('trk2', 'uidA', { trackTitle: 'Rumble', trackArtist: 'Skrillex' })));
+  await assertFails(setDoc(doc(A.firestore(), 'memories', 'trk3'), mem('trk3', 'uidA', { trackTitle: 'Rumble' })));
+  await assertFails(setDoc(doc(A.firestore(), 'memories', 'trk4'), mem('trk4', 'uidA', { trackArtist: 'Skrillex' })));
+  await assertFails(setDoc(doc(A.firestore(), 'memories', 'trk5'), mem('trk5', 'uidA', { ...track, trackUrl: 'https://evil.example/x' })));
+  await assertFails(setDoc(doc(A.firestore(), 'memories', 'trk6'), mem('trk6', 'uidA', { trackTitle: 'x'.repeat(121), trackArtist: 'Skrillex' })));
+  await assertSucceeds(updateDoc(doc(A.firestore(), 'memories', 'trk2'), { trackTitle: 'Rumble (VIP)' }));
+  await assertSucceeds(updateDoc(doc(A.firestore(), 'memories', 'trk1'), { trackTitle: deleteField(), trackArtist: deleteField(), trackUrl: deleteField() }));
+  await assertFails(updateDoc(doc(B.firestore(), 'memories', 'trk2'), { trackTitle: 'Mine' }));
+});
 // Throwbacks go with the free plan's count (usage/{uid}) in one write.
 const T = env.authenticatedContext('uidT');
 const memT = (id, over = {}) => ({ uid: 'uidT', handle: 'tara', memoryId: 'm1', videoPath: `memories/uidT/${id}.mov`, videoUrl: fileUrl(`memories/uidT/${id}.mov`), capturedAt: now, createdAt: now, ...over });
