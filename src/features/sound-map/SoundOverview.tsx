@@ -7,24 +7,22 @@ import { SOUND_LABEL, type SoundTag } from '../../data/models';
 import type { Artist } from '../../data/types';
 import { haptic } from '../../lib/haptics';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
-import { soundFocus } from '../discover/focus';
 import type { SoundShare } from '../taste/lean';
 import { SOUND_COLOR, withAlpha } from './colors';
 import { t } from '../../i18n';
 import { artistsIn, closeTo, nextSounds, otherSounds, SOUND_GUIDE, type SoundTip, soundTips } from './guide';
 
 /**
- * My Sound's overview, under your sound's summary: the sounds you lean
- * towards (what each feels like, what to listen for, how it differs from its
- * neighbours, your best matches in it and a way to watch it), sounds to try
- * next, tips for finding your sound, and every other sound to read about.
- * The bubble map is one tap away.
+ * My Sound's overview, under your sound's summary: every sound as a tile in a grid (the user, 2026-10-18: "instead
+ * of being very elongated down the page… a grid… if you click on one, you can see all the nitty gritty"). Yours
+ * first, with how much of your sound each is; then the ones close to yours to try next; then the rest. A tap
+ * opens that sound's own page (`/sound-guide/[tag]`: what it feels like, what to listen for, your best matches,
+ * the festivals with the most of it). Tips for finding your sound fold into one row. The bubble map is one tap away.
  */
 export function SoundOverview({
   shares,
   artists,
   taste,
-  watchable,
   shaped,
   canConnect,
   hasFestivals,
@@ -33,8 +31,8 @@ export function SoundOverview({
   shares: readonly SoundShare[];
   artists: readonly Artist[];
   taste: Record<string, number>;
-  /** Sounds with enough clips to watch in Discover. */
-  watchable: ReadonlySet<SoundTag>;
+  /** Kept for the caller: whether a sound has enough clips to watch is shown on its own page now. */
+  watchable?: ReadonlySet<SoundTag>;
   shaped: boolean;
   canConnect: boolean;
   hasFestivals: boolean;
@@ -43,10 +41,10 @@ export function SoundOverview({
   const yours = shares.slice(0, 3).map((s) => s.tag);
   const next = nextSounds(yours);
   const rest = otherSounds([...yours, ...next]);
-  const [open, setOpen] = useState<SoundTag | undefined>();
+  const [tipsOpen, setTipsOpen] = useState(false);
   const tips = soundTips({ shaped, canConnect, hasFestivals });
-  const card = (tag: SoundTag, kicker?: string, startOpen = false) => (
-    <SoundCard key={tag} tag={tag} kicker={kicker} share={shares.find((s) => s.tag === tag)} artists={artistsIn(tag, artists, taste)} watchable={watchable.has(tag)} startOpen={startOpen} />
+  const tile = (tag: SoundTag, kicker?: string) => (
+    <SoundTile key={tag} tag={tag} kicker={kicker} share={shares.find((x) => x.tag === tag)} faces={artistsIn(tag, artists, taste, 3)} />
   );
 
   return (
@@ -54,52 +52,42 @@ export function SoundOverview({
       {yours.length ? (
         <Section
           title={shaped ? t('Your sounds') : t('Where you might start')}
-          sub={shaped ? t('What you lean towards, and what makes each one tick.') : t('A first guess. Like, skip and rate and these become yours.')}
+          sub={shaped ? t('Tap a sound to see everything about it.') : t('A first guess. Like, skip and rate and these become yours.')}
         >
-          {yours.map((tag, i) => card(tag, undefined, i === 0))}
+          <View style={styles.grid}>{yours.map((tag) => tile(tag))}</View>
         </Section>
       ) : null}
 
       <Section title={t('Sounds to try next')} sub={t('Close to yours, so there’s a good chance you’ll love them.')}>
-        {next.map((tag) => card(tag, closeTo(tag, yours)))}
+        <View style={styles.grid}>{next.map((tag) => tile(tag, closeTo(tag, yours)))}</View>
       </Section>
 
-      <Section title={t('Find your sound faster')}>
+      <Section title={t('Every sound')}>
+        <View style={styles.grid}>{rest.map((tag) => tile(tag))}</View>
+      </Section>
+
+      <Pressable
+        onPress={() => {
+          haptic.select();
+          setTipsOpen((v) => !v);
+        }}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: tipsOpen }}
+        style={({ pressed }) => [styles.tipsHead, pressed && styles.pressed]}
+      >
+        <View style={{ flex: 1 }}>
+          <Text style={styles.h2}>{t('Find your sound faster')}</Text>
+          <Text style={styles.sub}>{tipsOpen ? t('A few quick ways to teach your map.') : t('{n} quick ways to teach your map', { n: tips.length })}</Text>
+        </View>
+        <ChevronIcon color={color.moonFaint} size={11} direction={tipsOpen ? 'up' : 'down'} />
+      </Pressable>
+      {tipsOpen ? (
         <View style={styles.tips}>
           {tips.map((tip, i) => (
             <Tip key={tip.id} tip={tip} last={i === tips.length - 1} onOpenMap={onOpenMap} />
           ))}
         </View>
-      </Section>
-
-      <Section title={t('Every sound')} sub={t('Tap one to see what it’s about.')}>
-        <View style={styles.tips}>
-          {rest.map((t, i) => (
-            <View key={t}>
-              <Pressable
-                onPress={() => {
-                  haptic.select();
-                  setOpen(open === t ? undefined : t);
-                }}
-                accessibilityRole="button"
-                accessibilityState={{ expanded: open === t }}
-                accessibilityLabel={`${SOUND_LABEL[t]}: ${SOUND_GUIDE[t].feel}`}
-                style={({ pressed }) => [styles.row, i === rest.length - 1 && open !== t && styles.rowLast, pressed && styles.pressed]}
-              >
-                <Dot tag={t} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.rowTitle}>{SOUND_LABEL[t]}</Text>
-                  <Text style={styles.rowBody} numberOfLines={open === t ? undefined : 1}>
-                    {SOUND_GUIDE[t].feel}
-                  </Text>
-                </View>
-                <ChevronIcon color={color.moonFaint} size={11} direction={open === t ? 'up' : 'down'} />
-              </Pressable>
-              {open === t ? <View style={styles.inline}>{card(t, undefined, true)}</View> : null}
-            </View>
-          ))}
-        </View>
-      </Section>
+      ) : null}
 
       <Pressable
         onPress={() => {
@@ -113,6 +101,49 @@ export function SoundOverview({
         <Text style={styles.mapButtonText}>{t('Open your bubble map')}</Text>
       </Pressable>
     </View>
+  );
+}
+
+/** One sound in the grid: its light, name, a line on how it feels, how much of your sound it is, and a few faces. */
+function SoundTile({ tag, kicker, share, faces }: { tag: SoundTag; kicker?: string; share?: SoundShare; faces: Artist[] }) {
+  const tone = SOUND_COLOR[tag];
+  const label = SOUND_LABEL[tag];
+  return (
+    <Pressable
+      onPress={() => {
+        haptic.select();
+        router.push({ pathname: '/sound-guide/[tag]', params: { tag } });
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}${share ? `, ${t('{pct}% of your sound', { pct: share.percent })}` : ''}. ${SOUND_GUIDE[tag].feel}`}
+      accessibilityHint={t('Opens everything about this sound')}
+      style={({ pressed }) => [styles.tile, { borderColor: withAlpha(tone, 0.32), backgroundColor: withAlpha(tone, 0.08) }, pressed && styles.pressed]}
+    >
+      <View style={styles.tileTop}>
+        <Dot tag={tag} size={12} />
+        {share ? <Text style={[styles.pct, { color: tone }]}>{`${share.percent}%`}</Text> : null}
+      </View>
+      <Text style={[styles.tileTitle, { color: tone }]} numberOfLines={1}>
+        {label}
+      </Text>
+      <Text style={styles.tileFeel} numberOfLines={3}>
+        {SOUND_GUIDE[tag].feel}
+      </Text>
+      {kicker ? (
+        <Text style={styles.tileKicker} numberOfLines={1}>
+          {kicker}
+        </Text>
+      ) : null}
+      {faces.length ? (
+        <View style={styles.tileFaces}>
+          {faces.map((a, i) => (
+            <View key={a.id} style={[styles.face, { marginLeft: i === 0 ? 0 : -8, zIndex: 5 - i }]}>
+              <ArtistAvatar artist={a} size={26} />
+            </View>
+          ))}
+        </View>
+      ) : null}
+    </Pressable>
   );
 }
 
@@ -132,85 +163,6 @@ function Section({ title, sub, children }: { title: string; sub?: string; childr
 const Dot = ({ tag, size = 12 }: { tag: SoundTag; size?: number }) => (
   <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: SOUND_COLOR[tag], shadowColor: SOUND_COLOR[tag], shadowOpacity: 0.9, shadowRadius: 6, shadowOffset: { width: 0, height: 0 } }} />
 );
-
-function SoundCard({ tag, kicker, share, artists, watchable, startOpen }: { tag: SoundTag; kicker?: string; share?: SoundShare; artists: Artist[]; watchable: boolean; startOpen: boolean }) {
-  const [more, setMore] = useState(startOpen);
-  const g = SOUND_GUIDE[tag];
-  const tone = SOUND_COLOR[tag];
-  const label = SOUND_LABEL[tag];
-  return (
-    <View style={[styles.card, { borderColor: withAlpha(tone, 0.28), backgroundColor: withAlpha(tone, 0.06) }]}>
-      <View style={styles.cardTop}>
-        <Dot tag={tag} size={14} />
-        <View style={{ flex: 1 }}>
-          {kicker ? <Text style={[styles.kicker, { color: tone }]}>{kicker.toUpperCase()}</Text> : null}
-          <Text style={[styles.cardTitle, { color: tone }]}>{label}</Text>
-        </View>
-        {share ? <Text style={styles.share}>{t('{pct}% of your sound', { pct: share.percent })}</Text> : null}
-      </View>
-      <Text style={styles.feel}>{g.feel}</Text>
-      {more ? (
-        <>
-          <Text style={styles.label}>{t('Listen for')}</Text>
-          {g.listenFor.map((l) => (
-            <View key={l} style={styles.bulletRow}>
-              <View style={[styles.bullet, { backgroundColor: tone }]} />
-              <Text style={styles.bulletText}>{l}</Text>
-            </View>
-          ))}
-          <Text style={styles.vs}>{g.vs}</Text>
-        </>
-      ) : (
-        <Pressable
-          onPress={() => {
-            haptic.select();
-            setMore(true);
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={t('How {sound} sounds, and how it differs', { sound: label.toLowerCase() })}
-          hitSlop={8}
-          style={styles.moreRow}
-        >
-          <Text style={[styles.moreText, { color: tone }]}>{t('How it sounds')}</Text>
-          <ChevronIcon color={tone} size={10} direction="down" />
-        </Pressable>
-      )}
-      {artists.length || watchable ? (
-        <View style={styles.cardBottom}>
-          <View style={styles.faces}>
-            {artists.map((a) => (
-              <Pressable
-                key={a.id}
-                onPress={() => {
-                  haptic.select();
-                  router.push({ pathname: '/artist/[id]', params: { id: a.id } });
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={`${a.name}, ${label.toLowerCase()}`}
-                hitSlop={4}
-              >
-                <ArtistAvatar artist={a} size={34} />
-              </Pressable>
-            ))}
-          </View>
-          {watchable ? (
-            <Pressable
-              onPress={() => {
-                haptic.tap();
-                router.navigate({ pathname: '/', params: { festival: soundFocus(tag) } });
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={t('Watch {sound} live sets in Discover', { sound: label.toLowerCase() })}
-              style={({ pressed }) => [styles.watch, { borderColor: withAlpha(tone, 0.5), backgroundColor: withAlpha(tone, 0.16) }, pressed && styles.pressed]}
-            >
-              <Text style={styles.watchText}>{t('Watch')}</Text>
-            </Pressable>
-          ) : null}
-        </View>
-      ) : null}
-    </View>
-  );
-}
 
 function Tip({ tip, last, onOpenMap }: { tip: SoundTip; last: boolean; onOpenMap: () => void }) {
   const go = () => {
@@ -256,7 +208,16 @@ const styles = StyleSheet.create({
   section: { gap: space.sm },
   h2: { ...type.headline, color: color.moon },
   sub: { ...type.caption, color: color.moonDim, marginBottom: space.xs },
-  card: { padding: space.lg, gap: space.sm, borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth, marginBottom: space.xs },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: space.md },
+  tile: { width: '48%', padding: space.lg, gap: 6, borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth, minHeight: 168 },
+  tileTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  pct: { ...type.headline, fontVariant: ['tabular-nums'] },
+  tileTitle: { ...type.headline },
+  tileFeel: { ...type.caption, color: color.moonDim },
+  tileKicker: { ...type.caption, fontSize: 11, color: color.moonFaint },
+  tileFaces: { flexDirection: 'row', marginTop: 'auto', paddingTop: space.sm },
+  face: { borderRadius: 14, borderWidth: 2, borderColor: color.night },
+  tipsHead: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg, borderRadius: radius.lg, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   kicker: { ...type.caption, fontSize: 10, letterSpacing: 1.2, fontWeight: '700' },
   cardTitle: { ...type.headline },

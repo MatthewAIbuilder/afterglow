@@ -108,6 +108,8 @@ describe('festival crews', () => {
     const crew = [...mockSocial.crews.values()][0];
     expect(crew).toMatchObject({ name: 'Sunrise gang', owner: me, members: [me] });
     expect(app.getByText('Crews are invite only. Invite friends in the app or send them the invite link, up to 12 people.')).toBeTruthy();
+    // Everyone's picks are one tap away, on their row under People.
+    await fireEvent.press(app.getByLabelText(/^You, started the crew, \d+ picks?$/));
     expect(app.getByText('A LITTLE SOUND · STEVE AOKI')).toBeTruthy();
     // Your stars are shared a moment later.
     await settle(2500);
@@ -153,6 +155,7 @@ describe('festival crews', () => {
     expect(mockSocial.agreed.has(`${crew.id}/${sam}`)).toBe(true);
     expect(app.getByText('Sets you share')).toBeTruthy();
     expect(app.getByLabelText(/^STEVE AOKI, \d+ percent match, Both of you$/)).toBeTruthy();
+    await fireEvent.press(app.getByLabelText(/^Maya, started the crew, \d+ picks?$/));
     expect(app.getByText('AARON HIBELL · STEVE AOKI')).toBeTruthy();
     // Not the owner: no rename, no remove.
     expect(app.queryByText('Rename')).toBeNull();
@@ -171,6 +174,7 @@ describe('festival crews', () => {
     await flush();
     const answer = (text: string) => jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons?: AlertButton[]) => buttons?.find((b) => b.text === text)?.onPress?.());
     const remove = answer('Remove');
+    await fireEvent.press(app.getByLabelText(/^Sam, \d+ picks?$/));
     await fireEvent.press(app.getByLabelText('Remove Sam from the crew'));
     await flush();
     expect(remove.mock.calls[0][0]).toBe('Remove Sam?');
