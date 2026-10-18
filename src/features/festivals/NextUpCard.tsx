@@ -13,7 +13,6 @@ import { PlayIcon } from '../discover/icons';
 import { usePrep } from '../prep/usePrep';
 import { goersLine } from '../social/going';
 import { useGoers } from '../social/useGoers';
-import { FestivalCover } from './FestivalCover';
 import { festivalLights } from './light';
 import { datesLine, whereWhen } from './format';
 import { distanceLabel } from './near';
@@ -23,16 +22,17 @@ import { nextRun } from './when';
 import { lovedLine, useFestivalSummary } from './useFestivalSummary';
 import { t, tn } from '../../i18n';
 
-const COVER = 170;
 
 /**
- * A festival you're going to, at the top of the Festivals tab (the next one
- * first, the rest beside it to swipe to): a big countdown (the last fortnight
- * as a row of lights, one a night), your top artists on its lineup, friends
- * who are going, and where your plan stands (must-sees, Get ready, set
- * times), with the two things you'd do: open your plan, or watch the lineup.
- * While it's on, it glows "Now" and offers Tonight. It wears the festival's
- * own light.
+ * A festival you're going to, at the top of the Festivals tab in the list
+ * view (the next one first, the rest beside it to swipe to; the grid view
+ * shows them as tiles instead). Compact (the user, 2026-10-18: the cards
+ * "take up the entire screen"): the name and the countdown (the last
+ * fortnight as a row of lights), one line of your top artists there with
+ * their match, one line of friends going, and where your plan stands
+ * (set times, must-sees, Get ready, which opens the checklist), with Watch.
+ * Tapping it opens the festival. While it's on, it glows "Now" and offers
+ * Tonight. It wears the festival's own light.
  */
 export function NextUpCard({ festival, first = true, style }: { festival: Festival; first?: boolean; style?: StyleProp<ViewStyle> }) {
   const s = useFestivalSummary(festival);
@@ -69,12 +69,11 @@ export function NextUpCard({ festival, first = true, style }: { festival: Festiv
       onAccessibilityAction={(e) => {
         if (e.nativeEvent.actionName === 'discover') watch();
       }}
-      style={({ pressed }) => [styles.card, style, { borderColor: tintA(light, 0.45) }, s.cover.length > 0 && styles.covered, live && styles.live, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.card, style, { borderColor: tintA(light, 0.45) }, live && styles.live, pressed && styles.pressed]}
     >
-      <FestivalCover photos={s.cover} style={styles.cover} />
       {/* Its light shining in from the top corner, the one before it low on the other side. */}
       <LinearGradient
-        colors={[tintA(light, s.cover.length > 0 ? 0.26 : 0.34), tintA(light, 0.03), tintA(dusk, 0.16)]}
+        colors={[tintA(light, 0.3), tintA(light, 0.03), tintA(dusk, 0.14)]}
         locations={[0, 0.55, 1]}
         start={{ x: 1, y: 0 }}
         end={{ x: 0, y: 1 }}
@@ -82,10 +81,19 @@ export function NextUpCard({ festival, first = true, style }: { festival: Festiv
         pointerEvents="none"
       />
 
-      <View style={styles.topRow}>
-        <View style={styles.kickerRow}>
-          {live ? <View style={styles.dot} /> : null}
-          <Text style={[styles.kicker, { color: light }, live && { color: '#FF7EB6' }]}>{live ? t('Happening now') : first ? t('Up next') : t('Also going')}</Text>
+      <View style={styles.head}>
+        <View style={styles.headText}>
+          <View style={styles.kickerRow}>
+            {live ? <View style={styles.dot} /> : null}
+            <Text style={[styles.kicker, { color: light }, live && { color: '#FF7EB6' }]}>{live ? t('Happening now') : first ? t('Up next') : t('Also going')}</Text>
+          </View>
+          <Text style={styles.name} numberOfLines={2}>
+            {festival.name}
+          </Text>
+          <Text style={styles.meta} numberOfLines={1}>
+            {whereWhen(festival)}
+            {s.away !== undefined ? ` · ${distanceLabel(s.away, s.units)}` : ''}
+          </Text>
         </View>
         {big ? (
           <View style={styles.count} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
@@ -95,12 +103,6 @@ export function NextUpCard({ festival, first = true, style }: { festival: Festiv
         ) : null}
       </View>
 
-      <Text style={styles.name}>{festival.name}</Text>
-      <Text style={styles.meta}>
-        {whereWhen(festival)}
-        {s.away !== undefined ? ` · ${distanceLabel(s.away, s.units)}` : ''}
-      </Text>
-
       {lights ? (
         <View style={styles.lights} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           {lights.map((lit, i) => (
@@ -109,90 +111,84 @@ export function NextUpCard({ festival, first = true, style }: { festival: Festiv
         </View>
       ) : null}
 
-      {top.length > 0 ? (
-        <View style={styles.topBlock}>
-          <Text style={styles.blockHead}>{t('Your top artists here')}</Text>
-          <View style={styles.topRow2}>
-            {top.map(({ artist, match }) => (
-              <Pressable
-                key={artist.id}
-                onPress={() => {
-                  haptic.select();
-                  router.push(`/artist/${artist.id}`);
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={t('{artist}, {n}% match', { artist: artist.name, n: match })}
-                style={({ pressed }) => [styles.topArtist, pressed && styles.pressed]}
-              >
-                <View style={[styles.topFace, { borderColor: tintA(light, 0.7) }]}>
-                  <ArtistAvatar artist={artist} size={56} />
-                </View>
-                <Text style={styles.topName} numberOfLines={1}>
-                  {artist.name}
-                </Text>
-                <Text style={[styles.topMatch, { color: light }]}>{t('{n}% match', { n: match })}</Text>
-              </Pressable>
-            ))}
-          </View>
+      {/* Your top artists there, with their match: one line. */}
+      <View style={styles.line}>
+        <View style={styles.faces}>
+          {(top.length ? top.map((x) => x.artist) : s.ranked.slice(0, 3)).map((a, i) => (
+            <View key={a.id} style={[styles.face, { marginLeft: i === 0 ? 0 : -8, zIndex: 10 - i }]}>
+              <ArtistAvatar artist={a} size={28} />
+            </View>
+          ))}
         </View>
-      ) : (
-        <View style={styles.factsRow}>
-          <View style={styles.faces}>
-            {s.ranked.slice(0, 5).map((a, i) => (
-              <View key={a.id} style={[styles.face, { marginLeft: i === 0 ? 0 : -10, zIndex: 10 - i }]}>
-                <ArtistAvatar artist={a} size={32} />
-              </View>
-            ))}
-          </View>
-        </View>
-      )}
+        <Text style={styles.lineText} numberOfLines={1}>
+          {top.length ? (
+            top.map(({ artist, match }, i) => (
+              <Text key={artist.id}>
+                {i > 0 ? <Text style={styles.sep}>{'  ·  '}</Text> : null}
+                {artist.name} <Text style={{ color: light }}>{t('{n}%', { n: match })}</Text>
+              </Text>
+            ))
+          ) : (
+            <Text style={styles.dim}>{facts}</Text>
+          )}
+        </Text>
+      </View>
 
       {goersText ? (
-        <View style={styles.goers}>
+        <View style={styles.line}>
           <View style={styles.faces}>
             {goerFaces.map((p, i) => (
-              <View key={p.uid} style={[styles.goerFace, { marginLeft: i === 0 ? 0 : -8, zIndex: 10 - i }]}>
-                <PersonAvatar name={p.displayName} url={p.avatarUrl} uid={p.uid} size={26} />
+              <View key={p.uid} style={[styles.face, { marginLeft: i === 0 ? 0 : -8, zIndex: 10 - i }]}>
+                <PersonAvatar name={p.displayName} url={p.avatarUrl} uid={p.uid} size={28} />
               </View>
             ))}
           </View>
-          <Text style={styles.goersText} numberOfLines={2}>
+          <Text style={styles.lineText} numberOfLines={1}>
             {goersText}
           </Text>
         </View>
       ) : null}
 
-      <View style={styles.chips}>
-        <Text style={[styles.chip, s.timesOut && { color: color.glow }]}>{facts}</Text>
-        {stars > 0 ? <Text style={styles.chip}>{tn(stars, '★ {n} must-see', '★ {n} must-sees')}</Text> : null}
-        {prep.total > 0 && !live ? (
-          <View style={styles.chipBox} accessibilityLabel={t('Get ready: {done} of {total} done', { done: prep.done, total: prep.total })}>
-            <Text style={styles.chipText}>{t('Get ready {done}/{total}', { done: prep.done, total: prep.total })}</Text>
-            <View style={styles.track}>
-              <View style={[styles.fill, { width: `${Math.round((prep.done / prep.total) * 100)}%`, backgroundColor: light }]} />
-            </View>
-          </View>
-        ) : null}
-      </View>
-
-      <View style={styles.actions}>
-        <Pressable
-          onPress={live ? () => router.push('/tonight') : open}
-          accessibilityRole="button"
-          accessibilityLabel={live ? t('Open Tonight') : t('Open your plan for {festival}', { festival: festival.name })}
-          style={({ pressed }) => [styles.primary, { backgroundColor: light }, pressed && styles.pressed]}
-        >
-          <Text style={styles.primaryText}>{live ? t('Tonight') : t('Your plan')}</Text>
-        </Pressable>
-        {s.reach.clips > 0 ? (
+      <View style={styles.footer}>
+        <View style={styles.chips}>
+          {top.length ? <Text style={[styles.chip, s.timesOut && { color: color.glow }]}>{s.timesOut ? t('Set times out') : t('Set times to come')}</Text> : null}
+          {stars > 0 ? <Text style={styles.chip}>{tn(stars, '★ {n} must-see', '★ {n} must-sees')}</Text> : null}
+          {prep.total > 0 && !live ? (
+            <Pressable
+              onPress={() => {
+                haptic.select();
+                router.push({ pathname: '/prep/[id]', params: { id: festival.id } });
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t('Get ready: {done} of {total} done', { done: prep.done, total: prep.total })}
+              hitSlop={6}
+              style={({ pressed }) => [styles.chipBox, pressed && styles.pressed]}
+            >
+              <Text style={styles.chipText}>{t('Get ready {done}/{total}', { done: prep.done, total: prep.total })}</Text>
+              <View style={styles.track}>
+                <View style={[styles.fill, { width: `${Math.round((prep.done / prep.total) * 100)}%`, backgroundColor: light }]} />
+              </View>
+            </Pressable>
+          ) : null}
+        </View>
+        {live ? (
+          <Pressable
+            onPress={() => router.push('/tonight')}
+            accessibilityRole="button"
+            accessibilityLabel={t('Open Tonight')}
+            style={({ pressed }) => [styles.small, { backgroundColor: light }, pressed && styles.pressed]}
+          >
+            <Text style={styles.smallDark}>{t('Tonight')}</Text>
+          </Pressable>
+        ) : s.reach.clips > 0 ? (
           <Pressable
             onPress={watch}
             accessibilityRole="button"
             accessibilityLabel={tn(s.reach.clips, 'Discover the {festival} lineup, {n} clip', 'Discover the {festival} lineup, {n} clips', { festival: festival.name })}
-            style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.small, styles.smallGlass, pressed && styles.pressed]}
           >
-            <PlayIcon color={color.moon} size={12} />
-            <Text style={styles.secondaryText}>{t('Watch · {n}', { n: s.reach.clips })}</Text>
+            <PlayIcon color={color.moon} size={10} />
+            <Text style={styles.smallText}>{s.reach.clips}</Text>
           </Pressable>
         ) : null}
       </View>
@@ -203,45 +199,42 @@ export function NextUpCard({ festival, first = true, style }: { festival: Festiv
 const styles = StyleSheet.create({
   card: {
     marginHorizontal: space.lg,
-    marginBottom: space.xl,
-    padding: space.xl,
-    borderRadius: radius.lg + 4,
+    marginBottom: space.lg,
+    padding: space.lg,
+    borderRadius: radius.lg,
     backgroundColor: color.glass,
     borderWidth: 1,
     overflow: 'hidden',
+    gap: space.md,
   },
-  covered: { paddingTop: COVER - space.xl * 2, backgroundColor: color.night },
   live: { borderColor: 'rgba(255,126,182,0.55)' },
-  cover: { position: 'absolute', top: 0, left: 0, right: 0, height: COVER },
   pressed: { opacity: 0.9, transform: [{ scale: 0.985 }] },
-  topRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
-  kickerRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF7EB6' },
-  kicker: { ...type.label, textTransform: 'uppercase', letterSpacing: 1.2 },
+  head: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
+  headText: { flex: 1, minWidth: 0 },
+  kickerRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#FF7EB6' },
+  kicker: { ...type.caption, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.2 },
+  name: { ...type.title, fontSize: 22, lineHeight: 27, color: color.moon },
+  meta: { ...type.caption, color: color.moonDim, marginTop: 2 },
   count: { alignItems: 'flex-end' },
-  countValue: { fontSize: 48, lineHeight: 52, fontWeight: '200', color: color.moon, fontVariant: ['tabular-nums'], letterSpacing: -1 },
+  countValue: { fontSize: 38, lineHeight: 42, fontWeight: '200', color: color.moon, fontVariant: ['tabular-nums'], letterSpacing: -1 },
   countUnit: { ...type.caption, color: color.moonDim, marginTop: -2 },
-  name: { ...type.largeTitle, fontSize: 30, lineHeight: 35, color: color.moon, marginTop: space.sm },
-  meta: { ...type.body, color: color.moonDim, marginTop: 2 },
-  lights: { flexDirection: 'row', gap: 5, marginTop: space.md },
-  light: { flex: 1, height: 4, borderRadius: 2, shadowOpacity: 0.8, shadowRadius: 4, shadowOffset: { width: 0, height: 0 } },
+  lights: { flexDirection: 'row', gap: 4 },
+  light: { flex: 1, height: 3, borderRadius: 2, shadowOpacity: 0.8, shadowRadius: 4, shadowOffset: { width: 0, height: 0 } },
   lightDark: { backgroundColor: color.hairline },
-  topBlock: { marginTop: space.lg },
-  blockHead: { ...type.caption, color: color.moonDim, textTransform: 'uppercase', letterSpacing: 1 },
-  topRow2: { flexDirection: 'row', gap: space.md, marginTop: space.sm },
-  topArtist: { flex: 1, alignItems: 'center', minWidth: 0 },
-  topFace: { borderRadius: 32, borderWidth: 2, padding: 2 },
-  topName: { ...type.label, color: color.moon, marginTop: 6, textAlign: 'center', alignSelf: 'stretch' },
-  topMatch: { ...type.caption, marginTop: 1, fontVariant: ['tabular-nums'] },
-  goers: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: space.lg },
-  goerFace: { borderRadius: 15, borderWidth: 2, borderColor: color.night },
-  goersText: { ...type.label, color: color.moon, flex: 1 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.lg },
+  line: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  faces: { flexDirection: 'row' },
+  face: { borderRadius: 16, borderWidth: 2, borderColor: color.night },
+  lineText: { ...type.label, color: color.moon, flex: 1 },
+  sep: { color: color.moonFaint },
+  dim: { color: color.moonDim },
+  footer: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  chips: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: {
     ...type.caption,
     color: color.moon,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
     borderRadius: radius.pill,
     overflow: 'hidden',
     backgroundColor: color.glass,
@@ -249,37 +242,21 @@ const styles = StyleSheet.create({
     borderColor: color.hairline,
   },
   chipBox: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
     borderRadius: radius.pill,
     backgroundColor: color.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: color.hairline,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   chipText: { ...type.caption, color: color.moon },
-  track: { width: 36, height: 4, borderRadius: 2, backgroundColor: color.hairline, overflow: 'hidden' },
-  fill: { height: 4, borderRadius: 2 },
-  factsRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.lg },
-  faces: { flexDirection: 'row' },
-  face: { borderRadius: 18, borderWidth: 2, borderColor: color.night },
-  facts: { ...type.label, color: color.moon, flex: 1 },
-  actions: { flexDirection: 'row', gap: space.sm, marginTop: space.lg },
-  primary: { flex: 1, minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill },
-  primaryText: { ...type.headline, color: color.night },
-  secondary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    minHeight: 46,
-    paddingHorizontal: space.lg,
-    borderRadius: radius.pill,
-    backgroundColor: color.glass,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: color.hairline,
-  },
-  secondaryText: { ...type.headline, color: color.moon },
+  track: { width: 28, height: 3, borderRadius: 2, backgroundColor: color.hairline, overflow: 'hidden' },
+  fill: { height: 3, borderRadius: 2 },
+  small: { flexDirection: 'row', alignItems: 'center', gap: 5, minHeight: 32, paddingHorizontal: space.md, borderRadius: radius.pill },
+  smallGlass: { backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  smallText: { ...type.label, color: color.moon, fontVariant: ['tabular-nums'] },
+  smallDark: { ...type.label, color: color.night },
 });

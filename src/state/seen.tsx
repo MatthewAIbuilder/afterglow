@@ -14,19 +14,31 @@ type Ctx = {
   markSeen: (clipId: string) => void;
   /** Forget the history (starting your sound over), so the feed feels new again. */
   clear: () => void;
+  /** How many times the app has opened on this phone (1 the first time), so each opening gets its own shuffle. */
+  session: number;
 };
 
 const STORAGE_KEY = 'seen.v1';
+const SESSION_KEY = 'feedSession.v1';
 
 const SeenContext = createContext<Ctx | null>(null);
 
 export function SeenProvider({ children }: { children: ReactNode }) {
   const [seen, setSeen] = useState<SeenHistory>({});
   const [hydrated, setHydrated] = useState(false);
+  const [session, setSession] = useState(1);
   const loaded = useRef(false);
 
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY)
+    // This opening of the app: one more than last time.
+    const counted = AsyncStorage.getItem(SESSION_KEY)
+      .then((raw) => {
+        const next = (Number(raw) > 0 ? Math.floor(Number(raw)) : 0) + 1;
+        setSession(next);
+        return AsyncStorage.setItem(SESSION_KEY, String(next));
+      })
+      .catch(() => {});
+    const read = AsyncStorage.getItem(STORAGE_KEY)
       .then((raw) => {
         if (!raw) return;
         const parsed = JSON.parse(raw);
@@ -35,11 +47,11 @@ export function SeenProvider({ children }: { children: ReactNode }) {
         for (const [id, at] of Object.entries(parsed)) if (typeof at === 'number' && Number.isFinite(at)) clean[id] = at;
         setSeen((current) => ({ ...clean, ...current }));
       })
-      .catch(() => {})
-      .finally(() => {
-        loaded.current = true;
-        setHydrated(true);
-      });
+      .catch(() => {});
+    void Promise.all([counted, read]).finally(() => {
+      loaded.current = true;
+      setHydrated(true);
+    });
   }, []);
 
   useEffect(() => {
@@ -49,7 +61,7 @@ export function SeenProvider({ children }: { children: ReactNode }) {
 
   const mark = useCallback((clipId: string) => setSeen((h) => markSeen(h, clipId, Date.now())), []);
 
-  const value = useMemo<Ctx>(() => ({ seen, hydrated, markSeen: mark, clear: () => setSeen({}) }), [seen, hydrated, mark]);
+  const value = useMemo<Ctx>(() => ({ seen, hydrated, markSeen: mark, clear: () => setSeen({}), session }), [seen, hydrated, mark, session]);
   return <SeenContext.Provider value={value}>{children}</SeenContext.Provider>;
 }
 

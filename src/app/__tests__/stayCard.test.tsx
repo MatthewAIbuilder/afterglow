@@ -30,6 +30,9 @@ describe('where to stay', () => {
     await showTab(app, 'Info');
     await flush();
     expect(app.getByText('Where to stay')).toBeTruthy();
+    // One row until you open it (the map is big).
+    expect(app.queryByText(/^3 nights near /)).toBeNull();
+    await fireEvent.press(app.getByLabelText(/^Places to stay near .*Opens the map\.$/));
     expect(app.getByText(/^3 nights near /)).toBeTruthy();
     const map = () => app.getByTestId('stay-map').props as { source: { uri: string }; onShouldStartLoadWithRequest: (r: { url: string; isTopFrame?: boolean }) => boolean };
     expect(map().source.uri.startsWith('https://www.stay22.com/embed/gm?')).toBe(true);

@@ -36,7 +36,7 @@ export function useRankedFeed(
 ): FeedItem[] | null {
   // What you just did reaches the ranking a moment later (deferred), so a swipe never waits for a re-rank.
   const { reactions: reactionsNow, hydrated: reactionsReady } = useReactions();
-  const { seen: seenNow, hydrated: seenReady } = useSeen();
+  const { seen: seenNow, hydrated: seenReady, session } = useSeen();
   const reactions = useDeferredValue(reactionsNow);
   const seen = useDeferredValue(seenNow);
   const { taste, informed, similarity } = useTaste();
@@ -101,6 +101,8 @@ export function useRankedFeed(
       reactions,
       seen,
       now: Object.values(seen).reduce((a, b) => Math.max(a, b), sessionStart),
+      // Each time the app opens, near-equal matches come in a different order (the very first time: your best matches, in order).
+      seed: session > 1 ? session : undefined,
       // Same focus: keep what's on screen and next, even when community clips arrive later. New focus: start over.
       keep,
     };
