@@ -72,7 +72,7 @@ describe('the festivals you’re going to, at the top of Festivals', () => {
     expect(app.getByLabelText(/^Up next: EDC Orlando 2026, .*Maya is going/)).toBeTruthy();
     expect(app.getByLabelText(/^Up next: Cyclops Cove 4, /)).toBeTruthy();
     expect(app.getByText('Up next')).toBeTruthy();
-    expect(app.getAllByText('Your top artists here').length).toBeGreaterThan(0);
+    expect(app.getByLabelText(/^Up next: EDC Orlando 2026, .*Your top artists here: /)).toBeTruthy();
     expect(app.getByText('Maya is going')).toBeTruthy();
   });
 
@@ -89,3 +89,28 @@ describe('the festivals you’re going to, at the top of Festivals', () => {
     expect((await s().profileOf(me))?.festivals).toEqual(['edc-orlando-26', 'cyclops-cove-4']);
   });
 });
+
+describe('your festival’s page and the grid', () => {
+  it('Get ready leads For you; Info comes in groups, with the places to stay folded into one row', async () => {
+    jest.useFakeTimers({ now: new Date(2026, 9, 15, 12) });
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['edc-orlando-26']));
+    const app = await renderApp('/festival/edc-orlando-26');
+    await flush();
+    expect(app.getByLabelText(/^Get ready for EDC Orlando 2026\. 0 of \d+ done\. Opens the checklist\.$/)).toBeTruthy();
+    await fireEvent.press(app.getByText('Info'));
+    await flush();
+    for (const group of ['Your trip', 'Tickets and links', 'Where to stay', 'More']) expect(app.getByText(group)).toBeTruthy();
+    expect(app.getByText('Places to stay')).toBeTruthy();
+  });
+
+  it('the grid shows the festivals you’re going to as tiles too', async () => {
+    jest.useFakeTimers({ now: new Date(2026, 9, 15, 12) });
+    await AsyncStorage.setItem('going.v1', JSON.stringify(['edc-orlando-26', 'cyclops-cove-4']));
+    await AsyncStorage.setItem('festivalsView.v1', 'grid');
+    const app = await renderApp('/festivals');
+    await flush();
+    expect(app.queryByLabelText(/^Up next: /)).toBeNull();
+    expect(app.getByText('Going')).toBeTruthy();
+  });
+});
+

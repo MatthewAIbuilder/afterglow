@@ -88,6 +88,8 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above, be
   const { taste } = useTaste();
   const [order, setOrder] = useState<Order>('match');
   const [query, setQuery] = useState('');
+  // Info: the places to stay (a big map) open only when you ask.
+  const [stayOpen, setStayOpen] = useState(false);
   const { ratings } = useRatings();
   // Acts added to this lineup lately (a catalogue update), marked "Just added".
   const added = useLineupNews().justAdded(festival.id);
@@ -225,6 +227,12 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above, be
 
         {/* While it's on: what people are filming there right now. */}
         {tab === 'plan' && onNow ? <LiveCrowdRow festival={festival} /> : null}
+        {/* Going: your checklist first, where it's found at a glance (also on Info, under Your trip). */}
+        {tab === 'plan' && isGoing(whole.id) && soon !== t('Over') ? (
+          <View style={[styles.pad, styles.readyTop]}>
+            <GetReadyCard festival={festival} />
+          </View>
+        ) : null}
         {tab === 'plan' ? <YourFestival festival={festival} /> : null}
 
         {tab === 'lineup' ? (
@@ -307,22 +315,55 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above, be
 
         {tab === 'info' ? (
           <View style={styles.infoTab}>
+            {/* Your trip: what you do before you go, your checklist first. */}
+            {soon !== t('Over') ? (
+              <View style={styles.pad}>
+                <Text style={styles.group}>{t('Your trip')}</Text>
+                {isGoing(whole.id) ? <GetReadyCard festival={festival} /> : null}
+                <CrewCard festival={whole} />
+                {isGoing(whole.id) ? (
+                  <View style={styles.infoPills}>
+                    <CalendarPill festival={festival} />
+                  </View>
+                ) : null}
+              </View>
+            ) : (
+              <View style={styles.pad}>
+                <CrewCard festival={whole} />
+              </View>
+            )}
+            {/* Tickets and the festival's own site, when the catalogue has them. */}
             <View style={styles.pad}>
-              {/* Tickets and the festival's own site, when the catalogue has them. */}
+              <Text style={styles.group}>{t('Tickets and links')}</Text>
               <OfficialLinks festival={whole} over={soon === t('Over')} />
-              {/* Where to stay: live places near the venue for its nights, with prices. */}
-              {soon !== t('Over') ? <StayCard trip={whole} name={festival.name} crew={crewHere ? { size: crewHere.members.length } : undefined} /> : null}
-              {/* Once you're going: the days (your weekend) into your calendar, and your checklist. */}
-              {isGoing(whole.id) && soon !== t('Over') ? (
-                <View style={styles.infoPills}>
-                  <CalendarPill festival={festival} />
-                </View>
-              ) : null}
-              {isGoing(whole.id) && soon !== t('Over') ? <GetReadyCard festival={festival} /> : null}
-              {/* A simpler app for the day itself: test it any day. */}
-              {soon !== t('Over') ? <TryFestivalMode festival={whole} /> : null}
-              {/* Your crews for this festival, or start one. */}
-              <CrewCard festival={whole} />
+            </View>
+            {/* Where to stay: one row, opening the places near the venue (a big map) only when you want them. */}
+            {soon !== t('Over') ? (
+              <View style={styles.pad}>
+                <Text style={styles.group}>{t('Where to stay')}</Text>
+                {stayOpen ? (
+                  <StayCard trip={whole} name={festival.name} crew={crewHere ? { size: crewHere.members.length } : undefined} />
+                ) : (
+                  <Pressable
+                    onPress={() => {
+                      haptic.select();
+                      setStayOpen(true);
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('Places to stay near {place}. Opens the map.', { place: whole.location })}
+                    style={({ pressed }) => [styles.infoCard, pressed && { opacity: 0.7 }]}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.infoRowTitle}>{t('Places to stay')}</Text>
+                      <Text style={styles.infoRowSub}>{t('Near {place}, for the festival’s nights', { place: whole.location })}</Text>
+                    </View>
+                    <ChevronIcon color={color.moonFaint} size={12} />
+                  </Pressable>
+                )}
+              </View>
+            ) : null}
+            <View style={styles.pad}>
+              <Text style={styles.group}>{t('More')}</Text>
             </View>
             {festival.posterImageUrl ? (
               <Pressable
@@ -387,6 +428,12 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above, be
                 </View>
                 <ChevronIcon color={color.moonFaint} size={12} />
               </Pressable>
+            ) : null}
+            {/* A simpler app for the day itself: test it any day. */}
+            {soon !== t('Over') ? (
+              <View style={styles.pad}>
+                <TryFestivalMode festival={whole} />
+              </View>
             ) : null}
             {/* Festivals from the nightly EDMTrain feed credit it, as its terms ask. */}
             {festival.source ? (
@@ -577,7 +624,29 @@ const styles = StyleSheet.create({
   lineupCount: { ...type.label, color: color.moonDim, flex: 1 },
   infoTab: { paddingTop: space.sm },
   infoPills: { flexDirection: 'row', marginTop: space.sm },
-  infoRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.xl, paddingVertical: space.md },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    paddingVertical: space.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: color.hairline,
+  },
+  // A heading over each group on Info: Your trip, Tickets and links, Where to stay, More.
+  group: { ...type.caption, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 1.2, marginTop: space.xl, marginBottom: space.xs },
+  infoCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    marginTop: space.sm,
+    padding: space.lg,
+    borderRadius: radius.md,
+    backgroundColor: color.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+    borderTopColor: color.rim,
+  },
+  readyTop: { marginBottom: space.sm },
   infoRowTitle: { ...type.headline, fontSize: 16, color: color.moon },
   infoRowSub: { ...type.caption, color: color.moonDim, marginTop: 2 },
   root: { flex: 1, backgroundColor: color.night },
@@ -605,7 +674,7 @@ const styles = StyleSheet.create({
   discoverCount: { ...type.caption, color: color.moonDim, fontVariant: ['tabular-nums'] },
   posterWrap: {
     marginHorizontal: space.lg,
-    marginTop: space.xl,
+    marginTop: space.sm,
     borderRadius: radius.lg,
     overflow: 'hidden',
     aspectRatio: 4 / 5,

@@ -387,4 +387,11 @@ export const es_festivalPage: Dictionary = {
   'Ask the crew': 'Preguntar al grupo',
   'For {n} of you · near {place}': 'Para {n} · cerca de {place}',
   'Near {place}': 'Cerca de {place}',
+  // Info, in groups
+  'Your trip': 'Tu viaje',
+  'Tickets and links': 'Entradas y enlaces',
+  'Places to stay near {place}. Opens the map.': 'Alojamiento cerca de {place}. Abre el mapa.',
+  'Near {place}, for the festival’s nights': 'Cerca de {place}, para las noches del festival',
+  More: 'Más',
+  '{n}%': '{n} %',
 };
