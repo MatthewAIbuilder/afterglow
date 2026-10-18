@@ -195,6 +195,8 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     crews.set(id, { ...c, members, owner: c.owner === uid ? members[0] : c.owner });
   };
 
+  /** Push addresses registered: uid -> this phone's token and language. */
+  const pushes = new Map<string, { token: string; lang: string }>();
   const service: SocialService = {
     availability: () => (opts.available === false ? { ok: false, reason: 'not-set-up' } : { ok: true }),
     onAuthChange(l) {
@@ -1042,6 +1044,13 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         chatWatchers.delete(w);
       };
     },
+    async registerPush(token, lang) {
+      pushes.set(me().uid, { token, lang });
+    },
+    async unregisterPush(token) {
+      const uid = me().uid;
+      if (pushes.get(uid)?.token === token) pushes.delete(uid);
+    },
     async markCrewChatRead(crewId) {
       if (network.down) throw new SocialError('network');
       inRoom(crewId);
@@ -1518,5 +1527,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     reads.set(`${crewId}/${uid}`, now());
     readsChanged(crewId);
   };
-  return { service, gardens, glows, gardenBackups, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, orgs, orgMembers, orgRequests, orgViews, orgPosts, currentUser: () => current, ticketTaps };
+  return { service, gardens, glows, gardenBackups, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, orgs, orgMembers, orgRequests, orgViews, orgPosts, currentUser: () => current, ticketTaps, pushes };
 }

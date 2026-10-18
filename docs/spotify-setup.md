@@ -135,10 +135,14 @@ The alternative Spotify recommends is a **universal link**: an https address on 
 5. In the Spotify dashboard, use `https://<your domain>/music-auth` as the Redirect URI.
 6. Rebuild (step 3.4). The app then declares that domain automatically (`app.config.ts`), and signs in with iOS's universal-link sign-in (iOS 17.4 or later).
 
-## Later: TestFlight and more testers
+## On TestFlight (the quick way, 2026-10-18)
 
-- Add the Client ID to EAS for release builds (EAS doesn't read your `.env` for them):
-  `npx eas-cli@latest env:create --name EXPO_PUBLIC_SPOTIFY_CLIENT_ID --value <client id> --environment production --visibility plaintext`
-  (and `--environment preview` for internal test builds made with `--profile preview`).
-- Build and send to TestFlight: `npx eas-cli@latest build --profile production --platform ios`, then `npx eas-cli@latest submit --platform ios`.
-- Spotify's development mode stops at 5 listed accounts. Anyone else needs Spotify's **extended quota**, which Spotify reviews and grants selectively. Check its current criteria on developer.spotify.com well before a public launch.
+The TestFlight app is a real build, so Spotify works there with no development build. All it needs is the Client ID:
+
+1. Step 1 above (the Spotify app, with the redirect `afterglow://music-auth`), and add your Spotify email (and up to four testers') under **User Management**.
+2. Give the Client ID to Expo for release builds and updates (once, on your PC):
+   `npx eas-cli@latest env:create --name EXPO_PUBLIC_SPOTIFY_CLIENT_ID --value <client id> --environment production --visibility plaintext`
+   (and `--environment preview` for the Android link build).
+3. The next instant update (any change merged to `main`) carries it: no new build needed.
+
+**The big limit:** Spotify's development mode allows only **5 listed accounts**. Anyone else sees Spotify refuse the sign-in. Opening it to everyone needs Spotify's **extended quota**, which Spotify reviews and grants selectively (as of 2025 only to established businesses). For EDC, Spotify is for you and up to four testers; Apple Music has no such limit.

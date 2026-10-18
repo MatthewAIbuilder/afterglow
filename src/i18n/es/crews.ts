@@ -399,4 +399,14 @@ export const es_crews: Dictionary = {
   'Split: {names} to {artist} at {time}': 'Por separado: {names} a {artist} a las {time}',
   '{names} split off': '{names} por separado',
   'Our route at {festival}': 'Nuestra ruta en {festival}',
+  // Push notifications from your crew and chats
+  '{text} (+{n} more)': '{text} (+{n} más)',
+  '{name}: {text}': '{name}: {text}',
+  '{name}: come find me': '{name}: ven a buscarme',
+  '{name} can’t find the crew': '{name} no encuentra al grupo',
+  '{name} sent a video': '{name} envió un video',
+  '{name} sent a photo': '{name} envió una foto',
+  '{name} is at {stage}': '{name} está en {stage}',
+  '{name} checked in': '{name} dijo dónde está',
+  '{name} set the meeting spot: {text}': '{name} fijó el punto de encuentro: {text}',
 };

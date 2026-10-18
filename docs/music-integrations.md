@@ -79,7 +79,7 @@ Rules the code follows:
 | Normalising, merging, taste integration, privacy | Fully tested with fixtures | Yes | Nothing |
 | Music connections screen, My Sound notes, states | Tested with test doubles | Yes (shows "not available" until set up) | Nothing |
 | Spotify sign-in and sync | Tested against recorded response shapes, PKCE and state checks | No: shows "Needs the full version" | Spotify Client ID, a development build (see spotify-setup.md) |
-| Apple Music sign-in and sync | API reading tested with fixtures | No (Expo Go has no MusicKit) | MusicKit module in a development build, developer-token service |
+| Apple Music sign-in and sync | API reading tested with fixtures | No (Expo Go has no MusicKit) | The app's own build (1.0.1 on), MusicKit switched on for the app's identifier |
 
 Nothing in the app pretends to connect: without setup, both services say "Not available in this version of Afterglow yet." or "Needs the full version of Afterglow."
 
@@ -114,12 +114,13 @@ Spotify's rules this relies on (checked 2026-09-29 against sources quoting Spoti
 
 If Spotify stops offering a part to an app, that part becomes a gap ("Spotify didn't share your top artists this time…") and the rest still syncs. If every part is refused (typically an account missing from User Management), the sync fails as "Spotify didn't allow access".
 
-### Apple Music, one-time setup
+### Apple Music
 
-1. In the Apple Developer account: Certificates, Identifiers & Profiles > Keys > create a key with MusicKit. Download the .p8 once; note the Key ID and Team ID. Enable MusicKit for the app's identifier.
-2. Host a tiny token service (any serverless function) that signs a developer token (ES256 JWT, `iss` = Team ID, `kid` = Key ID, up to 6 months) and returns `{ "token": "..." }`. Put its https link in `EXPO_PUBLIC_APPLE_MUSIC_TOKEN_URL`. This repo deliberately contains no backend.
-3. Add a MusicKit native module (an Expo module wrapping `MusicAuthorization.request()` and `MusicUserTokenProvider`, or a maintained community package) and implement `AppleMusicAuthorizer` from `src/features/music/apple/musicKit.ts` with it. Pass it instead of `noMusicKit` in `src/features/music/services.ts`. Add `NSAppleMusicUsageDescription` to `ios.infoPlist` in app.json, e.g. "Afterglow reads your library to learn which artists you love."
-4. Build a development build and test on an iPhone with an Apple Music subscription.
+Built in version 1.0.1 (2026-10-18). The native part is a small local Expo module, `modules/afterglow-musickit` (Swift, autolinked from `modules/`): `developerToken()` asks MusicKit for the app's own developer token (`DefaultMusicTokenProvider`, iOS 16+), and `authorize(developerToken)` shows Apple's permission prompt (`MusicAuthorization.request()`) and returns the Music User Token (`MusicUserTokenProvider`). `apple/nativeMusicKit.ts` wraps it (only in the app's own iPhone builds; Expo Go and the website fall back to `noMusicKit`). Because MusicKit makes the developer token itself, **no token service, key or secret is needed**; `EXPO_PUBLIC_APPLE_MUSIC_TOKEN_URL` still works and wins if it's ever set. `app.json` has `NSAppleMusicUsageDescription`.
+
+**One-time setup (the user, 2 minutes):** developer.apple.com → Certificates, Identifiers & Profiles → **Identifiers** → `app.afterglowmusic` → **App Services** tab → tick **MusicKit** → Save. Without it, MusicKit gives no developer token and Connect says it couldn't reach Apple Music.
+
+Test on an iPhone with an Apple Music subscription: Profile → Music connections → Apple Music → Connect → Apple's prompt → Allow → it syncs.
 
 Apple's API has no list of favourite artists, so Apple Music reads library songs, library artists (for catalogue ids and genres), heavy rotation and recently played; `followed` stays unknown.
 

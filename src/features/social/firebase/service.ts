@@ -23,6 +23,7 @@ import { cleanDecor } from '../../sprouts/decor';
 import { cleanNote, cleanPublicKandi, cleanWord, isCharm, isPattern, KANDI_ID, kandiFrom, PUBLIC_KANDI_MAX } from '../../kandi/kandi';
 import { cleanArtistName } from '../../../data/extraArtists';
 import { cutVideoPart } from '../../memories/cutPart';
+import { cleanPushAddress, PUSH_ENDPOINT, pushMessages, updatePushKind, withToken, type PushAddress, type PushEvent } from '../../notifications/push';
 import { profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc, orgRequestFromDoc, orgDayFromDoc, orgPostFromDoc } from './mapping';
 
 
@@ -202,6 +203,78 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
    * The whole crew goes: what's in it first, as well as it can (a part the
    * database won't let go of never stops the crew ending), then the crew.
    */
+  // --- Push notifications (features/notifications/push.ts): addresses kept in each room, sent by the sender's phone.
+  const pushNames = new Map<string, string>();
+  /** Your name as people see it, for the notifications you set off. */
+  async function myPushName(): Promise<string> {
+    const uid = me().uid;
+    const known = pushNames.get(uid);
+    if (known) return known;
+    const p = profileFromDoc(uid, (await getDoc(doc(fb().db, 'profiles', uid))).data());
+    const name = p?.displayName?.trim() || (p?.handle ? `@${p.handle}` : 'Someone');
+    pushNames.set(uid, name);
+    return name;
+  }
+  /** Everyone else's push addresses in a crew or 1-to-1 chat (only current members, when known). */
+  async function roomPushAddresses(roomId: string, members?: readonly string[]): Promise<PushAddress[]> {
+    const snap = await getDocs(collection(fb().db, ...room(roomId), 'push'));
+    const mine = me().uid;
+    return snap.docs
+      .filter((d) => d.id !== mine && (!members || members.includes(d.id)))
+      .map((d) => cleanPushAddress(d.data()))
+      .filter((a): a is PushAddress => !!a);
+  }
+  async function personPushAddress(uid: string): Promise<PushAddress[]> {
+    const a = cleanPushAddress((await getDoc(doc(fb().db, 'pushTokens', uid))).data());
+    return a ? [a] : [];
+  }
+  /** Hand the notifications to Expo, without waiting: a push that doesn't go never stops what was sent. */
+  function sendPush(addresses: () => Promise<PushAddress[]>, event: () => Promise<PushEvent>, href: string) {
+    void (async () => {
+      const to = await addresses();
+      if (!to.length) return;
+      for (const m of pushMessages(to, await event(), href)) {
+        await fetch(PUSH_ENDPOINT, { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify(m) }).catch(() => {});
+      }
+    })().catch(() => {});
+  }
+  /** Take this account's push address out of a room (leaving, or being removed). */
+  const forgetRoomPush = (crewId: string, uid: string) => deleteDoc(doc(fb().db, 'crews', crewId, 'push', uid)).catch(() => {});
+  /**
+   * This phone's address into (with a language) or out of (without) every place someone may notify you
+   * from: your own record, and each crew and 1-to-1 chat you're in. Unchanged records aren't written.
+   */
+  async function updatePushRecords(token: string, lang: 'en' | 'es' | undefined) {
+    const user = me();
+    const { db } = fb();
+    const [crews, dms] = await Promise.all([
+      getDocs(query(collection(db, 'crews'), where('members', 'array-contains', user.uid), limit(50))).catch(() => null),
+      getDocs(query(collection(db, 'dms'), where('members', 'array-contains', user.uid), limit(200))).catch(() => null),
+    ]);
+    const places = [
+      doc(db, 'pushTokens', user.uid),
+      ...(crews?.docs ?? []).map((d) => doc(db, 'crews', d.id, 'push', user.uid)),
+      ...(dms?.docs ?? []).map((d) => doc(db, 'dms', d.id, 'push', user.uid)),
+    ];
+    await Promise.all(
+      places.map((ref_) =>
+        (async () => {
+          const had = cleanPushAddress((await getDoc(ref_).catch(() => null))?.data());
+          const was = had?.tokens ?? [];
+          if (lang) {
+            const tokens = withToken(was, token);
+            if (had && had.lang === lang && tokens.join() === was.join()) return;
+            await setDoc(ref_, { tokens, lang, at: serverTimestamp() });
+          } else {
+            const tokens = was.filter((x) => x !== token);
+            if (tokens.length === was.length) return;
+            await (tokens.length ? setDoc(ref_, { tokens, lang: had?.lang ?? 'en', at: serverTimestamp() }) : deleteDoc(ref_));
+          }
+        })().catch(() => {}),
+      ),
+    );
+  }
+
   async function endWholeCrew(id: string) {
     const { db } = fb();
     await removeUpdates(id).catch(() => {});
@@ -212,6 +285,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     for (const d of reads?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
     await deleteDoc(doc(db, 'crews', id, 'meta', 'meet')).catch(() => {});
     await deleteDoc(doc(db, 'crews', id, 'meta', 'invite')).catch(() => {});
+    const push = await getDocs(collection(db, 'crews', id, 'push')).catch(() => null);
+    for (const d of push?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
     const joins = await getDocs(collection(db, 'crews', id, 'joins')).catch(() => null);
     for (const d of joins?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
     await deleteDoc(doc(db, 'crews', id));
@@ -264,7 +339,9 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           const said = await getDocs(query(collection(r.ref, 'chat'), where('uid', '==', user.uid), limit(500))).catch(() => null);
           for (const d of said?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
           await deleteDoc(doc(r.ref, 'reads', user.uid)).catch(() => {});
+          await deleteDoc(doc(r.ref, 'push', user.uid)).catch(() => {});
         }
+        await deleteDoc(doc(db, 'pushTokens', user.uid)).catch(() => {});
         // Follows and likes either way.
         const snaps = await Promise.all([
           getDocs(query(collection(db, 'follows'), where('from', '==', user.uid))),
@@ -781,6 +858,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         // Every reply is kept (a second one never replaces the first); `reply` stays the latest for older apps.
         const replies = [...(was?.replies ?? []).map((r) => ({ text: r.text, ...(r.at ? { at: r.at } : {}) })), { text, at }].slice(-SUPPORT_REPLIES_MAX);
         await updateDoc(ref_, { reply: text, repliedAt: at, replies, status: 'answered' });
+        if (was?.uid) sendPush(() => personPushAddress(was.uid), async () => ({ kind: 'support', text }), '/support');
       }),
     setSupportStatus: (id, status) => guard(async () => updateDoc(doc(fb().db, 'support', id), { status })),
     reports: (max) =>
@@ -1287,6 +1365,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           to: uid,
           createdAt: serverTimestamp(),
         });
+        sendPush(() => personPushAddress(uid), async () => ({ kind: 'invite', from: await myPushName(), room: c.name }), '/together');
       }),
     crewInvites: (max) =>
       guard(async () => {
@@ -1808,7 +1887,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           await endWholeCrew(id);
           return;
         }
-        // Your updates, messages and picks go with you.
+        // Your updates, messages and picks go with you, and the crew's notifications stop.
+        await forgetRoomPush(id, user.uid);
         await removeUpdates(id, user.uid).catch(() => {});
         await removeChat(id, user.uid).catch(() => {});
         await deleteDoc(doc(db, 'crews', id, 'reads', user.uid)).catch(() => {});
@@ -1839,6 +1919,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const crewRef = doc(db, 'crews', id);
         const c = crewFromDoc(id, (await getDoc(crewRef)).data());
         if (!c) throw new SocialError('not-found');
+        await forgetRoomPush(id, uid);
         await removeUpdates(id, uid).catch(() => {});
         await removeChat(id, uid).catch(() => {});
         await deleteDoc(doc(db, 'crews', id, 'reads', uid)).catch(() => {});
@@ -1922,6 +2003,17 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           throw e;
         }
         onProgress?.(1);
+        sendPush(
+          async () => {
+            const c = crewFromDoc(crewId, (await getDoc(doc(db, 'crews', crewId))).data());
+            return c ? roomPushAddresses(crewId, c.members) : [];
+          },
+          async () => {
+            const c = crewFromDoc(crewId, (await getDoc(doc(db, 'crews', crewId))).data());
+            return { kind: 'update', from: await myPushName(), room: c?.name ?? 'Afterglow', update: updatePushKind(input), ...(input.stage ? { stage: input.stage } : {}), ...(input.note ? { note: input.note } : {}) };
+          },
+          `/crew/${crewId}`,
+        );
         return crewUpdateFromDoc(crewId, input.id, { ...data, sentAt: Date.now() })!;
       }),
     crewUpdates: (crewId, sinceMs, max) =>
@@ -1942,8 +2034,21 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         // One write for all of them: the least a weak connection has to carry.
         const batch = writeBatch(db);
         for (const i of ready) batch.set(doc(db, ...room(crewId), 'chat', i.id), { uid: user.uid, text: i.text, atMs: i.atMs, sentAt: serverTimestamp() });
+        // Everyone else in the room hears about what went through (the last message, and how many more).
+        const tell = (sent: readonly string[]) => {
+          const went = ready.filter((i) => sent.includes(i.id));
+          const last = went[went.length - 1];
+          if (!last) return;
+          const crew = isDirectRoom(crewId) ? undefined : getDoc(doc(db, 'crews', crewId)).then((d) => crewFromDoc(crewId, d.data()));
+          sendPush(
+            async () => roomPushAddresses(crewId, (await crew)?.members),
+            async () => ({ kind: 'chat', from: await myPushName(), ...(crew ? { room: (await crew)?.name ?? 'Afterglow' } : {}), text: last.text, more: went.length - 1 }),
+            `/crew-chat/${crewId}`,
+          );
+        };
         try {
           await withTimeout(batch.commit(), CHAT_SEND_TIMEOUT_MS);
+          tell(ready.map((i) => i.id));
           return ready.map((i) => i.id);
         } catch (e) {
           if ((e as { code?: string })?.code !== 'permission-denied') throw e;
@@ -1957,7 +2062,11 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
             const again = writeBatch(db);
             for (const i of rest) again.set(doc(db, ...room(crewId), 'chat', i.id), { uid: user.uid, text: i.text, atMs: i.atMs, sentAt: serverTimestamp() });
             await withTimeout(again.commit(), CHAT_SEND_TIMEOUT_MS)
-              .then(() => done.push(...rest.map((i) => i.id)))
+              .then(() => {
+                done.push(...rest.map((i) => i.id));
+                // Only these are new (the others went on an earlier try, and were told about then).
+                tell(rest.map((i) => i.id));
+              })
               .catch(() => {});
           }
           return done;
@@ -1992,6 +2101,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         (e) => onError?.(asSocialError(e)),
       );
     },
+    registerPush: (token, lang) => guard(async () => updatePushRecords(token, lang)),
+    unregisterPush: (token) => guard(async () => updatePushRecords(token, undefined)),
     deleteCrewMessage: (crewId, id) =>
       guard(async () => {
         await deleteDoc(doc(fb().db, ...room(crewId), 'chat', id));
@@ -2036,6 +2147,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           return null;
         }
         await setDoc(ref_, { text, by: user.uid, at: serverTimestamp() });
+        const crew = getDoc(doc(fb().db, 'crews', crewId)).then((d) => crewFromDoc(crewId, d.data()));
+        sendPush(async () => roomPushAddresses(crewId, (await crew)?.members), async () => ({ kind: 'meet', from: await myPushName(), room: (await crew)?.name ?? 'Afterglow', text }), `/crew/${crewId}`);
         return { text, by: user.uid, at: new Date().toISOString() };
       }),
     forgetCrewVideos: (crewId, ids) =>

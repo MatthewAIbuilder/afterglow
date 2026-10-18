@@ -50,6 +50,11 @@ export function t(english: string, vars?: Vars): string {
   return translate(DICTIONARIES[LANGUAGE], english, vars);
 }
 
+/** A line in a given language (a push for someone whose phone speaks another one). */
+export function tIn(lang: Language, english: string, vars?: Vars): string {
+  return translate(DICTIONARIES[lang], english, vars);
+}
+
 /** One or many: tn(n, '{n} reply', '{n} replies'). Both lines go in the dictionary. */
 export function tn(n: number, one: string, other: string, vars?: Vars): string {
   return t(n === 1 ? one : other, { n, ...vars });

@@ -1514,6 +1514,50 @@ await t('organizers: anyone messages an organizer’s account without following;
   await assertFails(deleteDoc(doc(B.firestore(), 'orgPosts', 'p1')));
   await assertSucceeds(deleteDoc(doc(L.firestore(), 'orgPosts', 'p1')));
 });
+await t('push addresses: only the people who may notify you read them; each writes only their own', async () => {
+  const P = (uid) => env.authenticatedContext(uid).firestore();
+  const support = env.authenticatedContext('uidHQ', { email: 'afterglowmusic.support@gmail.com', email_verified: true }).firestore();
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const db = ctx.firestore();
+    await setDoc(doc(db, 'crews', 'pc1'), { festivalId: 'edc-orlando-26', name: 'Bass', owner: 'uidP1', members: ['uidP1', 'uidP2'], createdAt: serverTimestamp() });
+    await setDoc(doc(db, 'dms', 'uidP1_uidP3'), { members: ['uidP1', 'uidP3'], createdAt: serverTimestamp() });
+    await setDoc(doc(db, 'follows', 'uidP1_uidP4'), { from: 'uidP1', to: 'uidP4', createdAt: serverTimestamp() });
+    await setDoc(doc(db, 'follows', 'uidP4_uidP1'), { from: 'uidP4', to: 'uidP1', createdAt: serverTimestamp() });
+    await setDoc(doc(db, 'follows', 'uidP5_uidP1'), { from: 'uidP5', to: 'uidP1', createdAt: serverTimestamp() });
+  });
+  const rec = (over = {}) => ({ tokens: ['ExponentPushToken[abc]'], lang: 'en', at: serverTimestamp(), ...over });
+  // Your own record: only you write it, in its shape.
+  await assertSucceeds(setDoc(doc(P('uidP1'), 'pushTokens', 'uidP1'), rec()));
+  await assertFails(setDoc(doc(P('uidP2'), 'pushTokens', 'uidP1'), rec()));
+  await assertFails(setDoc(doc(P('uidP1'), 'pushTokens', 'uidP1'), rec({ lang: 'fr' })));
+  await assertFails(setDoc(doc(P('uidP1'), 'pushTokens', 'uidP1'), rec({ tokens: [] })));
+  await assertFails(setDoc(doc(P('uidP1'), 'pushTokens', 'uidP1'), rec({ tokens: ['a', 'b', 'c', 'd', 'e', 'f'] })));
+  await assertFails(setDoc(doc(P('uidP1'), 'pushTokens', 'uidP1'), rec({ at: '2026-01-01' })));
+  await assertFails(setDoc(doc(P('uidP1'), 'pushTokens', 'uidP1'), rec({ extra: 1 })));
+  // Read by you, friends both ways and support; not by a one-way follower or a stranger.
+  await assertSucceeds(getDoc(doc(P('uidP1'), 'pushTokens', 'uidP1')));
+  await assertSucceeds(getDoc(doc(P('uidP4'), 'pushTokens', 'uidP1')));
+  await assertSucceeds(getDoc(doc(support, 'pushTokens', 'uidP1')));
+  await assertFails(getDoc(doc(P('uidP5'), 'pushTokens', 'uidP1')));
+  await assertFails(getDoc(doc(P('uidP2'), 'pushTokens', 'uidP1')));
+  // A crew: members write their own and read everyone's; outsiders neither.
+  await assertSucceeds(setDoc(doc(P('uidP1'), 'crews', 'pc1', 'push', 'uidP1'), rec()));
+  await assertSucceeds(setDoc(doc(P('uidP2'), 'crews', 'pc1', 'push', 'uidP2'), rec({ lang: 'es' })));
+  await assertFails(setDoc(doc(P('uidP2'), 'crews', 'pc1', 'push', 'uidP1'), rec()));
+  await assertFails(setDoc(doc(P('uidP3'), 'crews', 'pc1', 'push', 'uidP3'), rec()));
+  await assertSucceeds(getDocs(collection(P('uidP2'), 'crews', 'pc1', 'push')));
+  await assertFails(getDocs(collection(P('uidP3'), 'crews', 'pc1', 'push')));
+  // Removed by its owner, or the crew's owner; not by another member.
+  await assertFails(deleteDoc(doc(P('uidP2'), 'crews', 'pc1', 'push', 'uidP1')));
+  await assertSucceeds(deleteDoc(doc(P('uidP1'), 'crews', 'pc1', 'push', 'uidP2')));
+  // A 1-to-1 chat: the two of them only.
+  await assertSucceeds(setDoc(doc(P('uidP3'), 'dms', 'uidP1_uidP3', 'push', 'uidP3'), rec()));
+  await assertSucceeds(getDocs(collection(P('uidP1'), 'dms', 'uidP1_uidP3', 'push')));
+  await assertFails(getDocs(collection(P('uidP2'), 'dms', 'uidP1_uidP3', 'push')));
+  await assertFails(setDoc(doc(P('uidP2'), 'dms', 'uidP1_uidP3', 'push', 'uidP2'), rec()));
+  await assertFails(deleteDoc(doc(P('uidP1'), 'dms', 'uidP1_uidP3', 'push', 'uidP3')));
+  await assertSucceeds(deleteDoc(doc(P('uidP3'), 'dms', 'uidP1_uidP3', 'push', 'uidP3')));
+});
 console.log(`\n${pass} passed, ${fail} failed`);
 await env.cleanup();
 process.exit(fail ? 1 : 0);

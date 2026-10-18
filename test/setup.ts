@@ -78,6 +78,8 @@ jest.mock('expo-notifications', () => {
       return req.identifier;
     }),
     useLastNotificationResponse: () => undefined,
+    // This phone's push address (push.ts).
+    getExpoPushTokenAsync: jest.fn(async () => ({ type: 'expo', data: 'ExponentPushToken[test-phone]' })),
   };
 });
 

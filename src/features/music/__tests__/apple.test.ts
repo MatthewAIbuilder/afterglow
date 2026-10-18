@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { appleMusicClient, readAppleMusicLibrary } from '../apple/api';
 import { noMusicKit, type AppleMusicAuthorizer } from '../apple/musicKit';
+import { readAuthorization } from '../apple/nativeMusicKit';
 import { normalizeAppleMusic, type AppleMusicLibrary } from '../apple/normalize';
 import { appleMusicService } from '../apple/service';
 import { SECRET_KEY } from '../secrets';
@@ -169,5 +170,40 @@ describe('Apple Music service', () => {
     const service = appleMusicService({ authorizer: authorizer({ status: 'denied' }), tokenUrl: TOKEN_URL, secrets, fetch: net.fetch, isIOS: true });
     await expect(service.fetchLibrary(AT)).rejects.toMatchObject({ kind: 'expired' });
     expect(secrets.items.size).toBe(0);
+  });
+
+  it('with MusicKit’s own developer token, no token link is needed', async () => {
+    const asked: string[] = [];
+    const musicKit: AppleMusicAuthorizer = {
+      isSupported: () => true,
+      developerToken: async () => 'musickit-dev',
+      authorize: async (dev) => {
+        asked.push(dev);
+        return { status: 'authorized', userToken: 'user-token' };
+      },
+    };
+    const { service, net } = make({ authorizer: musicKit, tokenUrl: '' });
+    expect(service.availability()).toEqual({ ok: true });
+    expect(await service.connect()).toEqual({ ok: true });
+    expect(asked).toEqual(['musickit-dev']);
+    await service.fetchLibrary(AT);
+    expect(net.calls.some((c) => c.url === TOKEN_URL)).toBe(false);
+  });
+
+  it('MusicKit giving no developer token (MusicKit off for the app) can’t connect', async () => {
+    const musicKit: AppleMusicAuthorizer = { isSupported: () => true, developerToken: async () => Promise.reject(new Error('no')), authorize: async () => ({ status: 'authorized', userToken: 'x' }) };
+    const { service, secrets } = make({ authorizer: musicKit, tokenUrl: '' });
+    expect(await service.connect()).toEqual({ ok: false, reason: 'unavailable' });
+    expect(secrets.items.size).toBe(0);
+  });
+});
+
+describe('MusicKit’s answer', () => {
+  it('a user token only counts when it’s there', () => {
+    expect(readAuthorization({ status: 'authorized', userToken: 'u' })).toEqual({ status: 'authorized', userToken: 'u' });
+    expect(readAuthorization({ status: 'authorized' })).toEqual({ status: 'cancelled' });
+    expect(readAuthorization({ status: 'denied' })).toEqual({ status: 'denied' });
+    expect(readAuthorization({ status: 'restricted' })).toEqual({ status: 'restricted' });
+    expect(readAuthorization(null)).toEqual({ status: 'cancelled' });
   });
 });

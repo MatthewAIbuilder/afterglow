@@ -21,6 +21,8 @@ export type SwitchResult = { ok: true } | { ok: false; needsPassword: true; prob
  */
 export function useSwitchAccount() {
   const social = useSocial();
+  const { service, releasePush } = social;
+  const signedInAs = social.user?.uid;
   const [busy, setBusy] = useState<string | undefined>();
 
   /** Sign in as `email` and save it; `password` typed, or undefined to use the saved one. */
@@ -31,7 +33,9 @@ export function useSwitchAccount() {
       if (!pw) return { ok: false, needsPassword: true };
       setBusy(target.uid ?? target.email);
       try {
-        const user = await social.service.signIn(target.email, pw);
+        // The account you're leaving stops sending its notifications to this phone.
+        if (signedInAs && signedInAs !== target.uid) await releasePush();
+        const user = await service.signIn(target.email, pw);
         if (remember) await savePassword(user.uid, pw).catch(() => {});
         await rememberAccount({ uid: user.uid, email: user.email ?? target.email.trim().toLowerCase(), savedAt: new Date().toISOString() });
         haptic.settle();
@@ -48,7 +52,7 @@ export function useSwitchAccount() {
         setBusy(undefined);
       }
     },
-    [social.service],
+    [service, signedInAs, releasePush],
   );
 
   /** After a switch: start again from the top, over whatever was open. */
