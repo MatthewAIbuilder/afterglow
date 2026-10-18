@@ -7,7 +7,7 @@ import { cleanWith } from '../../memories/b2b';
 import { cleanClip } from '../../memories/trim';
 import { cleanBackdrop } from '../../profile/backdrops';
 import { SOUND_TAGS, type SoundTag } from '../../../data/models';
-import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, type Comment, type ClipComment, MEET_SPOT_MAX, type MeetSpot, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, LEVEL_MAX, REPORT_REASONS, DROP_STATUSES, type Drop, type DropFile, type LivePatch, type Privileges, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportTopic, type Sprout, type SetTimesTip, TIP_PHOTO_MAX, TIP_TEXT_MAX, type SupportReply, type VideoTag } from '../models';
+import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, type Comment, type ClipComment, MEET_SPOT_MAX, type MeetSpot, type CrewCover, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, LEVEL_MAX, REPORT_REASONS, DROP_STATUSES, type Drop, type DropFile, type LivePatch, type Privileges, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportTopic, type Sprout, type SetTimesTip, TIP_PHOTO_MAX, TIP_TEXT_MAX, type SupportReply, type VideoTag } from '../models';
 import { SocialError, type SocialErrorKind } from '../service';
 import { GIFT_NOTE_MAX } from '../../finds/finds';
 import { cleanPostInput, isCounter, isEventId, type OrgDay, type OrgPost, type OrgRequest, REQUEST_KINDS, REQUEST_REPLY_MAX, REQUEST_TEXT_MAX } from '../../organizers/organizers';
@@ -270,6 +270,16 @@ export function meetSpotFromDoc(d: unknown): MeetSpot | null {
   const by = str(o.by);
   if (!text || !by) return null;
   return { text: text.slice(0, MEET_SPOT_MAX), by, at: timeOf(o.at) ?? '' };
+}
+
+/** A crew's group photo from its `meta/cover` document: only a real https link counts. */
+export function crewCoverFromDoc(d: unknown): CrewCover | null {
+  if (!d || typeof d !== 'object') return null;
+  const o = d as Record<string, unknown>;
+  const url = https(o.url);
+  const by = str(o.by);
+  if (!url || !by) return null;
+  return { url, by, at: timeOf(o.at) ?? '' };
 }
 
 /** Firebase's error codes as the app's kinds. */

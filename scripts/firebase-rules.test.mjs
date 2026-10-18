@@ -548,6 +548,19 @@ await t('crew meeting spot: members set it as themselves with the server time; o
   await assertFails(getDoc(meet(C.firestore())));
   await assertFails(setDoc(meet(C.firestore()), { text: 'x', by: 'uidC', at: serverTimestamp() }));
 });
+await t('crew cover photo: members set it as themselves, pointing at their own file; others can’t', async () => {
+  const cover = (db) => doc(db, 'crews', 'c1', 'meta', 'cover');
+  const url = (uid) => `https://firebasestorage.googleapis.com/v0/b/demo-afterglow.appspot.com/o/crews%2Fc1%2F${uid}%2Fcover.jpg?alt=media&token=abc-123`;
+  await assertSucceeds(setDoc(cover(B.firestore()), { url: url('uidB'), by: 'uidB', at: serverTimestamp() }));
+  await assertSucceeds(getDoc(cover(A.firestore())));
+  await assertSucceeds(setDoc(cover(A.firestore()), { url: url('uidA'), by: 'uidA', at: serverTimestamp() }));
+  await assertFails(setDoc(cover(A.firestore()), { url: url('uidB'), by: 'uidA', at: serverTimestamp() }));
+  await assertFails(setDoc(cover(A.firestore()), { url: url('uidA'), by: 'uidB', at: serverTimestamp() }));
+  await assertFails(setDoc(cover(A.firestore()), { url: 'https://example.com/x.jpg', by: 'uidA', at: serverTimestamp() }));
+  await assertFails(getDoc(cover(C.firestore())));
+  await assertFails(setDoc(cover(C.firestore()), { url: url('uidC'), by: 'uidC', at: serverTimestamp() }));
+  await assertSucceeds(deleteDoc(cover(B.firestore())));
+});
 await t('crew updates: “can’t find you” only on a check-in', async () => {
   const at = (id) => doc(B.firestore(), 'crews', 'c1', 'updates', id);
   await assertSucceeds(setDoc(at('l000001'), update({ lost: true, note: 'Can’t find you' })));

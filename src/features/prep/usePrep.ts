@@ -18,8 +18,9 @@ export function usePrep(festival: Festival) {
   const { ratings } = useRatings();
   const { mustSeesAt } = usePlan();
   const reminders = useSetReminders();
-  const { tickedFor, toggle } = usePrepTicks();
+  const { tickedFor, toggle, customFor, addCustom, removeCustom } = usePrepTicks();
   const ticked = tickedFor(festival.id);
+  const custom = customFor(festival.id);
   const sections = useMemo(
     () =>
       prepChecklist({
@@ -31,8 +32,15 @@ export function usePrep(festival: Festival) {
         remindersOn: reminders.on.has(festival.id),
         ticked,
         shop: SHOP,
+        custom,
       }),
-    [festival, ratings, mustSeesAt, reminders.on, ticked],
+    [festival, ratings, mustSeesAt, reminders.on, ticked, custom],
   );
-  return { sections, progress: prepProgress(sections), toggle: (item: string) => toggle(festival.id, item) };
+  return {
+    sections,
+    progress: prepProgress(sections),
+    toggle: (item: string) => toggle(festival.id, item),
+    add: (text: string) => addCustom(festival.id, text),
+    remove: (id: string) => removeCustom(festival.id, id),
+  };
 }

@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Missing } from '../../components/Missing';
 import { NightSky } from '../../components/NightSky';
@@ -7,7 +8,7 @@ import { PageActions } from '../../components/PageActions';
 import { PageTitle } from '../../components/PageTitle';
 import { CheckIcon, ChevronIcon } from '../../components/TabIcons';
 import type { Festival } from '../../data/models';
-import { sectionNotes, type PrepItem } from '../../features/prep/checklist';
+import { CUSTOM_MAX, CUSTOM_TEXT_MAX, sectionNotes, type PrepItem } from '../../features/prep/checklist';
 import { usePrep } from '../../features/prep/usePrep';
 import { countdown } from '../../features/festivals/when';
 import { haptic } from '../../lib/haptics';
@@ -16,7 +17,7 @@ import { countTicketTapOnce } from '../../features/partners/ticketTaps';
 import { useCatalog } from '../../state/catalog';
 import { useSocial } from '../../state/social';
 import { useWeekends } from '../../state/weekends';
-import { color, space, type } from '../../theme/tokens';
+import { color, radius, space, type } from '../../theme/tokens';
 import { t, tc } from '../../i18n';
 
 /**
@@ -42,7 +43,16 @@ function itemLabel(item: PrepItem): string {
 function PrepView({ festival }: { festival: Festival }) {
   const insets = useSafeAreaInsets();
   const today = useToday();
-  const { sections, progress, toggle } = usePrep(festival);
+  const { sections, progress, toggle, add, remove } = usePrep(festival);
+  // The next item you're adding.
+  const [draft, setDraft] = useState('');
+  const own = sections.find((s) => s.title === t('Yours'))?.items.length ?? 0;
+  const submit = () => {
+    if (!draft.trim()) return;
+    haptic.tap();
+    add(draft);
+    setDraft('');
+  };
   const { service, user } = useSocial();
   const soon = countdown(festival, today);
 
@@ -58,10 +68,10 @@ function PrepView({ festival }: { festival: Festival }) {
   };
 
   return (
-    <View style={styles.root}>
+    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <PageTitle title={t('Get ready · {festival}', { festival: festival.name })} />
       <NightSky />
-      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }]}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }]} keyboardShouldPersistTaps="handled">
         <Text style={styles.kicker}>{festival.name}</Text>
         <Text style={styles.title}>{t('Get ready')}</Text>
         <Text style={styles.sub}>
@@ -90,6 +100,19 @@ function PrepView({ festival }: { festival: Festival }) {
                     ) : null}
                   </View>
                   {item.auto ? <ChevronIcon color={color.moonFaint} size={12} /> : null}
+                  {item.custom ? (
+                    <Pressable
+                      onPress={() => {
+                        haptic.select();
+                        remove(item.id);
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('Remove {item} from the list', { item: item.label })}
+                      hitSlop={10}
+                    >
+                      <Text style={styles.removeX}>✕</Text>
+                    </Pressable>
+                  ) : null}
                 </Pressable>
                 {item.action === 'tickets' && festival.links?.tickets && !item.done ? (
                   <Pressable
@@ -122,6 +145,32 @@ function PrepView({ festival }: { festival: Festival }) {
                 ) : null}
               </View>
             ))}
+            {s.title === t('Yours') ? (
+              <View style={styles.addRow}>
+                <TextInput
+                  value={draft}
+                  onChangeText={setDraft}
+                  onSubmitEditing={submit}
+                  maxLength={CUSTOM_TEXT_MAX + 10}
+                  editable={own < CUSTOM_MAX}
+                  placeholder={own < CUSTOM_MAX ? t('Add your own: a poncho, snacks, a flag…') : t('That’s the most you can add')}
+                  placeholderTextColor={color.moonFaint}
+                  accessibilityLabel={t('Add your own item')}
+                  returnKeyType="done"
+                  blurOnSubmit={false}
+                  style={styles.addInput}
+                />
+                <Pressable
+                  onPress={submit}
+                  disabled={!draft.trim()}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('Add to the list')}
+                  style={({ pressed }) => [styles.addButton, !draft.trim() && { opacity: 0.4 }, pressed && { opacity: 0.8 }]}
+                >
+                  <Text style={styles.addText}>{t('Add')}</Text>
+                </Pressable>
+              </View>
+            ) : null}
             {sectionNotes(s, festival).map((n) => (
               <Text key={n} style={styles.partnerNote}>
                 {n}
@@ -132,7 +181,7 @@ function PrepView({ festival }: { festival: Festival }) {
         <Text style={styles.note}>{t('Only you see this list. It stays on this phone.')}</Text>
       </ScrollView>
       <PageActions />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -156,5 +205,10 @@ const styles = StyleSheet.create({
   inlineLink: { paddingLeft: 24 + space.md, paddingBottom: space.md, marginTop: -space.xs },
   link: { ...type.label, color: color.glow },
   note: { ...type.caption, color: color.moonFaint, marginTop: space.xl },
+  removeX: { ...type.label, color: color.moonFaint, paddingHorizontal: space.xs },
+  addRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: space.md },
+  addInput: { flex: 1, ...type.body, color: color.moon, paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  addButton: { paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.pill, backgroundColor: color.glow },
+  addText: { ...type.label, color: color.night },
   partnerNote: { ...type.caption, color: color.moonFaint, marginTop: space.sm },
 });

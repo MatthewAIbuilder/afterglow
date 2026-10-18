@@ -6,11 +6,14 @@ import { useCatalog } from '../../state/catalog';
 import { useAllDayHours } from '../../state/dayHours';
 import { useGoing } from '../../state/going';
 import { usePlan } from '../../state/plan';
+import { usePrepTicks } from '../../state/prep';
+import { useRatings } from '../../state/ratings';
+import { prepProgressOf } from '../prep/checklist';
 import { useSetReminders } from '../../state/setReminders';
 import { useTaste } from '../../state/taste';
 import { useWeekends } from '../../state/weekends';
 import { festivalRoute } from '../plan/route';
-import { festivalReminders, reminderChanges, type Reminder } from './reminders';
+import { festivalReminders, prepReminders, reminderChanges, type Reminder } from './reminders';
 import { careReminders, feelReminders, trailCheckins } from './careReminders';
 import { questReminder } from './questReminder';
 import { readPrefs } from '../care/trailStore';
@@ -57,6 +60,9 @@ function PhoneReminders() {
   const { artists } = useCatalog();
   const { taste, informed } = useTaste();
   const { mustSeesAt } = usePlan();
+  // How far along each festival's Get ready checklist is, for its reminders (the evening before, and the morning).
+  const { ratings } = useRatings();
+  const { tickedFor, customFor, hydrated: prepLoaded } = usePrepTicks();
   // Your hours: no reminder for a set the route skips because you've left or are at dinner.
   const { all: hoursAt } = useAllDayHours();
   // Water reminders, if you switched them on, while a festival you're going to is on.
@@ -85,7 +91,23 @@ function PhoneReminders() {
           // A few check-ins through a festival day you're at, when you've turned the festival trail on.
           const trailOn = (await readPrefs()).mode === 'on';
           const checkins = trailCheckins(tonightFestival(festivals, going, now)?.festival.id, trailOn, now);
-          const wanted = [...festivalReminders(festivals, going, now), ...sets, ...water, ...feelReminders(care, now), ...checkins, ...(evening ? [evening] : [])];
+          const checklist = prepReminders(
+            festivals,
+            going,
+            (f) =>
+              prepProgressOf({
+                festival: f,
+                rated: f.lineup.filter((a) => ratings[a]).length,
+                lineup: f.lineup.length,
+                stars: mustSeesAt(f.id).size,
+                remindersPossible: canRemindSets(f),
+                remindersOn: remindSets.has(f.id),
+                ticked: tickedFor(f.id),
+                custom: customFor(f.id),
+              }),
+            now,
+          );
+          const wanted = [...festivalReminders(festivals, going, now), ...(prepLoaded ? checklist : []), ...sets, ...water, ...feelReminders(care, now), ...checkins, ...(evening ? [evening] : [])];
           const scheduled = await Notifications.getAllScheduledNotificationsAsync();
           const { cancel, schedule } = reminderChanges(
             wanted,
@@ -108,7 +130,7 @@ function PhoneReminders() {
         }
       });
     },
-    [festivals, going, routes, care, nudge.on, questsLeft, quests.ready, quests.streak],
+    [festivals, going, routes, care, nudge.on, questsLeft, quests.ready, quests.streak, ratings, mustSeesAt, remindSets, tickedFor, customFor, prepLoaded],
   );
 
   // Only a change you make may ask for permission: going, or the set reminders switch. Not the sync when the app

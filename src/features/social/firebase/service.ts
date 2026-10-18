@@ -25,7 +25,7 @@ import { cleanArtistName } from '../../../data/extraArtists';
 import { cutVideoPart } from '../../memories/cutPart';
 import { trackFields } from '../../memories/track';
 import { cleanPushAddress, PUSH_ENDPOINT, pushMessages, updatePushKind, withToken, type PushAddress, type PushEvent } from '../../notifications/push';
-import { profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc, orgRequestFromDoc, orgDayFromDoc, orgPostFromDoc } from './mapping';
+import { profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, crewCoverFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc, orgRequestFromDoc, orgDayFromDoc, orgPostFromDoc } from './mapping';
 
 
 /** Where a chat room lives: a crew, or a 1-to-1 chat (`dm_<a>_<b>` is `dms/<a>_<b>`). */
@@ -285,6 +285,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     const reads = await getDocs(collection(db, 'crews', id, 'reads')).catch(() => null);
     for (const d of reads?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
     await deleteDoc(doc(db, 'crews', id, 'meta', 'meet')).catch(() => {});
+    await deleteDoc(doc(db, 'crews', id, 'meta', 'cover')).catch(() => {});
     await deleteDoc(doc(db, 'crews', id, 'meta', 'invite')).catch(() => {});
     const push = await getDocs(collection(db, 'crews', id, 'push')).catch(() => null);
     for (const d of push?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
@@ -2160,6 +2161,21 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         const crew = getDoc(doc(fb().db, 'crews', crewId)).then((d) => crewFromDoc(crewId, d.data()));
         sendPush(async () => roomPushAddresses(crewId, (await crew)?.members), async () => ({ kind: 'meet', from: await myPushName(), room: (await crew)?.name ?? 'Afterglow', text }), `/crew/${crewId}`);
         return { text, by: user.uid, at: new Date().toISOString() };
+      }),
+    crewCover: (crewId) =>
+      guard(async () => crewCoverFromDoc((await readDoc(doc(fb().db, 'crews', crewId, 'meta', 'cover'))).data())),
+    setCrewCover: (crewId, uri) =>
+      guard(async () => {
+        const user = me();
+        const ref_ = doc(fb().db, 'crews', crewId, 'meta', 'cover');
+        if (!uri) {
+          await deleteDoc(ref_);
+          await removeFile(`crews/${crewId}/${user.uid}/cover.jpg`);
+          return null;
+        }
+        const url = await upload(`crews/${crewId}/${user.uid}/cover.jpg`, uri, 'image/jpeg');
+        await setDoc(ref_, { url, by: user.uid, at: serverTimestamp() });
+        return { url, by: user.uid, at: new Date().toISOString() };
       }),
     forgetCrewVideos: (crewId, ids) =>
       guard(async () => {

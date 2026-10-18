@@ -914,6 +914,12 @@ service cloud.firestore {
           && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 80
           && request.resource.data.by == me()
           && request.resource.data.at == request.time;
+        // The crew's group photo: any member sets or replaces it, as themselves, pointing at their own file.
+        allow create, update: if signedIn() && doc == 'cover' && me() in get(path('crews', id)).data.members
+          && request.resource.data.keys().hasOnly(['url', 'by', 'at'])
+          && request.resource.data.by == me() && request.resource.data.at == request.time
+          && request.resource.data.url is string
+          && request.resource.data.url.matches('^https://firebasestorage[.]googleapis[.]com/v0/b/[a-z0-9._-]+/o/crews%2F' + id + '%2F' + me() + '%2Fcover[.]jpg[?]alt=media&token=[A-Za-z0-9-]+$');
         allow create: if signedIn() && doc == 'invite' && me() in get(path('crews', id)).data.members
           && request.resource.data.keys().hasOnly(['code', 'by', 'at'])
           && request.resource.data.code is string && request.resource.data.code.matches('^[A-Za-z0-9]{12,40}$')
@@ -922,7 +928,7 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly(['code', 'by', 'at'])
           && request.resource.data.code is string && request.resource.data.code.matches('^[A-Za-z0-9]{12,40}$')
           && request.resource.data.by == me() && request.resource.data.at == request.time;
-        allow delete: if signedIn() && ((doc == 'meet' && me() in get(path('crews', id)).data.members)
+        allow delete: if signedIn() && (((doc == 'meet' || doc == 'cover') && me() in get(path('crews', id)).data.members)
           || get(path('crews', id)).data.owner == me());
       }
 

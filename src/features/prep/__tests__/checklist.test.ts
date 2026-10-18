@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Festival } from '../../../data/models';
-import { cleanPrep, prepChecklist, prepProgress, RATED_ENOUGH } from '../checklist';
+import { cleanCustom, CUSTOM_MAX, CUSTOM_TEXT_MAX, cleanCustomText, cleanPrep, prepChecklist, prepProgress, prepProgressOf, RATED_ENOUGH, withCustomItem } from '../checklist';
 
 const fest = (over: Partial<Festival> = {}): Festival => ({
   id: 'f',
@@ -46,5 +46,33 @@ describe('getting ready', () => {
   it('reads back only lists of names', () => {
     expect(cleanPrep({ f: ['ticket', 3, 'id'], g: 'x' })).toEqual({ f: ['ticket', 'id'] });
     expect(cleanPrep(null)).toEqual({});
+  });
+});
+
+describe('your own checklist items', () => {
+  let n = 0;
+  const id = () => `c${++n}x`;
+  it('tidied, never empty, never twice, never more than the limit', () => {
+    expect(cleanCustomText('  a   poncho \n ')).toBe('a poncho');
+    expect(cleanCustomText('x'.repeat(200))).toHaveLength(CUSTOM_TEXT_MAX);
+    const one = withCustomItem([], '  Poncho ', id);
+    expect(one.map((x) => x.text)).toEqual(['Poncho']);
+    expect(withCustomItem(one, 'poncho', id)).toEqual(one);
+    expect(withCustomItem(one, '   ', id)).toEqual(one);
+    const full = Array.from({ length: CUSTOM_MAX }, (_, i) => ({ id: `c${i}ab`, text: `item ${i}` }));
+    expect(withCustomItem(full, 'one more', id)).toHaveLength(CUSTOM_MAX);
+  });
+
+  it('read back from the phone, bad ones dropped', () => {
+    expect(cleanCustom({ f: [{ id: 'cabc', text: ' Snacks ' }, { id: 'nope', text: 'x' }, { id: 'cabc', text: 'dup' }, { id: 'cdef', text: '' }, 7], g: 'x' })).toEqual({ f: [{ id: 'cabc', text: 'Snacks' }] });
+    expect(cleanCustom(null)).toEqual({});
+  });
+
+  it('count in how far along you are, and are always the last section', () => {
+    const input = { ...base, festival: fest(), ticked: new Set(['cabc']), custom: [{ id: 'cabc', text: 'Snacks' }, { id: 'cdef', text: 'A flag' }] };
+    const s = prepChecklist(input);
+    expect(s.at(-1)!.items.map((i) => [i.label, i.done, i.custom])).toEqual([['Snacks', true, true], ['A flag', false, true]]);
+    expect(prepProgressOf(input)).toEqual({ done: 1, total: 2 + 2 + 7 + 2 });
+    expect(prepChecklist({ ...base, festival: fest() }).at(-1)!.items).toEqual([]);
   });
 });

@@ -1057,7 +1057,7 @@ describe('Notifications', () => {
     await fireEvent.press(page.getByLabelText("I'm going to EDC Orlando 2026"));
     await settle();
     await settle();
-    expect([...scheduled.values()].map((r) => r.content.title)).toEqual(['EDC Orlando 2026 is a week away', 'EDC Orlando 2026 is tomorrow']);
+    expect([...scheduled.values()].map((r) => r.content.title)).toEqual(['EDC Orlando 2026 is a week away', 'EDC Orlando 2026 is tomorrow', 'Packed for EDC Orlando 2026?', 'EDC Orlando 2026 starts today']);
     await fireEvent.press(page.getByLabelText("You're going to EDC Orlando 2026. Tap to undo."));
     await settle();
     await settle();

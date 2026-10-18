@@ -8,7 +8,7 @@ import type { PublicResident } from '../sprouts/publicGarden';
 import type { Kandi, KandiInput, OpenKandiInput, PublicKandi } from '../kandi/kandi';
 import type { DecorId } from '../sprouts/decor';
 import type { Org, OrgCounter, OrgDay, OrgPost, OrgPostInput, OrgRequest, OrgRequestInput, OrgRequestStatus } from '../organizers/organizers';
-import type { Published, Activity, ClipComment, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, AppSettings, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic, Sprout, SproutInput, DirectChat, SetTimesTip, VideoTag } from './models';
+import type { Published, Activity, ClipComment, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, CrewCover, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, AppSettings, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic, Sprout, SproutInput, DirectChat, SetTimesTip, VideoTag } from './models';
 
 /**
  * The boundary every social backend implements. The app only talks to
@@ -322,6 +322,10 @@ export interface SocialService {
   meetSpot(crewId: string): Promise<MeetSpot | null>;
   /** Set the crew's meeting spot (any member), or clear it with an empty text. */
   setMeetSpot(crewId: string, text: string): Promise<MeetSpot | null>;
+  /** The crew's group photo, if one's set. Members only. */
+  crewCover(crewId: string): Promise<CrewCover | null>;
+  /** Set the crew's group photo (any member; `uri` is a JPEG on the phone), or remove it with null. Returns the new cover. */
+  setCrewCover(crewId: string, uri: string | null): Promise<CrewCover | null>;
 
   /**
    * Give a sprout: saves the one whose code you're showing (its id was made

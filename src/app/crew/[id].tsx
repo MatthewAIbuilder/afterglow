@@ -11,6 +11,7 @@ import { ChevronIcon, ShareIcon } from '../../components/TabIcons';
 import { crewTogether, firstName, whoLine } from '../../features/crews/together';
 import { CrewRouteSection } from '../../features/crews/CrewRouteSection';
 import { CrewLatest } from '../../features/crews/CrewLatest';
+import { CrewCoverPhoto } from '../../features/crews/CrewCoverPhoto';
 import { MeetSpotCard } from '../../features/crews/MeetSpotCard';
 import { CrewChatCard } from '../../features/crews/CrewChatCard';
 import { CrewStayCard } from '../../features/crews/CrewStayCard';
@@ -369,6 +370,7 @@ function Member({
 
   return (
     <>
+      <CrewCoverPhoto crew={crew} />
       {/* The crew at a glance: its picture, name, the festival and how soon, and the one thing you do most: invite. */}
       <View style={styles.hero}>
         <View style={styles.heroTop}>
