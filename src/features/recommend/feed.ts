@@ -8,9 +8,14 @@ import { type Similarity, soundSimilarity } from '../taste/similarity';
 const RATING_NET: Record<Rating, number> = { love: 1, like: 0.6, ok: 0, meh: -0.5, pass: -1 };
 
 /**
- * Discover's running order. Pure and deterministic: the same taste, reactions
- * and viewing history always give the same feed, and every pick says why it
- * is there. No model, no randomness.
+ * Discover's running order. Pure and deterministic: the same taste, reactions,
+ * viewing history and session give the same feed, and every pick says why it
+ * is there. No model. So opening the app doesn't show the same clips every
+ * time (the user, 2026-10-18: "Your mix is always the exact same videos"),
+ * clips you saw in the last week wait behind ones you haven't, fading back
+ * as the week goes by, and each session gives near-equal matches a small
+ * shuffle of its own (`seed`): taste still decides, the shuffle only breaks
+ * near-ties.
  *
  * It reads the taste engine's live match (which already folds in likes, saves,
  * skips, watch behaviour and spill-over to similar sounds) and adds what only
@@ -75,6 +80,12 @@ const REPEAT = 0.25;
 const NEAR_WEIGHT = 0.3;
 /** Among clips seen lately, how much a very recent view holds a clip back. */
 const RECENCY_WEIGHT = 0.5;
+/** Seen before the recent window but within this long: still held back, less each day. */
+export const SEEN_FADE_MS = 7 * 24 * 60 * 60 * 1000;
+/** How much a clip seen just outside the recent window is held back (fading to nothing at SEEN_FADE_MS). */
+export const SEEN_FADE_WEIGHT = 0.35;
+/** The widest a session's shuffle moves a clip's score (±half of it): enough to reorder near-equal matches, not to bury a favourite. */
+export const SHUFFLE = 0.16;
 
 /**
  * The turn each lane gets, repeated: half personal, a third exploring, one in
@@ -123,6 +134,8 @@ export type FeedInput = {
   similarity?: Similarity;
   /** Artists rated directly: "not for me" turns an artist down like a skip ("not really" half as much); "love" and "like" raise them through the match. */
   ratings?: Ratings;
+  /** This session's shuffle (any number, e.g. when the app opened). Left out: no shuffle. */
+  seed?: number;
 };
 
 /** Your top artists by match, strong matches only. What "related" is measured against. */
@@ -187,7 +200,7 @@ function tally(clips: Clip[], reactions: Record<string, Reaction>, ratings: Rati
 }
 
 /** Every clip, scored and placed in a lane. Not yet in feed order. */
-export function scoreClips({ clips, artists, taste, informed, reactions, seen, now, similarity, ratings = {} }: FeedInput): FeedItem[] {
+export function scoreClips({ clips, artists, taste, informed, reactions, seen, now, similarity, ratings = {}, seed }: FeedInput): FeedItem[] {
   const byId = new Map(artists.map((a) => [a.id, a]));
   const anchors = anchorsOf(artists, taste, informed);
   const { touched, net } = tally(clips, reactions, ratings);
@@ -208,6 +221,9 @@ export function scoreClips({ clips, artists, taste, informed, reactions, seen, n
     if (reason.kind === 'unknown') score += UNKNOWN;
     if (r?.liked || r?.saved) score -= HAD_IT;
     const at = seen[clip.id];
+    // Seen earlier this week: behind the ones you haven't, less so each day.
+    score -= SEEN_FADE_WEIGHT * fade(at, now);
+    if (seed !== undefined) score += SHUFFLE * (shuffleOf(seed, clip.id) - 0.5);
     items.push({
       clip,
       lane,
@@ -309,6 +325,23 @@ function interleave(items: FeedItem[], recent: string[], slot: number): FeedItem
 function byScore(a: FeedItem, b: FeedItem) {
   // Ties keep the catalogue's order, so the result never depends on sort stability.
   return b.score - a.score || a.clip.id.localeCompare(b.clip.id, undefined, { numeric: true });
+}
+
+/** A clip seen after the recent window: 1 just after it, falling to 0 a week on (0 when never seen, or seen within it). */
+export function fade(at: number | undefined, now: number) {
+  if (at == null || now < at) return 0;
+  const age = now - at;
+  if (age < RECENT_MS || age >= SEEN_FADE_MS) return 0;
+  return 1 - (age - RECENT_MS) / (SEEN_FADE_MS - RECENT_MS);
+}
+
+/** A session's shuffle for one clip: a number from 0 to 1, the same every time for the same session and clip (FNV-1a). */
+export function shuffleOf(seed: number, clipId: string): number {
+  let h = 2166136261;
+  for (const c of `${seed}:${clipId}`) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0;
+  h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d) >>> 0;
+  h ^= h >>> 12;
+  return (h >>> 0) / 4294967296;
 }
 
 /** How recently a clip was seen: 1 just now, falling to 0 at the edge of the recent window. */

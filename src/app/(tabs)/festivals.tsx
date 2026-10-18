@@ -255,7 +255,13 @@ function FestivalsScreen({ onlyOurs }: { onlyOurs?: () => void }) {
         ) : (
           <>
             {ready ? <LineupReadyCard festival={ready} /> : null}
-            {upcoming.length > 1 ? (
+            {/* Grid: the festivals you're going to as tiles, like the rest. */}
+            {view === 'grid' && upcoming.length > 0 ? (
+              <>
+                <SectionHead title={t('Going')} />
+                {list(upcoming, true)}
+              </>
+            ) : upcoming.length > 1 ? (
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
