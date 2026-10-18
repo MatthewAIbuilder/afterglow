@@ -52,6 +52,13 @@ export const es_festivals: Dictionary = {
 
   // Up next and lineup ready
   'Up next': 'Lo próximo',
+  'Your top artists here': 'Tus favoritos aquí',
+  'Your top artists here: {names}': 'Tus favoritos aquí: {names}',
+  '{artist}, {n}% match': '{artist}, {n}% de afinidad',
+  '★ {n} must-see': '★ {n} imprescindible',
+  '★ {n} must-sees': '★ {n} imprescindibles',
+  'Get ready {done}/{total}': 'Prepárate {done}/{total}',
+  'Get ready: {done} of {total} done': 'Prepárate: {done} de {total} listos',
   'Up next: {festival}, {dates}, {countdown}. {facts}': 'Lo próximo: {festival}, {dates}, {countdown}. {facts}',
   'Up next: {festival}, {dates}. {facts}': 'Lo próximo: {festival}, {dates}. {facts}',
   'Open Tonight': 'Abrir Esta noche',

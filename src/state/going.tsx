@@ -9,6 +9,10 @@ type Ctx = {
   toggle: (festivalId: string) => void;
   /** Saved festivals have loaded (or failed to). */
   hydrated: boolean;
+  /** Nothing was ever saved here for this account (a new install or a phone new to it), and nothing picked yet. */
+  fresh: boolean;
+  /** Bring back festivals from elsewhere (your profile), added to any picked here. */
+  restore: (festivalIds: readonly string[]) => void;
 };
 
 const STORAGE_KEY = 'going.v1';
@@ -18,12 +22,14 @@ const GoingContext = createContext<Ctx | null>(null);
 export function GoingProvider({ children }: { children: ReactNode }) {
   const [going, setGoing] = useState<string[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const [fresh, setFresh] = useState(false);
   const loaded = useRef(false);
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
       .then((raw) => {
         if (raw) setGoing((current) => cleanGoing([...JSON.parse(raw), ...current]));
+        else setFresh(true);
       })
       .catch(() => {})
       .finally(() => {
@@ -37,8 +43,18 @@ export function GoingProvider({ children }: { children: ReactNode }) {
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(going)).catch(() => {});
   }, [going]);
 
-  const toggle = useCallback((festivalId: string) => setGoing((g) => toggleGoing(g, festivalId)), []);
-  const value = useMemo<Ctx>(() => ({ going, isGoing: (id) => going.includes(id), toggle, hydrated }), [going, toggle, hydrated]);
+  const toggle = useCallback((festivalId: string) => {
+    setFresh(false);
+    setGoing((g) => toggleGoing(g, festivalId));
+  }, []);
+  const restore = useCallback((festivalIds: readonly string[]) => {
+    setFresh(false);
+    setGoing((g) => cleanGoing([...g, ...festivalIds]));
+  }, []);
+  const value = useMemo<Ctx>(
+    () => ({ going, isGoing: (id) => going.includes(id), toggle, hydrated, fresh: fresh && going.length === 0, restore }),
+    [going, toggle, hydrated, fresh, restore],
+  );
   return <GoingContext.Provider value={value}>{children}</GoingContext.Provider>;
 }
 
