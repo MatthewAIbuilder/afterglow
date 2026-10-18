@@ -9,6 +9,8 @@ import { OfflineNotice } from '../features/offline/OfflineNotice';
 import { ReminderSync } from '../features/notifications/ReminderSync';
 import { PushRegistration } from '../features/notifications/PushRegistration';
 import { SentMoment } from '../features/memories/SentMoment';
+import '../features/care/trailRecorder';
+import { TrailKeeper } from '../features/care/TrailKeeper';
 import { TonightLauncher } from '../features/tonight/TonightLauncher';
 import { QuestTracker } from '../features/quests/QuestTracker';
 import { DailyQuestTracker } from '../features/quests/DailyQuestTracker';
@@ -263,6 +265,7 @@ export default function RootLayout() {
       <LevelSync />
       <ReminderSync />
       <PushRegistration />
+      <TrailKeeper />
       <LikeSync />
       <QuestToast />
       <SentMoment />

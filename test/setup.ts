@@ -243,8 +243,16 @@ jest.mock('expo-image-manipulator', () => {
     },
   };
 });
+// Background location (the festival trail): not granted, nothing recording, unless a test says so.
+jest.mock('expo-task-manager', () => ({ defineTask: jest.fn(), isTaskDefined: jest.fn(() => true) }));
 jest.mock('expo-location', () => ({
   Accuracy: { Balanced: 3 },
+  ActivityType: { Fitness: 3 },
+  requestBackgroundPermissionsAsync: jest.fn(async () => ({ granted: false, canAskAgain: true })),
+  getBackgroundPermissionsAsync: jest.fn(async () => ({ granted: false, canAskAgain: true })),
+  startLocationUpdatesAsync: jest.fn(async () => undefined),
+  stopLocationUpdatesAsync: jest.fn(async () => undefined),
+  hasStartedLocationUpdatesAsync: jest.fn(async () => false),
   requestForegroundPermissionsAsync: jest.fn(async () => ({ granted: false })),
   getForegroundPermissionsAsync: jest.fn(async () => ({ granted: false })),
   geocodeAsync: jest.fn(async () => []),

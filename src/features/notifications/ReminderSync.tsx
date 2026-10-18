@@ -11,8 +11,9 @@ import { useTaste } from '../../state/taste';
 import { useWeekends } from '../../state/weekends';
 import { festivalRoute } from '../plan/route';
 import { festivalReminders, reminderChanges, type Reminder } from './reminders';
-import { careReminders, feelReminders } from './careReminders';
+import { careReminders, feelReminders, trailCheckins } from './careReminders';
 import { questReminder } from './questReminder';
+import { readPrefs } from '../care/trailStore';
 import { useQuestReminder } from '../../state/questReminder';
 import { useDailyQuests } from '../quests/useDailyQuests';
 import { useCare } from '../../state/care';
@@ -81,7 +82,10 @@ function PhoneReminders() {
           const sets: Reminder[] = soonest(routes.flatMap(({ festival, route }) => setReminders(festival, route, now)));
           const water = careReminders(care, tonightFestival(festivals, going, now)?.festival.id, now);
           const evening = quests.ready ? questReminder(nudge.on, now, questsLeft, quests.streak) : undefined;
-          const wanted = [...festivalReminders(festivals, going, now), ...sets, ...water, ...feelReminders(care, now), ...(evening ? [evening] : [])];
+          // A few check-ins through a festival day you're at, when you've turned the festival trail on.
+          const trailOn = (await readPrefs()).mode === 'on';
+          const checkins = trailCheckins(tonightFestival(festivals, going, now)?.festival.id, trailOn, now);
+          const wanted = [...festivalReminders(festivals, going, now), ...sets, ...water, ...feelReminders(care, now), ...checkins, ...(evening ? [evening] : [])];
           const scheduled = await Notifications.getAllScheduledNotificationsAsync();
           const { cancel, schedule } = reminderChanges(
             wanted,
