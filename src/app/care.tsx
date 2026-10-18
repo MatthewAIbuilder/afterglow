@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../components/NightSky';
 import { PageActions } from '../components/PageActions';
 import { PageTitle } from '../components/PageTitle';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { BodyCard } from '../features/care/BodyCard';
 import { BloomWash, HeartMark } from '../features/care/HeartIntro';
 import { countTonight, feelingsBetween, lastFeeling, regionOf, emergencyNumber, lastLine, MOOD_LABEL, needsHelp, TIMERS_MAX, WATER_EVERY, FEEL_EVERY } from '../features/care/care';
@@ -282,6 +282,23 @@ export default function CareScreen() {
         {/* Your body */}
         <Part id="body" title={t('Your body')} at={at}>
           <BodyCard now={now} />
+          {Platform.OS !== 'web' ? (
+            <Pressable
+              onPress={() => {
+                haptic.select();
+                router.push('/trail');
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t('Your festival trail. Where you walked on festival days.')}
+              style={({ pressed }) => [styles.trailLink, pressed && { opacity: 0.8 }]}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={styles.trailTitle}>{t('Your festival trail')}</Text>
+                <Text style={styles.trailSub}>{t('Where you walked on festival days, on a map.')}</Text>
+              </View>
+              <Text style={styles.trailChevron}>›</Text>
+            </Pressable>
+          ) : null}
         </Part>
 
         {!help ? (
@@ -419,6 +436,10 @@ function Big({ label, onPress, danger }: { label: string; onPress: () => void; d
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.night },
+  trailLink: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.md, padding: space.lg, borderRadius: radius.md, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline, borderTopColor: color.rim },
+  trailTitle: { ...type.headline, fontSize: 16, color: color.moon },
+  trailSub: { ...type.caption, color: color.moonDim, marginTop: 2 },
+  trailChevron: { ...type.title, color: color.moonFaint },
   content: { paddingHorizontal: space.xl, alignSelf: 'center', width: '100%', maxWidth: 640 },
   title: { ...type.largeTitle, color: color.moon },
   sub: { ...type.body, color: color.moonDim, marginTop: space.xs },

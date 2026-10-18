@@ -83,3 +83,29 @@ export function feelReminders(care: Care, now: Date): Reminder[] {
   }
   return out;
 }
+
+/** Check-ins on a festival day arrive at these hours (local): mid-afternoon, evening, late evening. */
+export const TRAIL_CHECKIN_HOURS = [15, 18, 21] as const;
+
+/**
+ * "Check in with yourself" reminders on a festival day, only when you've turned the festival trail on: a few
+ * through the day, each opening the trail with your steps and how far you've walked. Gentle and nothing
+ * private on the lock screen. Pure.
+ */
+export function trailCheckins(festivalId: string | undefined, trailOn: boolean, now: Date): Reminder[] {
+  if (!trailOn || !festivalId) return [];
+  const day = (n: number) => new Date(now.getFullYear(), now.getMonth(), now.getDate(), TRAIL_CHECKIN_HOURS[n]);
+  const lines = [
+    t('Time to check in with yourself. See your steps and where you’ve been.'),
+    t('Long day on your feet? Sit for a bit, have some water, and see your trail.'),
+    t('How are you doing? A quick check-in, and your day on the map so far.'),
+  ];
+  return TRAIL_CHECKIN_HOURS.map((_, i) => ({
+    id: `${REMINDER_PREFIX}care:trail:${festivalId}:${day(i).getTime()}`,
+    festivalId,
+    at: day(i),
+    title: t('Check in with yourself'),
+    body: lines[i],
+    href: '/trail',
+  })).filter((r) => r.at.getTime() > now.getTime() + LEAD_MS);
+}
