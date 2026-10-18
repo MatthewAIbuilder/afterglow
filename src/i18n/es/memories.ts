@@ -282,4 +282,20 @@ export const es_memories: Dictionary = {
   'Open the Music app once and accept Apple’s welcome screen, then try again.': 'Abre la app Música una vez y acepta la pantalla de bienvenida de Apple. Luego inténtalo de nuevo.',
   'Sign in to Apple Music on this iPhone (Settings, then Music), then try again.': 'Inicia sesión en Apple Music en este iPhone (Ajustes y luego Música). Luego inténtalo de nuevo.',
   'Your Apple Music library isn’t on. It needs an Apple Music subscription and Sync Library on (Settings, then Music). Then try again.': 'Tu biblioteca de Apple Music no está activada. Necesita una suscripción a Apple Music y Sincronizar biblioteca activado (Ajustes y luego Música). Luego inténtalo de nuevo.',
+  // Tagging a new video: one festival, or a search
+  'You’re going, and it’s on that day': 'Vas, y es ese día',
+  'On that day, where you filmed': 'Ese día, donde grabaste',
+  'Search festivals and shows': 'Busca festivales y eventos',
+  'Find the festival or show': 'Encuentra el festival o el evento',
+  'On that night': 'Esa noche',
+  'Nothing matches “{query}”. Add it as a past festival or a one-night show.': 'Nada coincide con “{query}”. Añádelo como un festival pasado o un evento de una noche.',
+  // After sending
+  '{title}. {line} Tap to close.': '{title}. {line} Toca para cerrar.',
+  'Sent to Discover and your crew': 'Enviado a Descubrir y a tu grupo',
+  'Shared to Discover': 'Compartido en Descubrir',
+  'Grab some water while you’re at it.': 'Aprovecha para tomar agua.',
+  'Take a breather between sets. Look after yourself.': 'Respira un poco entre sets. Cuídate.',
+  'Check in with your crew now and then.': 'Habla con tu grupo de vez en cuando.',
+  'Earplugs in near the speakers. Your ears will thank you.': 'Tapones cerca de los altavoces. Tus oídos te lo agradecerán.',
+  'Remember to eat something and sit down for a bit.': 'Acuérdate de comer algo y sentarte un rato.',
 };

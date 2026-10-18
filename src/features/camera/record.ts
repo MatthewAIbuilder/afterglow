@@ -70,8 +70,15 @@ export const FLICK_SPEED = 700;
 /** How far Discover shifts over while you drag. */
 export const PEEK_MAX = 110;
 
-/** Whether letting go after dragging right this far, this fast, opens the camera. */
-export const swipeOpens = (dx: number, vx: number, width: number) => dx > width * OPEN_AT || (vx > FLICK_SPEED && dx > 48);
+/**
+ * Whether letting go after dragging right this far, this fast, opens the
+ * camera. A worklet: the swipe's gesture asks it on the UI thread (without the
+ * directive, a release build closes the app as the swipe ends).
+ */
+export function swipeOpens(dx: number, vx: number, width: number) {
+  'worklet';
+  return dx > width * OPEN_AT || (vx > FLICK_SPEED && dx > 48);
+}
 
 /** "Filming at Cyclops Cove 4 · Friday": a festival you're going to that's on today (its night, when known). */
 export function filmingAt(festivals: readonly Festival[], going: readonly string[], now: Date): string | undefined {

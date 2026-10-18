@@ -108,8 +108,10 @@ describe('adding a memory from Discover', () => {
     await flush();
     expect(app.getByText('New memory')).toBeTruthy();
     expect(app.getByText('Sat, Dec 5 · 10:30 PM · Boca Raton')).toBeTruthy();
-    // Date and city agree: Cyclops Cove 4, Saturday, already chosen.
-    expect(app.getByRole('button', { name: 'Cyclops Cove 4', selected: true })).toBeTruthy();
+    // Date and city agree: Cyclops Cove 4, Saturday, already chosen: the one suggestion, with Change.
+    expect(app.getByText('Cyclops Cove 4')).toBeTruthy();
+    expect(app.getByText('On that day, where you filmed')).toBeTruthy();
+    expect(app.getByLabelText('Change the festival')).toBeTruthy();
     expect(app.getByRole('button', { name: 'Saturday', selected: true })).toBeTruthy();
     // No set times yet, so nobody is picked for you; that night's lineup is offered, SUBTRONICS among the first.
     await fireEvent.press(app.getByLabelText(/^SUBTRONICS, Playing Saturday/));
@@ -131,7 +133,9 @@ describe('adding a memory from Discover', () => {
     await flush();
     // The camera starts once its screen has slid in.
     await flush();
-    expect(app.getByRole('button', { name: 'Not at a festival or show', selected: true })).toBeTruthy();
+    // Nothing chosen: a search instead of a wall of guesses.
+    expect(app.queryByLabelText('Change the festival')).toBeNull();
+    expect(app.getByLabelText('Find the festival or show')).toBeTruthy();
     await fireEvent.press(app.getByLabelText('Save to Memories'));
     await flush();
     const [m] = await saved();
@@ -251,7 +255,8 @@ describe('Memories', () => {
     await flush();
     expect(app.getByText('Tag memory')).toBeTruthy();
     // Filmed on a Cyclops Cove night: the festival is already chosen, so tagging is one tap.
-    expect(app.getByRole('button', { name: 'Cyclops Cove 4', selected: true })).toBeTruthy();
+    expect(app.getByText('Cyclops Cove 4')).toBeTruthy();
+    expect(app.getByLabelText('Change the festival')).toBeTruthy();
     await fireEvent.press(app.getByLabelText('Save to Memories'));
     await flush();
     expect((await saved())[0].festivalId).toBe('cyclops-cove-4');

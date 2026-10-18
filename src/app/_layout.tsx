@@ -8,6 +8,7 @@ import { LikeSync } from '../features/community/LikeSync';
 import { OfflineNotice } from '../features/offline/OfflineNotice';
 import { ReminderSync } from '../features/notifications/ReminderSync';
 import { PushRegistration } from '../features/notifications/PushRegistration';
+import { SentMoment } from '../features/memories/SentMoment';
 import { TonightLauncher } from '../features/tonight/TonightLauncher';
 import { QuestTracker } from '../features/quests/QuestTracker';
 import { DailyQuestTracker } from '../features/quests/DailyQuestTracker';
@@ -264,6 +265,7 @@ export default function RootLayout() {
       <PushRegistration />
       <LikeSync />
       <QuestToast />
+      <SentMoment />
       <SunriseWatcher />
       <SecretStage />
       <OfflineNotice />

@@ -75,6 +75,8 @@ describe('share to Discover while tagging', () => {
     const shared = await mockSocial.service.festivalMemories('cyclops-cove-4', 10);
     expect(shared).toHaveLength(1);
     expect(shared[0]).toMatchObject({ handle: 'sam', artistId: 'subtronics', night: 'Saturday' });
+    // A little moment for it, over wherever you land.
+    expect(app.getByText('Shared to Discover')).toBeTruthy();
   });
 
   it('switched off, it stays in your Memories only', async () => {
