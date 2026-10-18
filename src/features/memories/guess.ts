@@ -123,6 +123,55 @@ export function festivalConfidence(g: FestivalGuess | undefined): 'sure' | 'like
   return date || g.reasons.includes('city') ? 'likely' : 'maybe';
 }
 
+/**
+ * The one festival to suggest for a new video (the user, 2026-10-18: "there
+ * should only be one festival suggestion… it should know which festival
+ * you're attending that day"): the one you're going to that's on that night;
+ * otherwise the only one whose date and place both agree (with no place on
+ * the video, the only festival on that night). Anything less sure suggests
+ * nothing, and the sheet offers a search with that night's events.
+ */
+export function suggestFestival(guesses: readonly FestivalGuess[], placeKnown = true): FestivalGuess | undefined {
+  const on = guesses.filter((g) => g.reasons.includes('date'));
+  const mine = on.find((g) => g.reasons.includes('going'));
+  if (mine) return mine;
+  const here = on.filter((g) => g.reasons.includes('city') || g.reasons.includes('region'));
+  if (here.length === 1) return here[0];
+  // No place to go on (no location on the video): the only festival on that night, if there's just one.
+  return !placeKnown && on.length === 1 ? on[0] : undefined;
+}
+
+/** Festivals on that night, nearest first (the place agreeing, then the rest), for the list under the search. */
+export function sameNight(guesses: readonly FestivalGuess[]): FestivalGuess[] {
+  return guesses.filter((g) => g.reasons.includes('date'));
+}
+
+/**
+ * One-night shows that night in the town it was filmed in (by the place name;
+ * nothing without one, as shows are everywhere every night), at most `max`. Pure.
+ */
+export function showsThatNight<S extends { date: string; location: string }>(shows: readonly S[], moment: Moment, max = 3): S[] {
+  if (!moment.when) return [];
+  const date = nightDate(moment.when);
+  const city = moment.place?.city;
+  const region = moment.place?.region;
+  if (!city && !region) return [];
+  return shows.filter((s) => s.date === date && (placeIn(city, s.location) || (!city && placeIn(region, s.location)))).slice(0, max);
+}
+
+/** How many artists the sheet offers at once: everyone on at that minute, up to this many. */
+export const ON_NOW_SHOWN = 12;
+
+/**
+ * The artists the sheet offers before any search: once set times are out,
+ * everyone on (or just starting or finishing) at that minute, your plan
+ * first; before set times, your likeliest few. Pure.
+ */
+export function offeredArtists(guesses: readonly ArtistGuess[], few = 3): ArtistGuess[] {
+  const now = guesses.filter((g) => g.reason === 'plan' || g.reason === 'on-now' || g.reason === 'close');
+  return now.length ? now.slice(0, ON_NOW_SHOWN) : guesses.slice(0, few);
+}
+
 export type ArtistReason =
   /** Your full-day plan had you there at that minute. */
   | 'plan'

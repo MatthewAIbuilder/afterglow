@@ -5,14 +5,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtistAvatar } from '../components/ArtistAvatar';
 import { SearchField } from '../components/SearchField';
 import { CheckIcon } from '../components/TabIcons';
-import type { Artist, Festival } from '../data/models';
+import type { Artist, Festival, Show } from '../data/models';
+import { whereWhen } from '../features/festivals/format';
+import { searchShows } from '../features/festivals/showsForYou';
 import { matchesName, normalize, searchFestivals } from '../features/festivals/search';
 import { trackArtistOn, type Track } from '../features/memories/track';
 import { TrackSuggestion } from '../features/memories/TrackSuggestion';
+import { celebrateSent } from '../features/memories/sent';
 import { cleanArtistName, newArtistId, noteArtist } from '../data/extraArtists';
 import { useHqRequests } from '../features/memories/useHqRequests';
-import { festivalsAround, isMany } from '../features/festivals/shelves';
-import { artistConfidence, festivalConfidence, guessArtists, guessFestivals, reasonLine, type ArtistGuess } from '../features/memories/guess';
+import { artistConfidence, guessArtists, guessFestivals, offeredArtists, reasonLine, sameNight, showsThatNight, suggestFestival, type ArtistGuess } from '../features/memories/guess';
 import type { Memory, MemoryTagInput } from '../features/memories/models';
 import { sharedAsMemory } from '../features/memories/webVideo';
 import { momentLine } from '../features/memories/organize';
@@ -62,9 +64,12 @@ const OLD_VIDEO_MS = 30 * 24 * 3600_000;
  * and your plan), so saving is usually one tap; everything is a tap or a
  * short search to change. The same sheet retags a saved memory (`id`).
  */
-/** Festivals shown as choices before searching, and search results shown. */
-const FESTIVAL_CHIPS = 5;
-const FESTIVAL_RESULTS = 8;
+/** Festivals offered under the festival search (that night's, or what you typed). */
+const FESTIVAL_RESULTS = 6;
+/** One-night shows offered under the festival search. */
+const SHOW_RESULTS = 3;
+/** A festival or a one-night show, offered under the search. */
+type EventChoice = { kind: 'festival'; festival: Festival } | { kind: 'show'; show: Show };
 
 /** A video just filmed (or chosen on the website) can be trimmed when it's longer than this. */
 const TRIM_FROM_SEC = 5;
@@ -137,23 +142,12 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
       ),
     [catalog.festivals, whenMs, city, region, going],
   );
-  // With many festivals: the guesses, yours and the ones around that date, and a search for the rest.
-  const many = isMany(catalog.festivals);
   const [festivalQuery, setFestivalQuery] = useState('');
-  const [searchingFestival, setSearchingFestival] = useState(false);
-  const festivals = useMemo(() => {
-    const first = guesses.map((g) => g.festival);
-    if (festivalQuery.trim()) return searchFestivals(catalog.festivals, festivalQuery);
-    if (!many) return [...first, ...catalog.festivals.filter((f) => !first.includes(f))];
-    const chosen = existing?.festivalId ? catalog.festival(existing.festivalId) : undefined;
-    const mine = catalog.festivals.filter((f) => going.includes(f.id));
-    const when = whenMs !== undefined && Number.isFinite(whenMs) ? new Date(whenMs) : undefined;
-    return festivalsAround(catalog.festivals, { first: [...first, ...(chosen ? [chosen] : []), ...mine], when });
-  }, [guesses, catalog, many, festivalQuery, existing?.festivalId, going, whenMs]);
-  const topFestival = guesses[0];
-  const festivalSure = festivalConfidence(topFestival) !== 'maybe';
+  // One suggestion only: the festival you're going to that night, or the only one the date and place agree on.
+  const suggested = useMemo(() => suggestFestival(guesses, !!(city || region)), [guesses, city, region]);
+  const festivalSure = !!suggested;
 
-  const [festivalId, setFestivalId] = useState<string | undefined>(() => existing?.festivalId ?? (festivalSure && !presetShow ? topFestival?.festival.id : undefined));
+  const [festivalId, setFestivalId] = useState<string | undefined>(() => existing?.festivalId ?? (suggested && !presetShow ? suggested.festival.id : undefined));
   // A festival from before Afterglow (a video from your camera roll): its name and year instead of a festival on Afterglow.
   const capturedAt = existing?.capturedAt ?? (whenMs !== undefined && Number.isFinite(whenMs) ? new Date(whenMs).toISOString() : new Date().toISOString());
   const [past, setPast] = useState<PastEvent | undefined>(existing?.past);
@@ -180,7 +174,7 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
   const [pickingShow, setPickingShow] = useState(false);
   const festival = festivalId ? catalog.festival(festivalId) : undefined;
   const guessedHere = guesses.find((g) => g.festival.id === festivalId);
-  const [night, setNight] = useState<string | undefined>(() => existing?.night ?? (festivalSure && !presetShow ? topFestival?.night : undefined));
+  const [night, setNight] = useState<string | undefined>(() => existing?.night ?? (suggested && !presetShow ? suggested.night : undefined));
   // A new festival starts on the night the date says (or none).
   const pickFestival = (f: Festival | undefined) => {
     haptic.select();
@@ -290,10 +284,30 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
   const sharedCopy = !!sharedMemory || (!!existing?.sharedId && !!social.user && existing.sharedBy === social.user.uid);
   // Once shared, a throwback stays one (its year and name can change) and nothing else becomes one.
   const throwbackLocked = sharedCopy && !!existing?.past && !existing.festivalId;
-  // The choices wrap rather than scroll off the edges, so only the likeliest few festivals show; the rest are a search away.
-  const listed = [...(festival && !festivals.includes(festival) ? [festival] : []), ...festivals];
-  const shownFestivals = searchingFestival && festivalQuery.trim() ? listed.slice(0, FESTIVAL_RESULTS) : listed.slice(0, FESTIVAL_CHIPS);
-  const moreFestivals = many || listed.length > FESTIVAL_CHIPS;
+  // No festival picked: a search, with that night's festivals and nearby shows under it until you type.
+  const eventRows = useMemo((): EventChoice[] => {
+    const q = festivalQuery.trim();
+    if (q) {
+      const fs = searchFestivals(catalog.festivals, q).slice(0, FESTIVAL_RESULTS);
+      const ss = searchShows(catalog.shows, q, (id) => catalog.artist(id)?.name, SHOW_RESULTS);
+      return [...fs.map((f) => ({ kind: 'festival' as const, festival: f })), ...ss.map((s) => ({ kind: 'show' as const, show: s }))];
+    }
+    const moment = { when: whenMs !== undefined && Number.isFinite(whenMs) ? new Date(whenMs) : undefined, place: { city, region } };
+    return [
+      ...sameNight(guesses).slice(0, FESTIVAL_RESULTS).map((g) => ({ kind: 'festival' as const, festival: g.festival })),
+      ...showsThatNight(catalog.shows, moment, SHOW_RESULTS).map((s) => ({ kind: 'show' as const, show: s })),
+    ];
+  }, [festivalQuery, catalog, guesses, whenMs, city, region]);
+  const pickShow = (s: Show) => {
+    haptic.select();
+    setShow(showTagOf(s));
+    setFestivalId(undefined);
+    setNight(undefined);
+    setPast(undefined);
+    setPickingPast(false);
+    setPickingShow(false);
+    setFestivalQuery('');
+  };
   // Who's tagged in it already, from Discover (where the tags live once it's shared).
   const sharedTagsId = sharedCopy ? existing?.sharedId : undefined;
   useEffect(() => {
@@ -400,6 +414,7 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
       }
       if (shareOn) shareIt({ ...existing, ...tag });
       if (crewOn) crewUpdates.sendVideo({ ...existing, ...tag });
+      celebrateSent({ discover: shareOn, crew: crewOn });
       leave();
       return;
     }
@@ -429,6 +444,8 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
     if (shareOn) shareIt(kept);
     // Waits for signal (and for the Discover upload, if any) on its own.
     if (crewOn) crewUpdates.sendVideo(kept);
+    // A little moment for it (and a nudge to look after yourself).
+    celebrateSent({ discover: shareOn, crew: crewOn });
     if (webPost) {
       // The upload runs in this page: Memories shows how far along it is.
       leaving.current = true;
@@ -501,7 +518,8 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
     );
   const aspect = (existing?.width ?? draft?.width ?? 9) / (existing?.height ?? draft?.height ?? 16);
   const videoH = Math.min(height * 0.34, 300);
-  const top = artistGuesses.slice(0, TOP_GUESSES);
+  // Everyone on stage at that minute once set times are out (your plan first); before then, your likeliest few.
+  const top = offeredArtists(artistGuesses, TOP_GUESSES);
   const chosen = chosenArtist ? catalog.artist(chosenArtist) : undefined;
   // Everyone ticked who isn't already a row above (found by searching).
   const shownIds = new Set(festival ? top.map((g) => g.artist.id) : bill.slice(0, TOP_GUESSES).map((a) => a.id));
@@ -572,49 +590,92 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
           <View style={styles.wrap}>
             <Chip label={t('A past festival…')} on={pickingPast} onPress={() => setPickingPast(true)} />
           </View>
+        ) : festival ? (
+          // The one festival it's sure of (or the one you chose), with a way to change it.
+          <View style={styles.rows}>
+            <View style={styles.picked}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.pickedName} numberOfLines={2}>
+                  {festival.name}
+                </Text>
+                <Text style={styles.pickedWhy} numberOfLines={1}>
+                  {guessedHere?.reasons.includes('going') && guessedHere.reasons.includes('date')
+                    ? t('You’re going, and it’s on that day')
+                    : guessedHere?.reasons.includes('date')
+                      ? t('On that day, where you filmed')
+                      : whereWhen(festival)}
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => {
+                  haptic.select();
+                  pickFestival(undefined);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={t('Change the festival')}
+                hitSlop={10}
+              >
+                <Text style={styles.link}>{t('Change')}</Text>
+              </Pressable>
+            </View>
+          </View>
         ) : (
-          <View style={styles.wrap}>
-            {shownFestivals.map((f) => (
-              <Chip key={f.id} label={f.name} on={f.id === festivalId} onPress={() => pickFestival(f.id === festivalId ? undefined : f)} />
-            ))}
-            {moreFestivals && !searchingFestival ? (
-              <Chip
-                label={t('Another festival…')}
-                on={false}
-                onPress={() => {
-                  haptic.select();
-                  setSearchingFestival(true);
-                }}
-              />
+          <>
+            <View style={styles.festivalSearch}>
+              <SearchField value={festivalQuery} onChange={setFestivalQuery} placeholder={t('Search festivals and shows')} label={t('Find the festival or show')} />
+            </View>
+            {eventRows.length ? (
+              <>
+                {!festivalQuery.trim() ? <Text style={styles.subhead}>{t('On that night')}</Text> : null}
+                <View style={styles.rows}>
+                  {eventRows.map((row) =>
+                    row.kind === 'festival' ? (
+                      <EventRow
+                        key={row.festival.id}
+                        name={row.festival.name}
+                        detail={whereWhen(row.festival)}
+                        onPress={() => {
+                          pickFestival(row.festival);
+                          setFestivalQuery('');
+                        }}
+                      />
+                    ) : (
+                      <EventRow key={row.show.id} name={showTagOf(row.show).name} detail={showLabel(showTagOf(row.show))} onPress={() => pickShow(row.show)} />
+                    ),
+                  )}
+                </View>
+              </>
+            ) : festivalQuery.trim() ? (
+              <Text style={[styles.quiet, styles.padX]}>{t('Nothing matches “{query}”. Add it as a past festival or a one-night show.', { query: festivalQuery.trim() })}</Text>
             ) : null}
-            {sharedCopy ? null : (
-              <Chip
-                label={t('A past festival…')}
-                on={pickingPast}
+            <View style={styles.links}>
+              {sharedCopy ? null : (
+                <Pressable
+                  onPress={() => {
+                    haptic.select();
+                    setPickingPast((v) => !v);
+                    setPickingShow(false);
+                  }}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                >
+                  <Text style={[styles.link, pickingPast && styles.linkOn]}>{t('A past festival…')}</Text>
+                </Pressable>
+              )}
+              <Pressable
                 onPress={() => {
                   haptic.select();
-                  setPickingPast((v) => !v);
-                  setPickingShow(false);
+                  setPickingShow((v) => !v);
+                  setPickingPast(false);
                 }}
-              />
-            )}
-            <Chip
-              label={t('A one-night show…')}
-              on={pickingShow}
-              onPress={() => {
-                haptic.select();
-                setPickingShow((v) => !v);
-                setPickingPast(false);
-              }}
-            />
-            <Chip label={t('Not at a festival or show')} on={!festivalId && !past && !show} onPress={() => pickFestival(undefined)} />
-          </View>
+                hitSlop={8}
+                accessibilityRole="button"
+              >
+                <Text style={[styles.link, pickingShow && styles.linkOn]}>{t('A one-night show…')}</Text>
+              </Pressable>
+            </View>
+          </>
         )}
-        {searchingFestival && !past && !show ? (
-          <View style={styles.festivalSearch}>
-            <SearchField value={festivalQuery} onChange={setFestivalQuery} placeholder={t('Find the festival')} label={t('Find the festival')} />
-          </View>
-        ) : null}
 
         {pickingPast || past ? (
           <PastPicker
@@ -706,8 +767,8 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
         </View>
 
         <View style={styles.pad}>
-          {searching || !festival ? (
-            <>
+          {/* Searching is always one tap away: anyone on the lineup, anyone on Afterglow, or someone new. */}
+
               <View style={styles.searchPad}>
               <SearchField
                 value={query}
@@ -752,12 +813,7 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
                   <Text style={styles.quiet}>{t('No one matches “{query}”.', { query: query.trim() })}</Text>
                 ) : null}
               </View>
-            </>
-          ) : (
             <View style={styles.links}>
-              <Pressable onPress={() => setSearching(true)} hitSlop={8} accessibilityRole="button">
-                <Text style={styles.link}>{t('Someone else')}</Text>
-              </Pressable>
               <Pressable
                 onPress={() => {
                   haptic.select();
@@ -770,7 +826,6 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
                 <Text style={[styles.link, !chosenArtist && touchedArtist && styles.linkOn]}>{t('Not sure')}</Text>
               </Pressable>
             </View>
-          )}
         </View>
         <TrackSuggestion
           uri={sharedMemory ? undefined : videoUri}
@@ -892,6 +947,27 @@ function crewLine(names: string[], filmed: string | undefined): string {
     : t('{crews} see it marked with when you filmed it, even if your signal holds it back. Only your crew.', { crews });
 }
 
+/** A festival or show to choose, under the search: its name and where and when. */
+function EventRow({ name, detail, onPress }: { name: string; detail?: string; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={detail ? `${name}, ${detail}` : name}
+      style={({ pressed }) => [styles.eventRow, pressed && { opacity: 0.75, transform: [{ scale: 0.99 }] }]}
+    >
+      <Text style={styles.eventName} numberOfLines={1}>
+        {name}
+      </Text>
+      {detail ? (
+        <Text style={styles.eventDetail} numberOfLines={1}>
+          {detail}
+        </Text>
+      ) : null}
+    </Pressable>
+  );
+}
+
 function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
   return (
     <Pressable
@@ -947,7 +1023,32 @@ const styles = StyleSheet.create({
   section: { ...type.label, color: color.moonFaint, textTransform: 'uppercase', letterSpacing: 1, paddingHorizontal: space.xl, marginTop: space.xl, marginBottom: space.sm },
   chips: { paddingHorizontal: space.xl, gap: space.sm },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: space.xl, gap: space.sm },
-  festivalSearch: { paddingHorizontal: space.xl, marginTop: space.md },
+  festivalSearch: { paddingHorizontal: space.xl, marginBottom: space.sm },
+  subhead: { ...type.caption, color: color.moonDim, paddingHorizontal: space.xl, marginTop: space.xs, marginBottom: space.sm },
+  padX: { paddingHorizontal: space.xl },
+  picked: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    padding: space.lg,
+    borderRadius: radius.md,
+    backgroundColor: glowA(0.12),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: glowA(0.45),
+  },
+  pickedName: { ...type.headline, color: color.moon },
+  pickedWhy: { ...type.caption, color: color.moonDim, marginTop: 2 },
+  eventRow: {
+    paddingVertical: space.md,
+    paddingHorizontal: space.lg,
+    borderRadius: radius.md,
+    backgroundColor: color.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+    borderTopColor: color.rim,
+  },
+  eventName: { ...type.headline, fontSize: 16, color: color.moon },
+  eventDetail: { ...type.caption, color: color.moonDim, marginTop: 2 },
   chip: {
     paddingHorizontal: space.md + 2,
     paddingVertical: space.sm,

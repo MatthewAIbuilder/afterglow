@@ -156,7 +156,7 @@ describe('posting a video from the website', () => {
     const app = await openTagging();
     await fireEvent.press(app.getByLabelText(/^SUBTRONICS, Playing Saturday/));
     expect(app.getByText('Playing back to back? Tick everyone who was on.')).toBeTruthy();
-    await fireEvent.press(app.getByText('Someone else'));
+    // The search is always there.
     await fireEvent.changeText(app.getByLabelText('Search for the artist'), 'hedex');
     await fireEvent.press(app.getByLabelText(/^HEDEX/));
     expect(app.getByText('Back to back: SUBTRONICS b2b HEDEX')).toBeTruthy();
