@@ -60,6 +60,7 @@ import { artistLook } from '../sprouts/artistLook';
 import { tierLabel } from '../sprouts/artistSprouts';
 import { shouldPlay } from './playback';
 import { StageScene } from './StageScene';
+import { markUnplayable } from './unplayable';
 import { fillsScreen, MIN_PLAYER, tallLayout } from './videoLayout';
 import { useSendOrShare } from '../messages/useSendOrShare';
 import { ToeGlyph } from '../toes/Toe';
@@ -169,7 +170,10 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
   }, [isActive, reacted, reaction.liked, community, clip, remember]);
   const [videoFailed, setVideoFailed] = useState(false);
   const showVideo = !!media && !videoFailed;
-  const failVideo = useCallback(() => setVideoFailed(true), []);
+  const failVideo = useCallback(() => {
+    markUnplayable(clip.id);
+    setVideoFailed(true);
+  }, [clip.id]);
   const playerSwipe = usePlayerSwipe(pager);
   const videoProgress = useSharedValue(0);
   const videoProgressStyle = useAnimatedStyle(() => ({ width: `${videoProgress.value * 100}%` }));
