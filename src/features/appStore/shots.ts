@@ -15,6 +15,8 @@ import { bySoonest, isOver } from '../festivals/shelves';
 export const DEVICES = [
   { key: '6.9', name: '6.9-inch', width: 1320, height: 2868 },
   { key: '6.5', name: '6.5-inch', width: 1284, height: 2778 },
+  // App Store Connect's iPhone 6.1"/6.3" slot: 1206 x 2622, the size of a recent iPhone's own screenshots.
+  { key: '6.3', name: '6.3-inch', width: 1206, height: 2622 },
 ] as const;
 export type Device = (typeof DEVICES)[number];
 

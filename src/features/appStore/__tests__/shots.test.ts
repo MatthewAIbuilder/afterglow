@@ -23,7 +23,7 @@ describe('App Store screenshots', () => {
       expect(css.width * SCALE).toBe(d.width);
       expect(css.height * SCALE).toBe(d.height);
     }
-    expect(DEVICES.map((d) => `${d.width}x${d.height}`)).toEqual(['1320x2868', '1284x2778']);
+    expect(DEVICES.map((d) => `${d.width}x${d.height}`)).toEqual(['1320x2868', '1284x2778', '1206x2622']);
   });
 
   it('picks the soonest real festival still to come with a proper lineup, never a demo one', () => {
