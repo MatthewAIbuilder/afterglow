@@ -9,7 +9,9 @@ import { useTaste } from '../../state/taste';
 import { lineupClips } from '../festivals/links';
 import { tonightClips, tonightOrder } from '../tonight/tonight';
 import { FOLLOWING, inSound, likeOf, MIX, soundOf, TONIGHT } from './focus';
+import { clipMedia } from './media';
 import { soundcloudClips } from './soundcloud';
+import { isUnplayable } from './unplayable';
 import { type FeedItem, rankFeed } from '../recommend/feed';
 import { rankStation, stationArtists } from '../recommend/station';
 
@@ -92,7 +94,8 @@ export function useRankedFeed(
   if (ready && inputs.some((v, i) => v !== state.inputs[i])) {
     const keep = state.feed && focusKey === state.inputs[10] ? state.feed.slice(0, activeIndex + 2).map((it) => it.clip.id) : [];
     const input = {
-      clips,
+      // Only clips with something to watch: no drawn-stage placeholders, and none whose video failed this session.
+      clips: clips.filter((c) => !!clipMedia(c) && !isUnplayable(c.id)),
       artists: catalog.artists,
       similarity,
       ratings,
