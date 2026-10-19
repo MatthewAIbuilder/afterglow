@@ -23,7 +23,7 @@ export const SCALE = 3;
 export const cssSize = (d: Device) => ({ width: d.width / SCALE, height: d.height / SCALE });
 
 /** The app's screen inside the frame, as a share of the frame's width. */
-export const SCREEN_SHARE = 0.76;
+export const SCREEN_SHARE = 0.72;
 
 /** A festival worth showing needs a lineup with this many acts. */
 export const LINEUP_MIN = 20;
@@ -127,6 +127,8 @@ export function seedStorage({ festival, artists, clips, whatsNewKey, now }: Seed
     'reactions.v1': JSON.stringify(reactions),
     'seen.v1': JSON.stringify(seen),
     'care.v1': JSON.stringify(care),
+    'prep.v1': JSON.stringify({ [festival.id]: ['ticket', 'id', 'power', 'water'] }),
+    'prepCustom.v1': JSON.stringify({ [festival.id]: [{ id: 'cposter', text: 'Poncho' }, { id: 'csnacks', text: 'Snacks' }] }),
   };
 }
 
@@ -147,18 +149,19 @@ export type Shot = {
 export function shotList(festival: Festival): Shot[] {
   const page = `/festival/${festival.id}`;
   const shots: Shot[] = [
-    { id: 'discover', headline: 'Live sets from your lineups', sub: 'Swipe through clips of the artists you’re going to see.', path: '/' },
-    { id: 'for-you', headline: 'A plan built from your sound', sub: `${festival.name}, ranked by what you love.`, path: page },
-    { id: 'my-sound', headline: 'See your sound', sub: 'Every artist you love, as a living map.', path: '/sound?view=map' },
+    { id: 'discover', headline: 'Live sets from your lineups', sub: 'Swipe through clips of the artists you’re about to see, from the festivals you’re going to.', path: '/' },
+    { id: 'for-you', headline: 'A plan built from your sound', sub: `${festival.name}, ranked by what you love, with your must-sees and a reminder before each set.`, path: page },
+    { id: 'my-sound', headline: 'See your sound', sub: 'Every artist you love, as a living map. The closer two bubbles, the more alike they sound.', path: '/sound?view=map' },
+    { id: 'sounds', headline: 'Find your sounds', sub: 'Your taste, grouped by sound: house, bass, trance and more. Tap one to dive in.', path: '/sound' },
+    { id: 'get-ready', headline: 'Get ready for the weekend', sub: 'A checklist for ticket, travel and packing. Add your own, and get a reminder the day before.', path: `/prep/${festival.id}` },
   ];
   if (festival.sets?.length) {
-    shots.push({ id: 'timetable', headline: 'Your route, set to set', sub: 'The day planned around the sets you want.', path: page, scrollTo: 'Full day route' });
+    shots.push({ id: 'timetable', headline: 'Your route, set to set', sub: 'Once set times are out, your day is planned around the sets you want to see.', path: page, scrollTo: 'Full day route' });
   }
   shots.push(
-    { id: 'festivals', headline: 'Every festival, counted down', sub: 'Lineups, dates and who you’ll love at each.', path: '/festivals' },
-    { id: 'festival-map', headline: 'Find festivals near you', sub: 'Every festival on one map.', path: '/festival-map' },
-    { id: 'crew', headline: 'Go with your crew', sub: 'Start a crew, share picks and find each other.', path: '/together' },
-    { id: 'care', headline: 'Look after yourself', sub: 'Water, how you feel and help close by. Private to you.', path: '/care' },
+    { id: 'festivals', headline: 'Every festival, counted down', sub: 'Lineups, dates and who you’ll love at each, with a countdown to the ones you’re going to.', path: '/festivals' },
+    { id: 'crew', headline: 'Go with your crew', sub: 'Start a crew with a group photo, share picks, check in and find each other in the crowd.', path: '/together' },
+    { id: 'care', headline: 'Look after yourself', sub: 'Water, how you feel and help close by. Everything stays private on your phone.', path: '/care' },
   );
   return shots;
 }
@@ -196,7 +199,7 @@ linear-gradient(180deg,#0E0C24 0%,#0A0918 60%,#0A0918 100%)}
 .text{position:absolute;left:0;right:0;top:${Math.round(height * 0.055)}px;padding:0 ${Math.round(width * 0.08)}px;text-align:center}
 h1{margin:0;font-size:${Math.round(width * 0.085)}px;line-height:1.1;font-weight:700;letter-spacing:-0.03em}
 p{margin:${Math.round(width * 0.025)}px 0 0;font-size:${Math.round(width * 0.04)}px;line-height:1.35;color:rgba(243,240,255,.68);font-weight:500}
-.screen{position:absolute;left:${Math.round((width - screenW) / 2)}px;top:${Math.round(height * 0.2)}px;width:${screenW}px;height:${screenH}px;border-radius:${radius}px;overflow:hidden;
+.screen{position:absolute;left:${Math.round((width - screenW) / 2)}px;top:${Math.round(height * 0.235)}px;width:${screenW}px;height:${screenH}px;border-radius:${radius}px;overflow:hidden;
 box-shadow:0 0 0 1px rgba(255,255,255,.14),0 0 ${Math.round(width * 0.12)}px rgba(169,124,255,.35),0 ${Math.round(width * 0.04)}px ${Math.round(width * 0.1)}px rgba(0,0,0,.6)}
 .screen img{display:block;width:100%;height:100%}
 </style></head><body><div class="sky"></div><div class="text"><h1>${escapeHtml(headline)}</h1><p>${escapeHtml(sub)}</p></div>

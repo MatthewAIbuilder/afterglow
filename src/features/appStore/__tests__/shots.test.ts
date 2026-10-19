@@ -68,10 +68,13 @@ describe('App Store screenshots', () => {
   });
 
   it('shows the timetable only once set times are out', () => {
-    expect(shotList(fest('f')).map((s) => s.id)).toEqual(['discover', 'for-you', 'my-sound', 'festivals', 'festival-map', 'crew', 'care']);
+    expect(shotList(fest('f')).map((s) => s.id)).toEqual(['discover', 'for-you', 'my-sound', 'sounds', 'get-ready', 'festivals', 'crew', 'care']);
     const timed = fest('f', { sets: [{ artistId: 'a0', day: 'Fri', stageId: 's', start: '22:00', end: '23:00' } as never] });
     expect(shotList(timed).map((s) => s.id)).toContain('timetable');
-    for (const s of shotList(timed)) expect(s.headline.length).toBeLessThanOrEqual(30);
+    for (const s of shotList(timed)) {
+      expect(s.headline.length).toBeLessThanOrEqual(30);
+      expect(s.sub.length).toBeLessThanOrEqual(110);
+    }
     expect(shotFile(DEVICES[0], 0, shotList(timed)[0])).toBe('6.9-01-discover.png');
   });
 
