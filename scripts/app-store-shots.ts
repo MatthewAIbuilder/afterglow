@@ -24,6 +24,10 @@
  * CATALOG_URL, otherwise just the built-in data. Artist photos and clips
  * only show when the computer can reach Deezer and YouTube.
  *
+ * Real phone screenshots: put PNGs named after a shot id (my-sound.png, festival-map.png) in
+ * docs/app-store/photos (or --photos <folder>); they replace that shot's website capture, and
+ * photo-only shots (the festival map) are made only when one is there.
+ *
  * Browser: CHROMIUM_PATH if set, else /opt/pw-browsers/chromium if it exists,
  * else Microsoft Edge on Windows, else Google Chrome.
  */
@@ -78,7 +82,8 @@ function args() {
   };
   const festival = flag('--festival');
   const out = flag('--out');
-  return { dist: resolve(list[0] ?? 'dist'), festival, out: resolve(out ?? 'docs/app-store/screenshots') };
+  const photos = flag('--photos');
+  return { dist: resolve(list[0] ?? 'dist'), photos: resolve(photos ?? 'docs/app-store/photos'), festival, out: resolve(out ?? 'docs/app-store/screenshots') };
 }
 
 /** The catalogue file the screenshots use, as text, and where it came from. */
@@ -125,7 +130,7 @@ async function launch(): Promise<Browser> {
 }
 
 async function main() {
-  const { dist, festival: wanted, out } = args();
+  const { dist, festival: wanted, out, photos } = args();
   if (!existsSync(join(dist, 'index.html'))) {
     console.error(`No website build in ${dist}. Run "npm run build:web" first, or pass the export folder.`);
     process.exit(1);
@@ -163,15 +168,25 @@ async function main() {
         await context.route(CATALOG_URL, (route) => route.fulfill({ status: 200, contentType: 'application/json', body }));
       }
       const page = await context.newPage();
-      for (const [i, shot] of shots.entries()) {
-        await page.goto(site.url + shot.path, { waitUntil: 'load' });
-        await page.waitForTimeout(SETTLE_MS);
-        if (shot.scrollTo) {
-          await page.getByText(shot.scrollTo).first().scrollIntoViewIfNeeded();
-          await page.waitForTimeout(800);
+      let number = 0;
+      for (const shot of shots) {
+        // A real phone screenshot named after the shot (docs/app-store/photos/my-sound.png) replaces the website capture.
+        const photo = join(photos, `${shot.id}.png`);
+        const real = existsSync(photo);
+        if (shot.photoOnly && !real) continue;
+        const i = number++;
+        let raw: Buffer;
+        if (real) raw = readFileSync(photo);
+        else {
+          await page.goto(site.url + shot.path, { waitUntil: 'load' });
+          await page.waitForTimeout(SETTLE_MS);
+          if (shot.scrollTo) {
+            await page.getByText(shot.scrollTo).first().scrollIntoViewIfNeeded();
+            await page.waitForTimeout(800);
+          }
+          raw = await page.screenshot();
+          check(raw, device.width, device.height, `${shot.id} (screen)`);
         }
-        const raw = await page.screenshot();
-        check(raw, device.width, device.height, `${shot.id} (screen)`);
         const frame = await context.newPage();
         await frame.setContent(frameHtml({ headline: shot.headline, sub: shot.sub, image: `data:image/png;base64,${raw.toString('base64')}`, ...viewport }));
         await frame.waitForFunction(() => Array.from(document.images).every((img) => img.complete));

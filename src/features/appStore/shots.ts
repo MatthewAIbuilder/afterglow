@@ -138,6 +138,8 @@ export type Shot = {
   sub: string;
   /** Where the app opens for it. */
   path: string;
+  /** Only made from a real phone screenshot (the website can't draw it, e.g. map tiles): skipped without one. */
+  photoOnly?: boolean;
   /** Text to scroll into view before the capture. */
   scrollTo?: string;
 };
@@ -160,6 +162,7 @@ export function shotList(festival: Festival): Shot[] {
   }
   shots.push(
     { id: 'festivals', headline: 'Every festival, counted down', sub: 'Lineups, dates and who you’ll love at each, with a countdown to the ones you’re going to.', path: '/festivals' },
+    { id: 'festival-map', headline: 'Festivals near you', sub: 'Every festival on one map, with the ones you’re going to and will love lit up.', path: '/festival-map', photoOnly: true },
     { id: 'crew', headline: 'Go with your crew', sub: 'Start a crew with a group photo, share picks, check in and find each other in the crowd.', path: '/together' },
     { id: 'care', headline: 'Look after yourself', sub: 'Water, how you feel and help close by. Everything stays private on your phone.', path: '/care' },
   );
