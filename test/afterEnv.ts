@@ -26,6 +26,7 @@ import { forgetExtraArtists } from '../src/data/extraArtists';
 import { forgetMyOrg, forgetOrgs } from '../src/state/orgs';
 import { forgetAppSettings } from '../src/state/appSettings';
 import { forgetTicketTaps } from '../src/features/partners/ticketTaps';
+import { forgetUnplayable } from '../src/features/discover/unplayable';
 
 // Shared stores (daily quests, secrets, tips): start every test with fresh ones.
 beforeEach(() => {
@@ -57,4 +58,5 @@ beforeEach(() => {
   forgetOrgs();
   forgetMyOrg();
   forgetAppSettings();
+  forgetUnplayable();
 });
