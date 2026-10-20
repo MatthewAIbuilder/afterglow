@@ -399,12 +399,12 @@ function FullProfile() {
             onFind={() => router.navigate('/festivals')}
             throwbacks={b.throwbacks}
             onAddPast={() => void pickPast('library')}
+            shows={showsSplit.upcoming}
           >
             <CrewsList
               crews={social.user ? crews.map((c) => ({ id: c.id, name: c.name, festival: eventOf(c.festivalId)?.name, people: c.members.length })) : []}
             />
-            {/* One-night shows: their own list (they aren't festivals, so they don't count as one). */}
-            <GoingShowsList title={t('Shows you’re going to')} shows={showsSplit.upcoming} />
+            {/* One-night shows you went to: their own list (they aren't festivals, so they don't count as one). Coming ones are under Planning. */}
             <GoingShowsList title={t('Shows you went to')} shows={showsSplit.past} />
           </PassportTab>
         ) : (

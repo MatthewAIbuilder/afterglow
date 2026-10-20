@@ -103,11 +103,16 @@ describe('shows for you', () => {
     expect(JSON.parse((await AsyncStorage.getItem('goingShows.v1')) ?? '[]')).toEqual([expect.objectContaining({ id: 'edm-2', title: 'Club Two', where: 'Denver, CO' })]);
     await act(async () => router.navigate('/profile'));
     await flush();
-    // A show isn't a festival: the count stays at none, and tapping it opens the Festivals tab with the show in it.
+    // A show isn't a festival: the count stays at none, and tapping it opens the Festivals tab with the show under Planning.
     await fireEvent.press(app.getByLabelText('0 festivals'));
     await flush();
-    expect(app.getByText('Shows you’re going to')).toBeTruthy();
+    expect(app.getByLabelText('Planning, 1')).toBeTruthy();
     expect(app.getByText('Club Two')).toBeTruthy();
+    // And with what's coming up on the Festivals tab.
+    await act(async () => router.navigate('/festivals'));
+    await flush();
+    expect(app.getByText('Shows you’re going to')).toBeTruthy();
+    expect(app.getAllByLabelText(/^Club Two, .*Denver, CO/).length).toBeGreaterThan(0);
   });
 
   it('shares a link to the show on the website', async () => {

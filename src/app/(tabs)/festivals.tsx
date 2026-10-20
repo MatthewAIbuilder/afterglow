@@ -44,6 +44,9 @@ import { useCatalog, useCatalogRefresh } from '../../state/catalog';
 import { revealSecret } from '../../state/secrets';
 import { type FestivalsView, useFestivalsView } from '../../state/festivalsView';
 import { useGoing } from '../../state/going';
+import { useGoingShows } from '../../state/goingShows';
+import { splitShows } from '../../features/festivals/goingShows';
+import { GoingShowsList } from '../../features/festivals/GoingShowsList';
 import { useWeekends } from '../../state/weekends';
 import { useRatings } from '../../state/ratings';
 import { useTaste } from '../../state/taste';
@@ -124,6 +127,9 @@ function FestivalsScreen({ onlyOurs }: { onlyOurs?: () => void }) {
   // Club shows: a shelf picked for you (near you first once location is on), and found by search.
   const showTaste = useShowTaste();
   const todayKey = localDay(today);
+  // One-night shows you tapped I'm going on, coming up: with your festivals, soonest first.
+  const { shows: myShows } = useGoingShows();
+  const goingShows = useMemo(() => splitShows(myShows, todayKey).upcoming, [myShows, todayKey]);
   const showPicks = useMemo(() => showsForYou(catalog.shows, showTaste, { today: todayKey, here: nearby.here }), [catalog.shows, showTaste, todayKey, nearby.here]);
   const foundShows = useMemo(
     () => {
@@ -283,6 +289,14 @@ function FestivalsScreen({ onlyOurs }: { onlyOurs?: () => void }) {
             {[ready, upNext].map((f) => (f ? <FestivalWeekCard key={`week-${f.id}`} festival={f} showName /> : null))}
             {alsoGoing.length > 0 && <SectionHead title={upNext || ready ? t('Also going') : t('Going')} />}
             {list(alsoGoing, true)}
+            {goingShows.length > 0 ? (
+              <>
+                <SectionHead title={t('Shows you’re going to')} />
+                <View style={styles.goingShows}>
+                  <GoingShowsList shows={goingShows} />
+                </View>
+              </>
+            ) : null}
             {/* Club shows picked for you, to swipe through; every show behind See all. */}
             {showPicks.picks.length > 0 ? (
               <>
@@ -579,6 +593,7 @@ const styles = StyleSheet.create({
   shelfWrap: { flexGrow: 0, marginBottom: space.md },
   upShelfWrap: { flexGrow: 0, marginBottom: space.xl },
   upShelf: { paddingHorizontal: space.lg, gap: space.md },
+  goingShows: { paddingHorizontal: space.lg, marginBottom: space.xl },
   upCard: { marginHorizontal: 0, marginBottom: 0 },
   shelf: { paddingHorizontal: space.lg, gap: space.md },
   showMore: {
