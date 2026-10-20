@@ -12,7 +12,7 @@ import { PageActions } from '../../components/PageActions';
 import { PageTitle } from '../../components/PageTitle';
 import { WEB_URL } from '../../config/app';
 import type { Artist } from '../../data/models';
-import { localDay, showDateSpoken, showTitle, withLine } from '../../features/artists/shows';
+import { localDay, showDateSpoken, showDayShort, showDaysShort, showTitle, withLine } from '../../features/artists/shows';
 import { CalendarPill } from '../../features/calendar/CalendarPill';
 import { showEvent } from '../../features/calendar/events';
 import { distanceLabel } from '../../features/festivals/near';
@@ -36,13 +36,16 @@ import { t, tc } from '../../i18n';
 import { TryFestivalMode } from '../../features/festivalMode/FestivalModeCard';
 import { showAsEvent } from '../../features/festivalMode/showEvent';
 import { goingShowOf } from '../../features/festivals/goingShows';
+import { showRun } from '../../features/festivals/showRuns';
 
 /**
  * One club show from the nightly EDMTrain feed: when and where, who's on the
  * bill that Afterglow knows (best for you first, with why), tickets on
  * EDMTrain (credited, as they ask), add to calendar and share. Opens from the
  * Festivals tab, search, the calendar, artist pages and links
- * (afterglowmusic.app/show/<id>).
+ * (afterglowmusic.app/show/<id>). A festival EDMTrain lists as a show a day
+ * (`showRun`) is one page: its days, the ones you're going to picked one by
+ * one, and who's on each day.
  */
 export default function ShowScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -55,6 +58,8 @@ export default function ShowScreen() {
   const { here, units } = useNearby();
   const show = useMemo(() => catalog.shows.find((s) => s.id === id), [catalog.shows, id]);
   const { isGoing, setGoing } = useGoingShows();
+  // Every day of it, when it runs more than one.
+  const run = useMemo(() => (show ? showRun(catalog.shows, show) : []), [catalog.shows, show]);
   // Its organizer made its own page for it on Afterglow: that takes over.
   const copy = useOrgs()
     .flatMap((o) => o.events.filter((e) => e.published && e.fromKind === 'show' && e.from === id).map((e) => eventFestivalIdOf(o, e)))
@@ -71,7 +76,9 @@ export default function ShowScreen() {
   const title = showTitle(show);
   const venueLine = [show.name ? show.venue : undefined, show.location].filter(Boolean).join(', ');
   const away = ranked.km !== undefined ? distanceLabel(ranked.km, units) : undefined;
-  const over = show.date < today;
+  const multi = run.length > 1;
+  const last = run[run.length - 1] ?? show;
+  const over = last.date < today;
   const best = ranked.best && bill.find((b) => b.artist.id === ranked.best!.id)?.artist;
   const event = showEvent(show, WEB_URL, names);
   const going = isGoing(show.id);
@@ -95,13 +102,20 @@ export default function ShowScreen() {
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl }} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
           <View style={styles.heroTop}>
-            <ShowDateBlock date={show.date} light={festivalLight(show.id)} big />
+            <ShowDateBlock date={run[0]?.date ?? show.date} light={festivalLight(show.id)} big />
             <View style={styles.heroWhen}>
               <View style={styles.tag}>
-                <Text style={styles.tagText}>{tc('event', 'Show')}</Text>
+                <Text style={styles.tagText}>{multi ? tc('event', 'Festival') : tc('event', 'Show')}</Text>
               </View>
-              <Text style={styles.date}>{showDateSpoken(show.date)}</Text>
-              {over ? <Text style={styles.over}>{t('This show has passed')}</Text> : null}
+              {multi ? (
+                <Text style={styles.date} accessibilityLabel={t('{from} to {to}', { from: showDateSpoken(run[0].date), to: showDateSpoken(last.date) })}>
+                  {showDaysShort(run[0].date, last.date)}
+                </Text>
+              ) : (
+                <Text style={styles.date}>{showDateSpoken(show.date)}</Text>
+              )}
+              {multi ? <Text style={styles.over}>{t('{n} days', { n: run.length })}</Text> : null}
+              {over ? <Text style={styles.over}>{multi ? t('This festival has passed') : t('This show has passed')}</Text> : null}
             </View>
           </View>
           <Text style={styles.title} accessibilityRole="header">
@@ -123,7 +137,40 @@ export default function ShowScreen() {
           >
             <Text style={styles.ticketsText}>{t('Get tickets on EDMTrain ↗')}</Text>
           </Pressable>
-          {over ? null : (
+          {over ? null : multi ? (
+            <>
+              {/* Going to some of its days, not the whole weekend: each day on its own. */}
+              <Text style={styles.daysTitle}>{t('Which days are you going?')}</Text>
+              <View style={styles.actions}>
+                {run.map((d) => {
+                  const on = isGoing(d.id);
+                  const day = showDateSpoken(d.date);
+                  const gone = d.date < today;
+                  return (
+                    <Pressable
+                      key={d.id}
+                      disabled={gone}
+                      onPress={() => {
+                        if (on) haptic.select();
+                        else haptic.celebrate();
+                        setGoing(d, !on);
+                      }}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: on, disabled: gone }}
+                      accessibilityLabel={on ? t("You're going on {day}. Tap to undo.", { day }) : t("I'm going on {day}", { day })}
+                      style={({ pressed }) => [styles.going, on && styles.goingOn, gone && { opacity: 0.4 }, pressed && { opacity: 0.75, transform: [{ scale: 0.98 }] }]}
+                    >
+                      {on ? <CheckIcon color={color.moon} size={14} /> : null}
+                      <Text style={[styles.goingText, !on && { color: color.moonDim }]}>{showDayShort(d.date)}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <View style={styles.actions}>
+                <CalendarPill event={event} name={title} />
+              </View>
+            </>
+          ) : (
             <View style={styles.actions}>
               <Pressable
                 onPress={() => {
@@ -158,7 +205,26 @@ export default function ShowScreen() {
         {/* Claimed by an event organizer on Afterglow: who's hosting it. */}
         <HostedBy show={show} />
 
-        {bill.length > 0 ? (
+        {multi ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle} accessibilityRole="header">
+              {t('On the bill')}
+            </Text>
+            <Text style={styles.sectionSub}>{t('Artists on Afterglow each day, best for you first. The full lineup is on EDMTrain.')}</Text>
+            {run.map((d) => (
+              <View key={d.id}>
+                <Text style={styles.dayHead} accessibilityRole="header">
+                  {showDateSpoken(d.date)}
+                  {isGoing(d.id) ? <Text style={styles.dayGoing}>{`  ·  ${t('Going')}`}</Text> : null}
+                </Text>
+                {rankShow(d, taste, here).bill.flatMap((b) => {
+                  const artist = catalog.artist(b.id);
+                  return artist ? [<ArtistRow key={artist.id} artist={artist} affinity={b.match} rating={taste.ratings[artist.id]} detail={why(artist, tasteClips, reactions, taste)} />] : [];
+                })}
+              </View>
+            ))}
+          </View>
+        ) : bill.length > 0 ? (
           <View style={styles.section}>
             <Text style={styles.sectionTitle} accessibilityRole="header">
               {t('On the bill')}
@@ -206,6 +272,9 @@ const styles = StyleSheet.create({
   },
   tagText: { ...type.caption, color: color.moon, letterSpacing: 0.6, textTransform: 'uppercase' },
   date: { ...type.headline, color: color.moon },
+  daysTitle: { ...type.label, color: color.moonDim, marginTop: space.lg },
+  dayHead: { ...type.headline, color: color.moon, marginTop: space.lg, marginBottom: space.xs },
+  dayGoing: { ...type.label, color: color.glow },
   over: { ...type.caption, color: color.moonFaint },
   title: { ...type.largeTitle, color: color.moon, marginTop: space.xl },
   where: { ...type.body, color: color.moonDim, marginTop: space.xs },

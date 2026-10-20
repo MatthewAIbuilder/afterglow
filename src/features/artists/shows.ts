@@ -32,6 +32,20 @@ export const showDateSpoken = (day: string) => {
   return capital(t('{weekday} {day} {month}', { weekday: weekdays()[wd], day: dom, month: months()[month] }));
 };
 
+/** A day as a chip: "Sun 13". */
+export function showDayShort(day: string): string {
+  const b = showDateBlock(day);
+  return `${b.weekday} ${b.day}`;
+}
+
+/** The days of a multi-day event: "Fri 11 – Sun 13 Dec" (each month named when it changes). */
+export function showDaysShort(first: string, last: string): string {
+  const month = (day: string) => capital(months(true)[parts(day).month]);
+  return first.slice(0, 7) === last.slice(0, 7)
+    ? `${showDayShort(first)} – ${showDayShort(last)} ${month(last)}`
+    : `${showDayShort(first)} ${month(first)} – ${showDayShort(last)} ${month(last)}`;
+}
+
 /** The show's own name when it has one, else the venue. */
 export const showTitle = (show: Show) => show.name ?? show.venue;
 

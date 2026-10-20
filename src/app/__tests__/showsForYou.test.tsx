@@ -34,6 +34,10 @@ jest.mock('../../state/catalog', () => {
       { id: 'edm-2', date: day(12), venue: 'Club Two', location: 'Denver, CO', link: 'https://edmtrain.com/denver-co/club-2', artists: [a.id] },
       { id: 'edm-3', date: day(45), venue: 'Warehouse Three', location: 'Austin, TX', link: 'https://edmtrain.com/austin-tx/w3', artists: [a.id] },
       { id: 'edm-4', date: day(3), venue: 'Not For Me Club', location: 'Denver, CO', link: 'https://edmtrain.com/denver-co/nfm', artists: [c.id] },
+      // A festival EDMTrain lists as a show a day.
+      { id: 'edm-5', date: day(60), name: 'We Belong Here', venue: 'Armature Works', location: 'Tampa, FL', link: 'https://edmtrain.com/tampa-fl/wbh-1', artists: [a.id] },
+      { id: 'edm-6', date: day(61), name: 'We Belong Here', venue: 'Armature Works', location: 'Tampa, FL', link: 'https://edmtrain.com/tampa-fl/wbh-2', artists: [b.id] },
+      { id: 'edm-7', date: day(62), name: 'We Belong Here', venue: 'Armature Works', location: 'Tampa, FL', link: 'https://edmtrain.com/tampa-fl/wbh-3', artists: [a.id, b.id] },
     ],
   };
   const built = buildCatalog(BUILT_IN.snapshot, parseCatalogFile(JSON.stringify(file)), { needClips: false });
@@ -115,6 +119,20 @@ describe('shows for you', () => {
     expect(app.getAllByLabelText(/^Club Two, .*Denver, CO/).length).toBeGreaterThan(0);
   });
 
+  it('a festival listed as a show a day is one page, and you pick the days you’re going', async () => {
+    const app = await renderApp('/show/edm-5');
+    await flush();
+    expect(app.getByText('3 days')).toBeTruthy();
+    expect(app.getByText('Which days are you going?')).toBeTruthy();
+    const days = app.getAllByLabelText(/^I'm going on /);
+    expect(days).toHaveLength(3);
+    // Only the last day.
+    await fireEvent.press(days[2]);
+    expect(app.getAllByLabelText(/^You're going on /)).toHaveLength(1);
+    expect(JSON.parse((await AsyncStorage.getItem('goingShows.v1')) ?? '[]').map((s: { id: string }) => s.id)).toEqual(['edm-7']);
+    await app.unmount();
+  });
+
   it('shares a link to the show on the website', async () => {
     const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
     const app = await renderApp('/show/edm-2');
@@ -140,7 +158,7 @@ describe('shows for you', () => {
     expect(app.getByText('Halloween Night')).toBeTruthy();
     expect(app.queryByText('Club Two')).toBeNull();
     expect(app.queryByText('Warehouse Three')).toBeNull();
-    await fireEvent.press(app.getByLabelText('All upcoming shows, 4'));
+    await fireEvent.press(app.getByLabelText('All upcoming shows, 7'));
     await fireEvent.changeText(app.getByLabelText('Find a show by artist, venue or town'), 'austin');
     await flush();
     expect(app.getByText('Warehouse Three')).toBeTruthy();

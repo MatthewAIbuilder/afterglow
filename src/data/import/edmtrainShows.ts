@@ -110,15 +110,23 @@ export function edmtrainShows(
   });
 
   // Soonest first (EDMTrain's own order within a day), each artist's next few, then the overall cap.
+  // The next day of an event already kept (same name and venue: a festival EDMTrain lists as a show a
+  // day) is kept too, so a weekend never loses its Sunday to the artists' caps.
   candidates.sort((a, b) => a.date.localeCompare(b.date) || a.order - b.order);
   const count = new Map<string, number>();
   const shows: FileShow[] = [];
+  const runKey = (s: FileShow) => (s.name ? `${fold(s.name)}|${fold(s.venue)}|${fold(s.location ?? '')}` : undefined);
+  const keptDays = new Set<string>();
+  const dayBefore = (day: string) => new Date(utc(day) - DAY_MS).toISOString().slice(0, 10);
   for (const { order: _order, ...show } of candidates) {
-    if (shows.length >= rules.maxShows || !show.artists.some((a) => (count.get(a) ?? 0) < rules.perArtist)) {
+    const key = runKey(show);
+    const nextDay = !!key && keptDays.has(`${key}|${dayBefore(show.date)}`);
+    if (shows.length >= rules.maxShows || (!nextDay && !show.artists.some((a) => (count.get(a) ?? 0) < rules.perArtist))) {
       skipped.full++;
       continue;
     }
     for (const a of show.artists) count.set(a, (count.get(a) ?? 0) + 1);
+    if (key) keptDays.add(`${key}|${show.date}`);
     shows.push(show);
   }
   return { shows, skipped };
