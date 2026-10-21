@@ -14,11 +14,14 @@ import { showAlert } from '../lib/dialog';
 import { goBack } from '../lib/nav';
 import { SheetClose } from '../components/SheetClose';
 import { t } from '../i18n';
+import { ProviderButtons } from '../features/social/ProviderButtons';
+import type { ProviderProof } from '../features/social/providerAuth';
 
 /**
- * Create your Afterglow profile, or sign back in. Email and password (kept
- * by Firebase, never by Afterglow). Creating one means agreeing to the
- * community guidelines, shown right here.
+ * Create your Afterglow profile, or sign back in: with Apple or Google (when
+ * they're switched on), or email and password (kept by Firebase, never by
+ * Afterglow). Creating one means agreeing to the community guidelines, shown
+ * right here (for Apple and Google, by continuing).
  */
 export default function AccountScreen() {
   const insets = useSafeAreaInsets();
@@ -56,6 +59,23 @@ export default function AccountScreen() {
       else goBack();
     } catch (e) {
       setProblem(SOCIAL_ERROR_COPY[socialErrorKind(e)]);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Apple or Google: a new account goes on to making the profile (with the name Apple gave, if any).
+  const withProvider = async (proof: ProviderProof, name?: string) => {
+    setBusy(true);
+    setProblem(undefined);
+    try {
+      const isNew = await social.signInWithProvider(proof);
+      haptic.settle();
+      if (isNew) router.replace({ pathname: '/profile-edit', params: name ? { name } : {} });
+      else goBack();
+    } catch (e) {
+      const kind = socialErrorKind(e);
+      if (kind !== 'cancelled') setProblem(SOCIAL_ERROR_COPY[kind]);
     } finally {
       setBusy(false);
     }
@@ -111,6 +131,21 @@ export default function AccountScreen() {
             </Pressable>
           ))}
         </View>
+
+        <ProviderButtons
+          onProof={withProvider}
+          busy={busy}
+          after={
+            <>
+              <Text style={styles.fine}>{t('By continuing with Apple or Google you confirm you’re 18 or older and agree to the community guidelines, Terms and Privacy Policy.')}</Text>
+              <View style={styles.or}>
+                <View style={styles.orLine} />
+                <Text style={styles.orText}>{t('or with email')}</Text>
+                <View style={styles.orLine} />
+              </View>
+            </>
+          }
+        />
 
         <TextInput
           value={email}
@@ -217,6 +252,10 @@ const styles = StyleSheet.create({
   boxOn: { backgroundColor: color.glow, borderColor: color.glow },
   agreeText: { ...type.label, color: color.moon, flex: 1 },
   problem: { ...type.label, color: color.moon },
+  fine: { ...type.caption, color: color.moonFaint, textAlign: 'center' },
+  or: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.xs },
+  orLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: color.hairline },
+  orText: { ...type.caption, color: color.moonDim },
   primary: {
     alignItems: 'center',
     paddingVertical: space.md,

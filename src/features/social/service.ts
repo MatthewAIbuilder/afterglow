@@ -9,6 +9,7 @@ import type { Kandi, KandiInput, OpenKandiInput, PublicKandi } from '../kandi/ka
 import type { DecorId } from '../sprouts/decor';
 import type { Org, OrgCounter, OrgDay, OrgPost, OrgPostInput, OrgRequest, OrgRequestInput, OrgRequestStatus } from '../organizers/organizers';
 import type { Published, Activity, ClipComment, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, CrewCover, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, AppSettings, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic, Sprout, SproutInput, DirectChat, SetTimesTip, VideoTag } from './models';
+import type { ProviderProof } from './providerAuth';
 
 /**
  * The boundary every social backend implements. The app only talks to
@@ -60,10 +61,12 @@ export interface SocialService {
   onAuthChange(listener: (user: SocialUser | null) => void): () => void;
   signUp(email: string, password: string): Promise<SocialUser>;
   signIn(email: string, password: string): Promise<SocialUser>;
+  /** Sign in (or up) with Apple or Google; `isNew` when this made the account. */
+  signInWithProvider(proof: ProviderProof): Promise<{ user: SocialUser; isNew: boolean }>;
   signOut(): Promise<void>;
   sendPasswordReset(email: string): Promise<void>;
-  /** Deletes your profile, shared memories, blocks and the account itself. Needs your password again. */
-  deleteAccount(password: string): Promise<void>;
+  /** Deletes your profile, shared memories, blocks and the account itself. Needs your password again, or Apple or Google again for an account that signs in with them. */
+  deleteAccount(proof: string | ProviderProof): Promise<void>;
 
   profileOf(uid: string): Promise<Profile | null>;
   profileByHandle(handle: string): Promise<Profile | null>;
@@ -477,6 +480,8 @@ export type SocialErrorKind =
   | 'not-found'
   | 'network'
   | 'unavailable'
+  | 'account-exists'
+  | 'cancelled'
   | 'unknown';
 
 export class SocialError extends Error {
@@ -513,6 +518,8 @@ export const SOCIAL_ERROR_COPY: Record<SocialErrorKind, string> = {
   'not-found': t('That doesn’t exist any more.'),
   network: t('Couldn’t reach Afterglow. Check your connection and try again.'),
   unavailable: t('Profiles aren’t available in this version of Afterglow yet.'),
+  'account-exists': t('There’s already an Afterglow account with that email. Sign in with your email and password.'),
+  cancelled: t('Sign-in was cancelled.'),
   unknown: t('Something went wrong. Try again.'),
 };
 

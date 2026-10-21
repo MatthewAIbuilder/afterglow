@@ -95,6 +95,27 @@ jest.mock('expo-local-authentication', () => {
     authenticateAsync: jest.fn(async () => state.result),
   };
 });
+// Sign in with Apple: Apple's sheet answers with `__state.next` (the token stands for the person), or is cancelled when null.
+jest.mock('expo-apple-authentication', () => {
+  const { Pressable, Text } = jest.requireActual<typeof import('react-native')>('react-native');
+  const React = jest.requireActual<typeof import('react')>('react');
+  const state: { available: boolean; next: { identityToken: string; givenName?: string } | null; nonces: string[] } = { available: true, next: { identityToken: 'sam' }, nonces: [] };
+  return {
+    __state: state,
+    AppleAuthenticationScope: { FULL_NAME: 0, EMAIL: 1 },
+    AppleAuthenticationButtonType: { SIGN_IN: 0, CONTINUE: 1, SIGN_UP: 2 },
+    AppleAuthenticationButtonStyle: { WHITE: 0, WHITE_OUTLINE: 1, BLACK: 2 },
+    isAvailableAsync: jest.fn(async () => state.available),
+    signInAsync: jest.fn(async (o: { nonce?: string }) => {
+      if (!state.next) throw Object.assign(new Error('cancelled'), { code: 'ERR_REQUEST_CANCELED' });
+      state.nonces.push(o.nonce ?? '');
+      return { user: 'apple-user', identityToken: state.next.identityToken, authorizationCode: 'code', fullName: state.next.givenName ? { givenName: state.next.givenName } : null, email: null, realUserStatus: 1, state: null };
+    }),
+    formatFullName: (n: { givenName?: string }) => n.givenName ?? '',
+    AppleAuthenticationButton: ({ onPress }: { onPress: () => void }) =>
+      React.createElement(Pressable, { onPress, accessibilityRole: 'button', accessibilityLabel: 'Continue with Apple' }, React.createElement(Text, null, 'Continue with Apple')),
+  };
+});
 // Keeping the screen awake (the totem).
 jest.mock('expo-keep-awake', () => ({ useKeepAwake: jest.fn(), activateKeepAwakeAsync: jest.fn(async () => {}), deactivateKeepAwake: jest.fn(async () => {}) }));
 jest.mock('expo-sharing', () => ({ isAvailableAsync: jest.fn(async () => true), shareAsync: jest.fn(async () => {}) }));

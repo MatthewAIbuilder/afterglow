@@ -300,6 +300,13 @@ export function firebaseErrorKind(e: unknown): SocialErrorKind {
       return 'no-account';
     case 'auth/too-many-requests':
       return 'too-many-attempts';
+    case 'auth/account-exists-with-different-credential':
+    case 'auth/credential-already-in-use':
+      return 'account-exists';
+    case 'auth/popup-closed-by-user':
+    case 'auth/cancelled-popup-request':
+    case 'auth/user-cancelled':
+      return 'cancelled';
     case 'auth/network-request-failed':
     case 'unavailable':
     case 'deadline-exceeded':

@@ -28,3 +28,20 @@ export const FIREBASE_CONFIG = {
 
 /** Everything profiles need is filled in. */
 export const firebaseConfigured = (c: typeof FIREBASE_CONFIG = FIREBASE_CONFIG) => !!(c.apiKey && c.projectId && c.appId && c.storageBucket);
+
+/**
+ * Sign in with Apple and with Google (docs/sign-in-providers.md). Each stays
+ * hidden until it's switched on in the Firebase console, so a button never
+ * leads to "not allowed".
+ *
+ * - `APPLE_SIGN_IN`: on once Apple is switched on in Firebase (Authentication →
+ *   Sign-in method). iPhone only (the build has the Sign in with Apple capability).
+ * - `APPLE_ON_WEB`: the website too, which needs an Apple Services ID and key in
+ *   Firebase as well.
+ * - `GOOGLE_WEB_CLIENT_ID`: the "Web client ID" Firebase shows under Google →
+ *   Web SDK configuration once Google is switched on. Public by design. Empty
+ *   hides "Continue with Google" everywhere.
+ */
+export const APPLE_SIGN_IN = false;
+export const APPLE_ON_WEB = false;
+export const GOOGLE_WEB_CLIENT_ID: string = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '';

@@ -126,4 +126,21 @@ export const es_account: Dictionary = {
   'No spam, and don’t pretend to be someone else.': 'Nada de spam, y no te hagas pasar por otra persona.',
   'Report anything that breaks these, and block anyone you don’t want to see. Reports are reviewed, and accounts that break the guidelines are removed.':
     'Denuncia todo lo que no cumpla estas normas y bloquea a quien no quieras ver. Revisamos las denuncias y eliminamos las cuentas que no cumplen las normas.',
+  // Sign in with Apple and with Google.
+  'There’s already an Afterglow account with that email. Sign in with your email and password.': 'Ya hay una cuenta de Afterglow con ese correo. Inicia sesión con tu correo y contraseña.',
+  'Sign-in was cancelled.': 'Se canceló el inicio de sesión.',
+  'Continue with Apple': 'Continuar con Apple',
+  'Continue with Google': 'Continuar con Google',
+  'Confirm with Apple': 'Confirmar con Apple',
+  'Confirm with Google': 'Confirmar con Google',
+  'Couldn’t open the sign-in. Check your connection and try again.': 'No se pudo abrir el inicio de sesión. Revisa tu conexión e inténtalo de nuevo.',
+  'By continuing with Apple or Google you confirm you’re 18 or older and agree to the community guidelines, Terms and Privacy Policy.':
+    'Al continuar con Apple o Google confirmas que tienes 18 años o más y que aceptas las normas de la comunidad, los Términos y la Política de privacidad.',
+  'or with email': 'o con correo',
+  'This deletes your profile, everything you shared and your account, for good. Memories on this phone stay. Confirm with Apple to delete it.':
+    'Esto borra tu perfil, todo lo que compartiste y tu cuenta, para siempre. Los recuerdos de este teléfono se quedan. Confirma con Apple para borrarla.',
+  'This deletes your profile, everything you shared and your account, for good. Memories on this phone stay. Confirm with Google to delete it.':
+    'Esto borra tu perfil, todo lo que compartiste y tu cuenta, para siempre. Los recuerdos de este teléfono se quedan. Confirma con Google para borrarla.',
+  'Delete it from Afterglow on your iPhone, where you can confirm with Apple.': 'Bórrala desde Afterglow en tu iPhone, donde puedes confirmar con Apple.',
+  'Delete it from Afterglow where you signed in with Google.': 'Bórrala desde Afterglow donde iniciaste sesión con Google.',
 };

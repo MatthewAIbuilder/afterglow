@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,7 +10,7 @@ import { ChevronIcon } from '../components/TabIcons';
 import { SOUND_LABEL } from '../data/models';
 import { goingLine } from '../features/social/copy';
 import { SOCIAL_ERROR_COPY, socialErrorKind } from '../features/social/service';
-import { BIO_MAX, normalizeHandle, profileProblems, suggestHandle } from '../features/social/validate';
+import { BIO_MAX, NAME_MAX, normalizeHandle, profileProblems, suggestHandle } from '../features/social/validate';
 import { SOCIALS, readSocial, socialUrl, type SocialKey } from '../features/social/socials';
 import { SocialIcon } from '../components/SocialIcons';
 import { tasteMix } from '../features/taste/lean';
@@ -23,6 +23,8 @@ import { useTaste } from '../state/taste';
 import { color, radius, space, type, glowA, nightA, pageColumn } from '../theme/tokens';
 import { showAlert } from '../lib/dialog';
 import { t } from '../i18n';
+import { ProviderButtons } from '../features/social/ProviderButtons';
+import type { ProviderProof } from '../features/social/providerAuth';
 import type { CropShape } from '../features/profile/crop';
 import { useShowLevel, setShowLevel } from '../state/showLevel';
 import { useDailyQuests } from '../features/quests/useDailyQuests';
@@ -47,7 +49,9 @@ export default function ProfileEditScreen() {
   const { taste, informed } = useTaste();
   const p = social.profile;
 
-  const [displayName, setDisplayName] = useState(p?.displayName ?? '');
+  // A new Apple account comes with the name Apple gave.
+  const { name: givenName } = useLocalSearchParams<{ name?: string }>();
+  const [displayName, setDisplayName] = useState(p?.displayName ?? (typeof givenName === 'string' ? givenName.slice(0, NAME_MAX) : ''));
   const [handle, setHandle] = useState(p?.handle ?? suggestHandle(social.user?.email ?? ''));
   const [bio, setBio] = useState(p?.bio ?? '');
   const [showFestivals, setShowFestivals] = useState(p?.showFestivals ?? false);
@@ -214,18 +218,21 @@ export default function ProfileEditScreen() {
     ]);
   };
 
-  const deleteAccount = async () => {
+  // Your password, or (an account that signs in with Apple or Google) Apple or Google again.
+  const deleteAccount = async (proof: string | ProviderProof = password) => {
     try {
       const uid = social.user?.uid;
-      await social.deleteAccount(password);
+      await social.deleteAccount(proof);
       if (uid) void forgetAccount(uid);
       haptic.settle();
       showAlert(t('Account deleted'), t('Your profile and everything you shared are gone. Your memories are still on this phone.'));
       if (router.canGoBack()) goBack();
     } catch (e) {
-      setProblem(SOCIAL_ERROR_COPY[socialErrorKind(e)]);
+      const kind = socialErrorKind(e);
+      if (kind !== 'cancelled') setProblem(SOCIAL_ERROR_COPY[kind]);
     }
   };
+  const viaProvider = social.user?.via === 'apple' || social.user?.via === 'google' ? social.user.via : undefined;
 
   const handleNote = problems.handle ?? (h === p?.handle ? undefined : available === false ? SOCIAL_ERROR_COPY['handle-taken'] : available ? t('Available') : undefined);
 
@@ -379,11 +386,29 @@ export default function ProfileEditScreen() {
               </Pressable>
             ) : (
               <View style={styles.deleteBox}>
-                <Text style={styles.body}>{t('This deletes your profile, everything you shared and your account, for good. Memories on this phone stay. Type your password to confirm.')}</Text>
-                <TextInput value={password} onChangeText={setPassword} secureTextEntry placeholder={t('Password')} placeholderTextColor={color.moonFaint} accessibilityLabel={t('Password to delete your account')} style={styles.input} />
-                <Pressable onPress={() => void deleteAccount()} disabled={!password} accessibilityRole="button" style={({ pressed }) => [styles.dangerButton, !password && styles.dim, pressed && styles.pressed]}>
-                  <Text style={styles.dangerText}>{t('Delete account forever')}</Text>
-                </Pressable>
+                {viaProvider ? (
+                  <>
+                    <Text style={styles.body}>
+                      {viaProvider === 'apple'
+                        ? t('This deletes your profile, everything you shared and your account, for good. Memories on this phone stay. Confirm with Apple to delete it.')
+                        : t('This deletes your profile, everything you shared and your account, for good. Memories on this phone stay. Confirm with Google to delete it.')}
+                    </Text>
+                    <ProviderButtons
+                      only={viaProvider}
+                      label="confirm"
+                      onProof={(proof) => deleteAccount(proof)}
+                      none={<Text style={styles.body}>{viaProvider === 'apple' ? t('Delete it from Afterglow on your iPhone, where you can confirm with Apple.') : t('Delete it from Afterglow where you signed in with Google.')}</Text>}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.body}>{t('This deletes your profile, everything you shared and your account, for good. Memories on this phone stay. Type your password to confirm.')}</Text>
+                    <TextInput value={password} onChangeText={setPassword} secureTextEntry placeholder={t('Password')} placeholderTextColor={color.moonFaint} accessibilityLabel={t('Password to delete your account')} style={styles.input} />
+                    <Pressable onPress={() => void deleteAccount()} disabled={!password} accessibilityRole="button" style={({ pressed }) => [styles.dangerButton, !password && styles.dim, pressed && styles.pressed]}>
+                      <Text style={styles.dangerText}>{t('Delete account forever')}</Text>
+                    </Pressable>
+                  </>
+                )}
               </View>
             )}
           </View>

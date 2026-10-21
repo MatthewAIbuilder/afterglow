@@ -15,7 +15,14 @@ import type { ClipWindow } from '../memories/trim';
  * ratings, reactions, music library, unshared memories, where you filmed)
  * stays private on your phone.
  */
-export type SocialUser = { uid: string; email?: string; /** Whether the email address has been confirmed. */ emailVerified?: boolean };
+export type SocialUser = {
+  uid: string;
+  email?: string;
+  /** Whether the email address has been confirmed. */
+  emailVerified?: boolean;
+  /** How this account signs in: a password, or only Apple or Google (then deleting it asks Apple or Google again, not for a password). */
+  via?: 'password' | 'apple' | 'google';
+};
 
 export type Profile = {
   uid: string;
