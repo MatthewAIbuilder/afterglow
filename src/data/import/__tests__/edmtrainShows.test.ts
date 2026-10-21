@@ -97,6 +97,16 @@ describe('club shows from EDMTrain', () => {
     expect(edmtrainShows(events, artists, TODAY, { ...SHOW_RULES, maxShows: 2 }).shows.map((s) => s.date)).toEqual(days.slice(0, 2));
   });
 
+  it('keeps every day of a festival listed as a show a day, past the artists’ caps', () => {
+    const before = Array.from({ length: SHOW_RULES.perArtist - 1 }, (_, i) => show(`2026-11-${String(i + 10)}`, ['Subtronics']));
+    const weekend = ['2026-12-11', '2026-12-12', '2026-12-13'].map((d) => show(d, ['Subtronics'], { name: 'We Belong Here - Tampa Bay' }));
+    const { shows } = edmtrainShows([...before, ...weekend], artists, TODAY);
+    expect(shows.slice(-3).map((s) => s.date)).toEqual(['2026-12-11', '2026-12-12', '2026-12-13']);
+    // A club's nights (no name of their own) still count against the cap.
+    const nights = ['2026-12-11', '2026-12-12'].map((d) => show(d, ['Subtronics']));
+    expect(edmtrainShows([...before, ...nights], artists, TODAY).shows.map((s) => s.date).slice(-1)).toEqual(['2026-12-11']);
+  });
+
   it('lists the same event once', () => {
     const e = show('2026-10-18', ['Subtronics']);
     expect(edmtrainShows([e, { ...e }], artists, TODAY).shows).toHaveLength(1);

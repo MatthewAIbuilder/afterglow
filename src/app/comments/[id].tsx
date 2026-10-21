@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PageTitle } from '../../components/PageTitle';
 import { SheetClose } from '../../components/SheetClose';
@@ -15,6 +15,7 @@ import { SOCIAL_ERROR_COPY, socialErrorKind } from '../../features/social/servic
 import { commentProblem } from '../../features/social/validate';
 import { showActionSheet, showAlert } from '../../lib/dialog';
 import { haptic } from '../../lib/haptics';
+import { useKeyboardInset } from '../../lib/useKeyboardInset';
 import { useNow } from '../../lib/useNow';
 import { useCatalog } from '../../state/catalog';
 import { useClipPool } from '../../state/community';
@@ -40,6 +41,9 @@ export default function CommentsScreen() {
   const { id, kind } = useLocalSearchParams<{ id: string; kind?: string }>();
   const onClip = kind === 'clip';
   const insets = useSafeAreaInsets();
+  // A form sheet: the field stays just above the keyboard.
+  const page = useRef<View>(null);
+  const keyboard = useKeyboardInset(page);
   const social = useSocial();
   const catalog = useCatalog();
   const pool = useClipPool();
@@ -161,7 +165,7 @@ export default function CommentsScreen() {
   const filmedIt = (c: Row) => !onClip && c.uid === video?.uid;
 
   return (
-    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <View ref={page} onLayout={keyboard.onLayout} style={[styles.root, { paddingBottom: keyboard.inset }]}>
       <PageTitle title={t('Comments')} />
       <SheetClose />
       <View style={styles.head}>
@@ -175,7 +179,7 @@ export default function CommentsScreen() {
           </Text>
         ) : null}
       </View>
-      <ScrollView contentContainerStyle={[pageColumn, styles.list]} keyboardShouldPersistTaps="handled">
+      <ScrollView style={styles.scroll} contentContainerStyle={[pageColumn, styles.list]} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
         {!social.user ? <Text style={styles.quiet}>{t('Sign in to read and write comments.')}</Text> : null}
         {social.user && list === undefined && !failed ? <ActivityIndicator color={color.glow} /> : null}
         {!onClip && video === null ? <Text style={styles.quiet}>{t('This video isn’t available any more.')}</Text> : null}
@@ -223,7 +227,7 @@ export default function CommentsScreen() {
       </ScrollView>
       {open || !social.user ? (
         social.profile ? (
-          <View style={[styles.compose, { paddingBottom: insets.bottom + space.sm }]}>
+          <View style={[styles.compose, { paddingBottom: (keyboard.inset ? 0 : insets.bottom) + space.sm }]}>
             <TextInput
               value={text}
               onChangeText={(typed) => setText(typed.slice(0, COMMENT_MAX + 20))}
@@ -253,17 +257,18 @@ export default function CommentsScreen() {
           </Pressable>
         )
       ) : null}
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: SHEET_BACKGROUND },
-  // Room on the right for the close button.
-  head: { paddingLeft: space.xl, paddingRight: space.xl + space.xxxl, paddingTop: space.xl, paddingBottom: space.md, gap: space.xs },
+  // Room on the right for the close button. Drawn over the list, so comments scroll under it, never across it.
+  head: { zIndex: 1, backgroundColor: SHEET_BACKGROUND, paddingLeft: space.xl, paddingRight: space.xl + space.xxxl, paddingTop: space.xl, paddingBottom: space.md, gap: space.xs },
   title: { ...type.title, color: color.moon },
   about: { ...type.label, color: color.moon },
   aboutTitle: { color: color.moonDim, fontWeight: '400' },
+  scroll: { flex: 1, overflow: 'hidden' },
   list: { paddingHorizontal: space.xl, paddingBottom: space.xl, gap: space.md },
   quiet: { ...type.body, color: color.moonDim },
   comment: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },

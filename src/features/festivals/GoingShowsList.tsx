@@ -13,15 +13,18 @@ import { festivalLight } from './light';
 /**
  * One-night shows someone is going to (or went to), as a short list: date,
  * name, where and who's on. A show still on Afterglow opens its page.
+ * Without a title, just the rows (under a heading of the screen's own).
  */
-export function GoingShowsList({ title, shows }: { title: string; shows: readonly GoingShow[] }) {
+export function GoingShowsList({ title, shows }: { title?: string; shows: readonly GoingShow[] }) {
   const catalog = useCatalog();
   if (!shows.length) return null;
   return (
-    <View style={styles.root}>
-      <Text style={styles.title} accessibilityRole="header">
-        {title}
-      </Text>
+    <View style={[styles.root, !title && styles.bare]}>
+      {title ? (
+        <Text style={styles.title} accessibilityRole="header">
+          {title}
+        </Text>
+      ) : null}
       {shows.map((s) => {
         const live = catalog.shows.some((x) => x.id === s.id);
         const who = s.artistIds
@@ -60,6 +63,7 @@ export function GoingShowsList({ title, shows }: { title: string; shows: readonl
 
 const styles = StyleSheet.create({
   root: { gap: space.sm, marginTop: space.lg },
+  bare: { marginTop: 0 },
   title: { ...type.headline, color: color.moon },
   row: {
     flexDirection: 'row',

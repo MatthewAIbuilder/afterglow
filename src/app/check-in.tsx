@@ -1,9 +1,9 @@
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useNetworkState } from 'expo-network';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { Artist, Festival, TasteProfile } from '../data/types';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PageTitle } from '../components/PageTitle';
 import { CHECK_INS, clock, cleanNote, presetLabel } from '../features/crews/updates';
@@ -20,6 +20,7 @@ import { usePlan } from '../state/plan';
 import { useTaste } from '../state/taste';
 import { color, radius, space, type, glowA, accentEdge, pageColumn } from '../theme/tokens';
 import { goBack } from '../lib/nav';
+import { useKeyboardInset } from '../lib/useKeyboardInset';
 import { SheetClose } from '../components/SheetClose';
 import { t } from '../i18n';
 import { SHEET_BACKGROUND } from '../components/LiquidGlass';
@@ -35,6 +36,9 @@ const crewNames = (crews: readonly { name: string }[]) => crews.map((c) => c.nam
  */
 export default function CheckInScreen() {
   const insets = useSafeAreaInsets();
+  // A form sheet: the note stays above the keyboard.
+  const page = useRef<View>(null);
+  const keyboard = useKeyboardInset(page);
   const catalog = useCatalog();
   const { crewFestivals, checkIn, sendPhoto, ready, outbox, dropped } = useCrewUpdates();
   const { crewsAt } = useCrews();
@@ -132,7 +136,7 @@ export default function CheckInScreen() {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <View ref={page} onLayout={keyboard.onLayout} style={[styles.root, { paddingBottom: keyboard.inset }]}>
       <PageTitle title={t('Check in')} />
       <ScrollView contentContainerStyle={[pageColumn, { paddingTop: space.xl, paddingBottom: insets.bottom + space.xl }]} keyboardShouldPersistTaps="handled">
         <Text style={[styles.title, styles.pad]}>{t('Check in with your crew')}</Text>
@@ -248,7 +252,7 @@ export default function CheckInScreen() {
         </View>
       </ScrollView>
       <SheetClose />
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

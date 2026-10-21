@@ -16,6 +16,8 @@ import { countdown } from '../festivals/when';
 import { type Passport, type Stamp, stampLine } from './passport';
 import { t, tn } from '../../i18n';
 import { datesLine } from '../festivals/format';
+import type { GoingShow } from '../festivals/goingShows';
+import { GoingShowsList } from '../festivals/GoingShowsList';
 
 const CARD_H = 168;
 
@@ -32,6 +34,8 @@ type Props = {
   throwbacks?: readonly ThrowbackBadge[];
   /** Add a video from a festival you went to before. */
   onAddPast?: () => void;
+  /** One-night shows you're going to (coming up), under Planning after your festivals. They never count as festivals. */
+  shows?: readonly GoingShow[];
 };
 
 type Side = 'planning' | 'been';
@@ -41,11 +45,12 @@ type Side = 'planning' | 'been';
  * one you've been to, with the headliners' faces behind, your pin (or the
  * pin still to collect), what you filmed there or how many acts you'd love.
  */
-export function PassportTab({ passport, artistOf, loves, recapIds, today, onFind, children, throwbacks = [], onAddPast }: Props) {
+export function PassportTab({ passport, artistOf, loves, recapIds, today, onFind, children, throwbacks = [], onAddPast, shows = [] }: Props) {
   const beenCount = passport.been.length + throwbacks.length;
-  const [side, setSide] = useState<Side>(passport.planning.length || !beenCount ? 'planning' : 'been');
+  const planningCount = passport.planning.length + shows.length;
+  const [side, setSide] = useState<Side>(planningCount || !beenCount ? 'planning' : 'been');
   const stamps = side === 'planning' ? passport.planning : passport.been;
-  const empty = !passport.planning.length && !beenCount;
+  const empty = !planningCount && !beenCount;
   return (
     <View style={styles.root}>
       {empty ? (
@@ -72,7 +77,7 @@ export function PassportTab({ passport, artistOf, loves, recapIds, today, onFind
         <>
           <FilterChips
             chips={[
-              { key: 'planning', label: t('Planning'), count: passport.planning.length, accessibilityLabel: t('Planning, {n}', { n: passport.planning.length }) },
+              { key: 'planning', label: t('Planning'), count: planningCount, accessibilityLabel: t('Planning, {n}', { n: planningCount }) },
               { key: 'been', label: t('Been there'), count: beenCount, accessibilityLabel: t('Been there, {n}', { n: beenCount }) },
             ]}
             value={side}
@@ -82,6 +87,7 @@ export function PassportTab({ passport, artistOf, loves, recapIds, today, onFind
             {stamps.map((s) => (
               <PassportCard key={s.festival.id} stamp={s} planning={side === 'planning'} artistOf={artistOf} loves={loves} recap={recapIds.has(s.festival.id)} today={today} />
             ))}
+            {side === 'planning' ? <GoingShowsList shows={shows} /> : null}
             {side === 'been' ? throwbacks.map((tb) => <ThrowbackCard key={tb.key} badge={tb} />) : null}
             {side === 'been' && onAddPast ? (
               <Pressable
@@ -97,7 +103,7 @@ export function PassportTab({ passport, artistOf, loves, recapIds, today, onFind
                 <Text style={styles.addPastBody}>{t('A video from your camera roll, tagged with the festival and year, earns a rose gold throwback badge.')}</Text>
               </Pressable>
             ) : null}
-            {stamps.length || (side === 'been' && (throwbacks.length || onAddPast)) ? null : (
+            {stamps.length || (side === 'planning' && shows.length) || (side === 'been' && (throwbacks.length || onAddPast)) ? null : (
               <Text style={styles.none}>
                 {side === 'been' ? t('Festivals you’ve been to collect here, with what you filmed.') : t('Tap I’m going on a festival to plan it here.')}
               </Text>
