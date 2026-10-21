@@ -13,6 +13,7 @@ import { localDay } from '../features/artists/shows';
 import { useToday } from '../lib/useToday';
 import { useGoingShows } from './goingShows';
 import { SOCIAL_ERROR_COPY, SocialError, socialErrorKind, type ReportTarget, type SocialAvailability, type SocialService } from '../features/social/service';
+import type { ProviderProof } from '../features/social/providerAuth';
 import { cleanShareOutbox, queueShare, sharesOf, shareRetryDelay, shareTried, unqueueShare, type ShareItem } from '../features/social/shareOutbox';
 import { defaultSocialService } from '../features/social/services';
 import { tasteMix } from '../features/taste/lean';
@@ -52,10 +53,13 @@ type Ctx = {
   service: SocialService;
   signUp: (email: string, password: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  /** Sign in (or up) with Apple or Google; true when this made a new account. */
+  signInWithProvider: (proof: ProviderProof) => Promise<boolean>;
   signOut: () => Promise<void>;
   /** Take this phone's push address off the signed-in account (before switching to another). */
   releasePush: () => Promise<void>;
-  deleteAccount: (password: string) => Promise<void>;
+  /** Your password, or Apple or Google again for an account that signs in with them. */
+  deleteAccount: (proof: string | ProviderProof) => Promise<void>;
   saveProfile: (input: ProfileInput) => Promise<Profile>;
   setAvatar: (uri: string | null) => Promise<void>;
   /** Read your sign-in again (after confirming your email). */
@@ -283,6 +287,7 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
 
   const signUp = useCallback(async (email: string, password: string) => void (await service.signUp(email, password)), [service]);
   const signIn = useCallback(async (email: string, password: string) => void (await service.signIn(email, password)), [service]);
+  const signInWithProvider = useCallback(async (proof: ProviderProof) => (await service.signInWithProvider(proof)).isNew, [service]);
   // This phone stops getting the account's notifications (a few seconds at most: no signal never blocks
   // signing out or switching). It registers again with the next account (PushRegistration).
   const releasePush = useCallback(async () => {
@@ -297,9 +302,9 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
     await service.signOut();
   }, [service, releasePush]);
   const deleteAccount = useCallback(
-    async (password: string) => {
+    async (proof: string | ProviderProof) => {
       const uid = user?.uid;
-      await service.deleteAccount(password);
+      await service.deleteAccount(proof);
       if (uid) {
         mem.forgetShares(uid);
         forgetLastKnownAccount(uid);
@@ -522,8 +527,8 @@ export function SocialProvider({ children, service: given }: { children: ReactNo
   const report = useCallback((target: ReportTarget, reason: ReportReason, note?: string) => service.report(target, reason, note), [service]);
 
   const value = useMemo<Ctx>(
-    () => ({ availability, ready, user, profile, profileStatus, reloadProfile, service, signUp, signIn, signOut, releasePush, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, setBackdrop, share, unshare, sharing, waiting, blocked, setBlocked, following, setFollowing, noteFollowing, report }),
-    [availability, ready, user, profile, profileStatus, reloadProfile, service, signUp, signIn, signOut, releasePush, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, setBackdrop, share, unshare, sharing, waiting, blocked, setBlocked, following, setFollowing, noteFollowing, report],
+    () => ({ availability, ready, user, profile, profileStatus, reloadProfile, service, signUp, signIn, signInWithProvider, signOut, releasePush, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, setBackdrop, share, unshare, sharing, waiting, blocked, setBlocked, following, setFollowing, noteFollowing, report }),
+    [availability, ready, user, profile, profileStatus, reloadProfile, service, signUp, signIn, signInWithProvider, signOut, releasePush, deleteAccount, saveProfile, setAvatar, refreshUser, setCover, setBackdrop, share, unshare, sharing, waiting, blocked, setBlocked, following, setFollowing, noteFollowing, report],
   );
   return <SocialContext.Provider value={value}>{children}</SocialContext.Provider>;
 }

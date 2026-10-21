@@ -24,7 +24,8 @@ import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNam
  * it. No network, no real accounts.
  */
 export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string) => number } = {}) {
-  const accounts = new Map<string, { uid: string; password: string }>();
+  // Email accounts by address; an Apple or Google account has no password and `via` says which.
+  const accounts = new Map<string, { uid: string; password: string; via?: 'apple' | 'google' }>();
   const profiles = new Map<string, Profile>();
   const handles = new Map<string, string>();
   const memories = new Map<string, SharedMemory & { memoryId: string }>();
@@ -223,15 +224,29 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
       emit();
       return current;
     },
+    // A token's text stands for the person ("sam" signs in as sam@apple.test); Firebase's window on the website as "web".
+    async signInWithProvider(proof) {
+      const who = 'popup' in proof ? 'web' : proof.idToken;
+      const e = `${who}@${proof.provider}.test`;
+      const had = accounts.get(e);
+      if (had && !had.via) throw new SocialError('account-exists');
+      const uid = had?.uid ?? `uid-${++n}`;
+      if (!had) accounts.set(e, { uid, password: '', via: proof.provider });
+      current = { uid, email: e, emailVerified: true, via: proof.provider };
+      emit();
+      return { user: current, isNew: !had };
+    },
     async signOut() {
       current = null;
       emit();
     },
     async sendPasswordReset() {},
-    async deleteAccount(password) {
+    async deleteAccount(proof) {
       const u = me();
       const a = accounts.get(u.email ?? '');
-      if (!a || a.password !== password) throw new SocialError('wrong-password');
+      const ok = typeof proof === 'string' ? !a?.via && a?.password === proof : a?.via === proof.provider;
+      if (!a || !ok) throw new SocialError('wrong-password');
+      accounts.delete(u.email ?? '');
       for (const [id, m] of memories) if (m.uid === u.uid) memories.delete(id);
       const p = profiles.get(u.uid);
       if (p) handles.delete(p.handle);

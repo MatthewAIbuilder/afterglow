@@ -2,7 +2,7 @@
   "expo": {
     "name": "Afterglow",
     "slug": "afterglow",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -23,6 +23,7 @@
         "usesNonExemptEncryption": false
       },
       "bundleIdentifier": "app.afterglowmusic",
+      "usesAppleSignIn": true,
       "privacyManifests": {
         "NSPrivacyTracking": false,
         "NSPrivacyAccessedAPITypes": [
@@ -162,7 +163,8 @@
         {
           "color": "#A78BFA"
         }
-      ]
+      ],
+      "expo-apple-authentication"
     ],
     "scheme": "afterglow",
     "backgroundColor": "#0A0918",

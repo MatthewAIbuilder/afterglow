@@ -1,13 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 import * as FirebaseAuth from 'firebase/auth';
-import { createUserWithEmailAndPassword, deleteUser, EmailAuthProvider, getAuth, initializeAuth, onAuthStateChanged, reauthenticateWithCredential, reload, sendEmailVerification, sendPasswordResetEmail, signInWithEmailAndPassword, signOut, type Auth, type Persistence } from 'firebase/auth';
+import { createUserWithEmailAndPassword, deleteUser, EmailAuthProvider, getAdditionalUserInfo, getAuth, GoogleAuthProvider, initializeAuth, OAuthProvider, onAuthStateChanged, reauthenticateWithCredential, reauthenticateWithPopup, reload, revokeAccessToken, sendEmailVerification, sendPasswordResetEmail, signInWithCredential, signInWithEmailAndPassword, signInWithPopup, signOut, type Auth, type AuthProvider, type OAuthCredential, type Persistence, type User } from 'firebase/auth';
+import { isPopup, type ProviderProof, type ProviderToken } from '../providerAuth';
 import { arrayRemove, arrayUnion, collection, deleteDoc, deleteField, doc, getAggregateFromServer, getCountFromServer, getDoc, getDocs, increment, initializeFirestore, limit, onSnapshot, orderBy, query, runTransaction, serverTimestamp, setDoc, startAfter, sum, Timestamp, updateDoc, where, writeBatch, type DocumentData, type DocumentReference, type Firestore, type Query } from 'firebase/firestore';
 import { Platform } from 'react-native';
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
 import type { FIREBASE_CONFIG } from '../../../config/social';
 import { firebaseConfigured } from '../../../config/social';
-import { appSettingsFromDoc, ARTISTS_SHOWN, CHAT_MAX, CHAT_SEND_TIMEOUT_MS, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, DROP_FILE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type ClipComment, type Comment, validClipId, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile, DM_PREFIX, directRoom, isDirectRoom, SUPPORT_REPLIES_MAX, type ReportRecord, TIP_TEXT_MAX, VIDEO_TAGS_MAX, type VideoTag } from '../models';
+import { appSettingsFromDoc, ARTISTS_SHOWN, CHAT_MAX, CHAT_SEND_TIMEOUT_MS, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, DROP_FILE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type SocialUser, type ClipComment, type Comment, validClipId, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile, DM_PREFIX, directRoom, isDirectRoom, SUPPORT_REPLIES_MAX, type ReportRecord, TIP_TEXT_MAX, VIDEO_TAGS_MAX, type VideoTag } from '../models';
 import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 import { throwbackShares } from '../../memories/throwbackLimit';
@@ -302,26 +303,38 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         listener(null);
         return () => {};
       }
-      return onAuthStateChanged(fb().auth, (u) => listener(u ? { uid: u.uid, email: u.email ?? undefined, emailVerified: u.emailVerified } : null));
+      return onAuthStateChanged(fb().auth, (u) => listener(u ? userOf(u) : null));
     },
     signUp: (email, password) =>
       guard(async () => {
         const c = await createUserWithEmailAndPassword(fb().auth, email.trim(), password);
-        return { uid: c.user.uid, email: c.user.email ?? undefined, emailVerified: c.user.emailVerified };
+        return userOf(c.user);
       }),
     signIn: (email, password) =>
       guard(async () => {
         const c = await signInWithEmailAndPassword(fb().auth, email.trim(), password);
-        return { uid: c.user.uid, email: c.user.email ?? undefined, emailVerified: c.user.emailVerified };
+        return userOf(c.user);
+      }),
+    signInWithProvider: (proof) =>
+      guard(async () => {
+        const c = isPopup(proof) ? await signInWithPopup(fb().auth, popupProvider(proof.provider)) : await signInWithCredential(fb().auth, credentialOf(proof));
+        return { user: userOf(c.user), isNew: !!getAdditionalUserInfo(c)?.isNewUser };
       }),
     signOut: () => guard(() => signOut(fb().auth)),
     sendPasswordReset: (email) => guard(() => sendPasswordResetEmail(fb().auth, email.trim())),
 
-    deleteAccount: (password) =>
+    deleteAccount: (proof) =>
       guard(async () => {
         const user = me();
-        if (!user.email) throw new SocialError('wrong-password');
-        await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
+        if (typeof proof === 'string') {
+          if (!user.email) throw new SocialError('wrong-password');
+          await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, proof));
+        } else if (isPopup(proof)) await reauthenticateWithPopup(user, popupProvider(proof.provider));
+        else {
+          await reauthenticateWithCredential(user, credentialOf(proof));
+          // Apple asks apps to let go of the account's Apple sign-in when it's deleted (needs Apple's key in Firebase; never blocks deleting).
+          if (proof.provider === 'apple' && proof.authorizationCode) await revokeAccessToken(fb().auth, proof.authorizationCode).catch(() => {});
+        }
         const { db } = fb();
         // Shared memories and their files.
         const mine = await getDocs(query(collection(db, 'memories'), where('uid', '==', user.uid)));
@@ -824,7 +837,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         await reload(u);
         // A fresh token carries the verified flag the rules check.
         await u.getIdToken(true);
-        return { uid: u.uid, email: u.email ?? undefined, emailVerified: u.emailVerified };
+        return userOf(u);
       }),
 
     contactSupport: (input) =>
@@ -2234,4 +2247,29 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       }),
   };
   return service;
+}
+
+/** Your sign-in as the app sees it. */
+function userOf(u: User): SocialUser {
+  const ids = u.providerData.map((p) => p.providerId);
+  const via = ids.includes('password') ? 'password' : ids.includes('apple.com') ? 'apple' : ids.includes('google.com') ? 'google' : undefined;
+  return { uid: u.uid, email: u.email ?? undefined, emailVerified: u.emailVerified, ...(via ? { via } : {}) };
+}
+
+/** Apple's or Google's token, with the nonce Firebase checks it against. */
+function credentialOf(t: ProviderToken): OAuthCredential {
+  return new OAuthProvider(t.provider === 'apple' ? 'apple.com' : 'google.com').credential({ idToken: t.idToken, rawNonce: t.rawNonce });
+}
+
+/** On the website: Firebase's own Apple or Google window. */
+function popupProvider(p: ProviderProof['provider']): AuthProvider {
+  if (p === 'google') {
+    const g = new GoogleAuthProvider();
+    g.setCustomParameters({ prompt: 'select_account' });
+    return g;
+  }
+  const a = new OAuthProvider('apple.com');
+  a.addScope('email');
+  a.addScope('name');
+  return a;
 }

@@ -116,9 +116,9 @@ upload ever warns about a missing reason, it names the API: add it there.
   Firebase console (Firestore → reports) regularly and remove what breaks the
   rules. Apple expects action within 24 hours.
 - **Account deletion** (5.1.1): Profile → Edit profile → Delete account.
-- **Sign in with Apple** (4.8): only needed if the app offers Google or
-  another social sign-in. It only has email and password, so it isn't needed
-  yet. If Google sign-in is added later, Sign in with Apple must come with it.
+- **Sign in with Apple** (4.8): the app offers Google sign-in, so it has
+  Sign in with Apple too (since 1.0.5, `docs/sign-in-providers.md`). Deleting
+  an Apple account confirms with Apple (5.1.1).
 - **Health and safety**: Look after yourself has a harm-reduction timing guide
   (when common substances, including alcohol, usually start, peak and wear
   off; risky mixes; "don't take more too soon"). It never gives doses, sends

@@ -112,6 +112,7 @@ export default function RootLayout() {
         <Stack.Screen name="notifications" />
         <Stack.Screen name="music" />
         <Stack.Screen name="music-auth" options={{ animation: 'none' }} />
+        <Stack.Screen name="google-auth" options={{ animation: 'none' }} />
         <Stack.Screen name="tune/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="memory-tag" options={{ presentation: 'modal', gestureEnabled: false }} />
         <Stack.Screen name="camera" options={{ animation: 'slide_from_left', gestureEnabled: false }} />

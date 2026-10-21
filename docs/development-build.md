@@ -6,7 +6,7 @@ app, installed on your iPhone with its own name and icon. It's what lets these
 work, now or in the next steps:
 
 - Spotify sign-in (built; Expo Go can't complete it)
-- Sign in with Apple and with Google (next: the App Store expects them)
+- Sign in with Apple and with Google (built in 1.0.5, `docs/sign-in-providers.md`)
 - Heart rate from Apple Health in Look after yourself (later)
 - Real push notifications, so a crewmate's "come find me" or a support reply
   reaches you with the app closed (later)

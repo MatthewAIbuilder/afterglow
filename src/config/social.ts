@@ -28,3 +28,22 @@ export const FIREBASE_CONFIG = {
 
 /** Everything profiles need is filled in. */
 export const firebaseConfigured = (c: typeof FIREBASE_CONFIG = FIREBASE_CONFIG) => !!(c.apiKey && c.projectId && c.appId && c.storageBucket);
+
+/**
+ * Sign in with Apple and with Google (docs/sign-in-providers.md). Each stays
+ * hidden until it's switched on in the Firebase console, so a button never
+ * leads to "not allowed".
+ *
+ * - `APPLE_SIGN_IN`: on once Apple is switched on in Firebase (Authentication →
+ *   Sign-in method). iPhone only (the build has the Sign in with Apple capability).
+ * - `APPLE_ON_WEB`: the website too, which needs an Apple Services ID and key in
+ *   Firebase as well.
+ * - `GOOGLE_WEB_CLIENT_ID`: the "Web client ID" Firebase shows under Google →
+ *   Web SDK configuration once Google is switched on. Public by design. Empty
+ *   hides "Continue with Google" everywhere.
+ */
+// Apple was switched on in Firebase on 2026-10-21. Only builds from 1.0.5 have the capability, and this code only reaches them.
+export const APPLE_SIGN_IN = true;
+export const APPLE_ON_WEB = false;
+// Afterglow's web client (Firebase → Google → Web SDK configuration), sent by the user on 2026-10-21.
+export const GOOGLE_WEB_CLIENT_ID: string = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '25740581285-s3k5c9s1frah414hm5vsah5em2mgdjnf.apps.googleusercontent.com';

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Signing in · Afterglow</title>
+    <style>
+      :root { color-scheme: dark; }
+      body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #07060f; color: #efeaff; font: 17px/1.4 -apple-system, system-ui, sans-serif; text-align: center; padding: 0 16px; }
+      a { color: #b99cff; }
+    </style>
+  </head>
+  <body>
+    <!--
+      Google's sign-in answers here (the redirect registered with the web client),
+      and this hands the answer straight back to the Afterglow app, which checks it.
+      See src/features/social/providerAuth.ts and docs/sign-in-providers.md.
+    -->
+    <p>Signing you in…<br /><a id="back" href="afterglow://google-auth">Back to Afterglow</a></p>
+    <script>
+      (function () {
+        var answer = (location.hash || '').replace(/^#/, '') || (location.search || '').replace(/^\?/, '');
+        var back = 'afterglow://google-auth' + (answer ? '?' + answer : '');
+        document.getElementById('back').href = back;
+        location.replace(back);
+      })();
+    </script>
+  </body>
+</html>
