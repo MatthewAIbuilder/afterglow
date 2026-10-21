@@ -42,6 +42,8 @@ export const firebaseConfigured = (c: typeof FIREBASE_CONFIG = FIREBASE_CONFIG) 
  *   Web SDK configuration once Google is switched on. Public by design. Empty
  *   hides "Continue with Google" everywhere.
  */
-export const APPLE_SIGN_IN = false;
+// Apple was switched on in Firebase on 2026-10-21. Only builds from 1.0.5 have the capability, and this code only reaches them.
+export const APPLE_SIGN_IN = true;
 export const APPLE_ON_WEB = false;
-export const GOOGLE_WEB_CLIENT_ID: string = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '';
+// Afterglow's web client (Firebase → Google → Web SDK configuration), sent by the user on 2026-10-21.
+export const GOOGLE_WEB_CLIENT_ID: string = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '25740581285-s3k5c9s1frah414hm5vsah5em2mgdjnf.apps.googleusercontent.com';
