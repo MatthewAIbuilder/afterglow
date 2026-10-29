@@ -19,6 +19,7 @@ import { useSocial } from '../../state/social';
 import { useWeekends } from '../../state/weekends';
 import { color, radius, space, type } from '../../theme/tokens';
 import { t, tc } from '../../i18n';
+import { PageFeedback } from '../../components/PageFeedback';
 
 /**
  * Get ready: one checklist for a festival you're going to. The app ticks
@@ -179,6 +180,7 @@ function PrepView({ festival }: { festival: Festival }) {
           </View>
         ))}
         <Text style={styles.note}>{t('Only you see this list. It stays on this phone.')}</Text>
+        <PageFeedback />
       </ScrollView>
       <PageActions />
     </KeyboardAvoidingView>

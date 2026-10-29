@@ -20,6 +20,7 @@ import { PALETTES, type ThemeId } from '../theme/palettes';
 import { writeStoredGlass, writeStoredTheme } from '../theme/storedTheme';
 import { color, GLASS, radius, space, THEME_ID, type } from '../theme/tokens';
 import { BottomFade } from '../components/BottomFade';
+import { PageFeedback } from '../components/PageFeedback';
 
 /** How long the new theme's colours fill the screen before Afterglow starts again in them. */
 const SWAP_MS = 650;
@@ -190,6 +191,7 @@ export default function ThemesScreen() {
         <Pressable onPress={() => router.push('/backdrop')} accessibilityRole="button" style={styles.rowLink}>
           <Text style={styles.link}>{t('Just your profile background ›')}</Text>
         </Pressable>
+        <PageFeedback />
       </ScrollView>
 
       <View style={[styles.bar, { paddingBottom: insets.bottom + space.md }]}>

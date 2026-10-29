@@ -86,6 +86,7 @@ import AdminScreen from '../admin';
 import TotemScreen from '../totem';
 import SwitchAccountScreen from '../switch-account';
 import SupportScreen from '../support';
+import FeedbackScreen from '../feedback';
 import OrgScreen from '../org/[id]';
 import StudioScreen from '../studio';
 import PublicProfileScreen from '../u/[handle]';
@@ -172,6 +173,7 @@ export const APP_ROUTES = {
   totem: TotemScreen,
   'switch-account': SwitchAccountScreen,
   support: SupportScreen,
+  feedback: FeedbackScreen,
   'org/[id]': OrgScreen,
   studio: StudioScreen,
   people: PeopleScreen,

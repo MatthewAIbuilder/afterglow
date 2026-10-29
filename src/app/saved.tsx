@@ -22,6 +22,7 @@ import { goBack } from '../lib/nav';
 import { shownClipTitle } from '../features/community/clips';
 import { t, tc } from '../i18n';
 import { EmptyState } from '../components/EmptyState';
+import { PageFeedback } from '../components/PageFeedback';
 
 type Shelf = 'saved' | 'liked';
 
@@ -65,6 +66,7 @@ export default function YourClipsScreen() {
             <ClipRow key={c.id} clip={c} shelf="liked" />
           ))}
         </View>
+        <PageFeedback />
       </ScrollView>
 
       <View style={[styles.back, { top: insets.top + space.sm }]}>

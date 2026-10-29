@@ -13,6 +13,7 @@ import { STAY_GUESTS_MAX } from '../../features/messages/shares';
 import { useToday } from '../../lib/useToday';
 import { color, space, type } from '../../theme/tokens';
 import { t } from '../../i18n';
+import { PageFeedback } from '../../components/PageFeedback';
 
 /**
  * Places to stay for a festival or a show, on a page of its own: what a crew
@@ -36,6 +37,7 @@ export default function StayScreen() {
         <Text style={styles.title}>{event.name}</Text>
         <Text style={styles.sub}>{whereWhen(event)}</Text>
         {over ? <Text style={styles.sub}>{t('This has passed, so there’s nowhere to book any more.')}</Text> : <StayCard trip={event} name={event.name} crew={size ? { size } : undefined} />}
+        <PageFeedback />
       </ScrollView>
       <PageActions />
     </View>

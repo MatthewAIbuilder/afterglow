@@ -150,6 +150,16 @@ export default function RootLayout() {
             contentStyle: { backgroundColor: SHEET_BACKGROUND },
           }}
         />
+        <Stack.Screen
+          name="feedback"
+          options={{
+            presentation: 'formSheet',
+            sheetAllowedDetents: [0.7, 0.95],
+            sheetGrabberVisible: true,
+            sheetCornerRadius: 32,
+            contentStyle: { backgroundColor: SHEET_BACKGROUND },
+          }}
+        />
         <Stack.Screen name="plan-card/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="recap/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="hunt/[id]" options={{ presentation: 'modal' }} />

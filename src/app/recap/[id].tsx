@@ -14,6 +14,7 @@ import { useCatalog } from '../../state/catalog';
 import { color, radius, space, type } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
 import { t } from '../../i18n';
+import { PageFeedback } from '../../components/PageFeedback';
 
 /**
  * Your recap of a festival that's over: your artists there, your nights, your
@@ -76,6 +77,7 @@ export default function RecapScreen() {
             {t('Your recap is ready once the festival is over, if you were going, filmed something there or starred sets.')}
           </Text>
         )}
+        <PageFeedback />
       </ScrollView>
     </View>
   );

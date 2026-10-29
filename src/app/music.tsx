@@ -15,6 +15,7 @@ import { color, radius, space, type, glowA, pageColumn } from '../theme/tokens';
 import { showAlert } from '../lib/dialog';
 import { goBack } from '../lib/nav';
 import { t } from '../i18n';
+import { PageFeedback } from '../components/PageFeedback';
 
 /**
  * Music connections: connect Spotify (or, later, Apple Music) so Afterglow
@@ -83,6 +84,7 @@ export default function MusicScreen() {
             {t('Your library stays on this phone and is never shown to anyone. Disconnecting removes everything imported and forgets the sign-in.')}
           </Text>
         </View>
+        <PageFeedback />
       </ScrollView>
 
       <View style={[styles.back, { top: insets.top + space.sm }]}>

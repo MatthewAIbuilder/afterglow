@@ -40,6 +40,7 @@ import { StoryPreview } from '../features/sprouts/StoryShare';
 import { HoloTilt } from '../features/sprouts/HoloTilt';
 import { showAlert } from '../lib/dialog';
 import { color, glowA, radius, space, type, accentEdge } from '../theme/tokens';
+import { PageFeedback } from '../components/PageFeedback';
 
 const GIVEN_SHOWN = 12;
 /** A sprout or collectible that arrived this recently glows in the garden. */
@@ -344,6 +345,7 @@ export default function GardenScreen() {
             ))}
           </View>
         ) : null}
+        <PageFeedback />
       </ScrollView>
       <KandiSheet kandi={openKandi} worn={!!openKandi && kandi.worn?.id === openKandi.id} onWear={(on) => kandi.wear(on ? openKandi?.id : undefined)} onClose={() => setOpenKandi(undefined)} onRemove={(id) => void kandi.remove(id).then((ok) => ok && setOpenKandi(undefined))} />
       <SproutSheet sprout={open} onClose={() => setOpen(undefined)} />

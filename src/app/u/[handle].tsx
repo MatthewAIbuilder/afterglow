@@ -56,6 +56,7 @@ import { useSendOrShare } from '../../features/messages/useSendOrShare';
 import { goBack } from '../../lib/nav';
 import { t, tn } from '../../i18n';
 import type { PublicKandi } from '../../features/kandi/kandi';
+import { PageFeedback } from '../../components/PageFeedback';
 
 /**
  * Someone's festival profile (or yours, as others see it): photo, name,
@@ -476,6 +477,7 @@ export default function PublicProfileScreen() {
           <ProfileCover url={profile && !blocked ? profile.coverUrl : undefined} backdrop={blocked ? undefined : backdrop} height={insets.top + 64 + 236} fadeFrom={(insets.top + 64 + 100) / (insets.top + 64 + 236)} />
         </View>
         {body}
+        <PageFeedback />
       </ScrollView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>
         <GlassCircleButton label={t('Back')} onPress={() => goBack()}>
