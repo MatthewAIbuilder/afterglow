@@ -26,6 +26,7 @@ import { useLoves } from '../state/useLoves';
 import { useWeekends } from '../state/weekends';
 import { color, radius, space, type, glowA } from '../theme/tokens';
 import { t } from '../i18n';
+import { PageFeedback } from '../components/PageFeedback';
 
 /** "A", "A and B", "A, B and C". */
 const andList = (xs: string[]) => (xs.length > 1 ? t('{list} and {last}', { list: xs.slice(0, -1).join(', '), last: xs[xs.length - 1] }) : (xs[0] ?? ''));
@@ -151,6 +152,7 @@ export default function CompareScreen() {
             ))}
           </View>
         ) : null}
+        <PageFeedback />
       </ScrollView>
       <PageActions />
     </View>

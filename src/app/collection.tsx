@@ -27,6 +27,7 @@ import { useSocial } from '../state/social';
 import { StoryPreview } from '../features/sprouts/StoryShare';
 import { CollectionStory, Ring } from '../features/sprouts/CollectionStory';
 import { color, glowA, radius, space, type } from '../theme/tokens';
+import { PageFeedback } from '../components/PageFeedback';
 
 const TILE = 68;
 /** One you have, opened big. */
@@ -256,6 +257,7 @@ export default function CollectionScreen() {
             ) : null}
           </View>
         ))}
+        <PageFeedback />
       </ScrollView>
       <Modal visible={!!detail} transparent animationType="fade" onRequestClose={() => setDetail(undefined)}>
         <Pressable style={styles.scrim} onPress={() => setDetail(undefined)} accessibilityRole="button" accessibilityLabel={t('Close')}>

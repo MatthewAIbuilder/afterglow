@@ -19,6 +19,7 @@ import { useWeekends } from '../../state/weekends';
 import { color, motion, radius, space, type, glowA, accentEdge } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
 import { t } from '../../i18n';
+import { PageFeedback } from '../../components/PageFeedback';
 
 const GOLD = '#FFD58A';
 
@@ -82,6 +83,7 @@ function Week({ festival }: { festival: Festival }) {
             {shown ? <DoorCard door={shown} festival={festival} burst={burst} /> : <Text style={styles.hint}>{week.line}</Text>}
           </>
         ) : null}
+        <PageFeedback />
       </ScrollView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>
         <GlassCircleButton label={t('Back')} onPress={() => (router.canGoBack() ? goBack() : router.replace({ pathname: '/festival/[id]', params: { id: festival.id } }))}>

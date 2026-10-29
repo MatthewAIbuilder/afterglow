@@ -13,6 +13,7 @@ import { color, radius, space, type, glowA, pageColumn } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { t } from '../i18n';
 import { BottomFade } from '../components/BottomFade';
+import { PageFeedback } from '../components/PageFeedback';
 
 const ICONS: Record<string, React.ReactNode> = {
   sprouts: <Sprout kind="seedling" stage={2} size={34} still />,
@@ -64,6 +65,7 @@ export default function WhatsNewScreen() {
             </Pressable>
           </Animated.View>
         ))}
+        <PageFeedback />
       </ScrollView>
       <View style={[styles.bottom, { paddingBottom: insets.bottom + space.lg }]}>
         <BottomFade />

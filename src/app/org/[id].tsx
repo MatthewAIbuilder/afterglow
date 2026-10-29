@@ -27,6 +27,7 @@ import { useMyOrg, useOrg, useOrgs } from '../../state/orgs';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { t } from '../../i18n';
+import { PageFeedback } from '../../components/PageFeedback';
 
 /**
  * An event organizer's page: their logo and words, their links, what's
@@ -143,6 +144,7 @@ export default function OrgScreen() {
             </View>
           </>
         ) : null}
+        <PageFeedback />
       </ScrollView>
       <PageActions shareLabel={t('Share {organizer}', { organizer: org.name })} onShare={() => void shareMessage(t('{organizer} on Afterglow: {link}', { organizer: org.name, link }), org.name)} />
     </View>

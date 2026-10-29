@@ -17,6 +17,7 @@ import { useCatalog } from '../state/catalog';
 import { useNearby } from '../state/nearby';
 import { color, radius, space, type } from '../theme/tokens';
 import { t } from '../i18n';
+import { PageFeedback } from '../components/PageFeedback';
 
 /** Rows shown at a time. */
 const PAGE = 30;
@@ -133,6 +134,7 @@ export default function ShowsScreen() {
             </Pressable>
           ) : null}
         </View>
+        <PageFeedback />
       </ScrollView>
       <PageActions />
     </View>

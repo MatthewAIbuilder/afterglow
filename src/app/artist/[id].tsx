@@ -60,6 +60,7 @@ import { useSeen } from '../../state/seen';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type, glowA, nightA, accentEdge } from '../../theme/tokens';
 import { dayWord, t, tc } from '../../i18n';
+import { PageFeedback } from '../../components/PageFeedback';
 
 const HERO = 132;
 
@@ -586,6 +587,7 @@ export default function ArtistScreen() {
         )}
         {/* Photos from the nightly photo list credit where they're from. */}
         {credit ? <Text style={styles.credit}>{artist.imageUrl ? t('Photo from {credit}', { credit }) : t('Photos from {credit}', { credit })}</Text> : null}
+        <PageFeedback />
       </ScrollView>
 
       <PageActions shareLabel={t('Share {artist}', { artist: artist.name })} onShare={() => sendOrShare({ kind: 'artist', id: artist.id }, artistShareText(artist, festivals, WEB_URL), artist.name)} />

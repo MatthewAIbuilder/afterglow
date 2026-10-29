@@ -34,6 +34,7 @@ import { useTaste } from '../state/taste';
 import { useLoves } from '../state/useLoves';
 import { color, glowA, radius, space, type } from '../theme/tokens';
 import { t, tc } from '../i18n';
+import { PageFeedback } from '../components/PageFeedback';
 
 /** Faces drawn on one date; with more, the first two and "+N". */
 const FACES_MAX = 3;
@@ -181,6 +182,7 @@ export default function WhereTheyPlayScreen() {
             </Text>
           )}
         </View>
+        <PageFeedback />
       </ScrollView>
       <PageActions />
     </View>

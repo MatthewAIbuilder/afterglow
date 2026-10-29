@@ -38,6 +38,7 @@ import { useToday } from '../../lib/useToday';
 import { countdown } from '../../features/festivals/when';
 import { useEventLookup } from '../../features/festivalMode/useEvent';
 import { eventPath } from '../../features/festivalMode/showEvent';
+import { PageFeedback } from '../../components/PageFeedback';
 
 /**
  * A festival crew. Someone who opens an invite sees the crew and who's in it,
@@ -89,6 +90,7 @@ export default function CrewScreen() {
           contentContainerStyle={[pageColumn, { paddingTop: insets.top + 64, paddingBottom: insets.bottom + space.xxxl, paddingHorizontal: space.xl, gap: space.md }]}
         >
           {social.availability.ok ? body : <Intro title={t('Festival crews')} line={SOCIAL_ERROR_COPY.unavailable} />}
+          <PageFeedback />
         </ScrollView>
       </KeyboardAvoidingView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>
