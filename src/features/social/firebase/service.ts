@@ -3,6 +3,7 @@ import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 import * as FirebaseAuth from 'firebase/auth';
 import { createUserWithEmailAndPassword, deleteUser, EmailAuthProvider, getAdditionalUserInfo, getAuth, GoogleAuthProvider, initializeAuth, OAuthProvider, onAuthStateChanged, reauthenticateWithCredential, reauthenticateWithPopup, reload, revokeAccessToken, sendEmailVerification, sendPasswordResetEmail, signInWithCredential, signInWithEmailAndPassword, signInWithPopup, signOut, type Auth, type AuthProvider, type OAuthCredential, type Persistence, type User } from 'firebase/auth';
 import { isPopup, type ProviderProof, type ProviderToken } from '../providerAuth';
+import { countByInviter } from '../../invites/invites';
 import { arrayRemove, arrayUnion, collection, deleteDoc, deleteField, doc, getAggregateFromServer, getCountFromServer, getDoc, getDocs, increment, initializeFirestore, limit, onSnapshot, orderBy, query, runTransaction, serverTimestamp, setDoc, startAfter, sum, Timestamp, updateDoc, where, writeBatch, type DocumentData, type DocumentReference, type Firestore, type Query } from 'firebase/firestore';
 import { Platform } from 'react-native';
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
@@ -26,7 +27,7 @@ import { cleanArtistName } from '../../../data/extraArtists';
 import { cutVideoPart } from '../../memories/cutPart';
 import { trackFields } from '../../memories/track';
 import { cleanPushAddress, PUSH_ENDPOINT, pushMessages, updatePushKind, withToken, type PushAddress, type PushEvent } from '../../notifications/push';
-import { profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, crewCoverFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc, orgRequestFromDoc, orgDayFromDoc, orgPostFromDoc } from './mapping';
+import { inviteFromDoc, profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, crewCoverFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc, orgRequestFromDoc, orgDayFromDoc, orgPostFromDoc } from './mapping';
 
 
 /** Where a chat room lives: a crew, or a 1-to-1 chat (`dm_<a>_<b>` is `dms/<a>_<b>`). */
@@ -357,6 +358,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
           await deleteDoc(doc(r.ref, 'push', user.uid)).catch(() => {});
         }
         await deleteDoc(doc(db, 'pushTokens', user.uid)).catch(() => {});
+        // Who invited you goes too (the friends you invited keep their own record).
+        await deleteDoc(doc(db, 'invites', user.uid)).catch(() => {});
         // Follows and likes either way.
         const snaps = await Promise.all([
           getDocs(query(collection(db, 'follows'), where('from', '==', user.uid))),
@@ -1161,6 +1164,34 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         if (!mine.exists()) batch.set(doc(db, 'follows', `${user.uid}_${uid}`), { from: user.uid, to: uid, createdAt: now() });
         if (!theirs.exists()) batch.set(doc(db, 'follows', `${uid}_${user.uid}`), { from: uid, to: user.uid, createdAt: now(), via: 'code' });
         await batch.commit();
+      }),
+    claimInvite: (by) =>
+      guard(async () => {
+        const user = me();
+        if (by === user.uid) throw new SocialError('unknown');
+        const ref_ = doc(fb().db, 'invites', user.uid);
+        // Once ever: an account already counted (for anyone) stays as it was.
+        if ((await getDoc(ref_)).exists()) return;
+        await setDoc(ref_, { by, at: serverTimestamp() });
+      }),
+    myInviter: () =>
+      guard(async () => {
+        const snap = await getDoc(doc(fb().db, 'invites', me().uid));
+        const x = snap.exists() ? inviteFromDoc(snap.id, snap.data()) : null;
+        return x ? { by: x.by, at: x.at } : null;
+      }),
+    myInvites: (max) =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'invites'), where('by', '==', me().uid), limit(max)));
+        return snap.docs
+          .flatMap((d) => inviteFromDoc(d.id, d.data()) ?? [])
+          .map(({ uid, at }) => ({ uid, at }))
+          .sort((a, b) => b.at.localeCompare(a.at));
+      }),
+    inviteCounts: () =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'invites'), limit(5000)));
+        return countByInviter(snap.docs.flatMap((d) => inviteFromDoc(d.id, d.data()) ?? []));
       }),
     unfollow: (uid) => guard(async () => deleteDoc(doc(fb().db, 'follows', `${me().uid}_${uid}`))),
     removeFollower: (uid) => guard(async () => deleteDoc(doc(fb().db, 'follows', `${uid}_${me().uid}`))),

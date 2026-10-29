@@ -42,6 +42,7 @@ import { CrewUpdatesProvider } from '../state/crewUpdates';
 import { CrewChatProvider } from '../state/crewChat';
 import { FestivalModeProvider } from '../state/festivalMode';
 import { FriendAddsProvider } from '../state/friendAdds';
+import { InviteClaim } from '../state/invites';
 import { TasteProvider } from '../state/taste';
 import { FollowedArtistsProvider } from '../state/followedArtists';
 import { GoingProvider } from '../state/going';
@@ -278,6 +279,7 @@ export default function RootLayout() {
       <ReminderSync />
       <PushRegistration />
       <TrailKeeper />
+      <InviteClaim />
       <LikeSync />
       <QuestToast />
       <SentMoment />

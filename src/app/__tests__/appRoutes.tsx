@@ -89,6 +89,7 @@ import SupportScreen from '../support';
 import FeedbackScreen from '../feedback';
 import OrgScreen from '../org/[id]';
 import StudioScreen from '../studio';
+import GoogleAuthScreen from '../google-auth';
 import PublicProfileScreen from '../u/[handle]';
 import WelcomeScreen from '../welcome';
 import YourSoundScreen from '../your-sound';
@@ -119,6 +120,7 @@ export const APP_ROUTES = {
   'card/[id]': SharedCardScreen,
   collection: CollectionScreen,
   'add/[handle]': AddFriendScreen,
+  'google-auth': GoogleAuthScreen,
   'artist/[id]': ArtistScreen,
   'sound-guide/[tag]': SoundGuideScreen,
   'festival/[id]': FestivalScreen,

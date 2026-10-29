@@ -15,7 +15,10 @@ import { FLAIR_KINDS } from '../social/models';
 import { StandingAvatar } from '../standing/StandingAvatar';
 import { rememberStanding } from '../standing/useStanding';
 import { FLAIR_CAPTION, PLUS_TERMS, plusUntil } from './drops';
+import { plusEarners } from '../invites/invites';
 
+/** HQ lists this many inviters, most friends first. */
+const INVITERS_SHOWN = 25;
 const FLAIR_LABEL: Record<FlairKind, string> = { artist: 'Artist', team: 'Team', partner: 'Partner' };
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const dateLabel = (iso: string) => {
@@ -115,7 +118,92 @@ export function AdminAccounts() {
           </View>
         ),
       )}
+
+      <InviteRewards plusOf={(uid) => list?.find((x) => x.uid === uid)?.plus} onGiven={load} />
     </View>
+  );
+}
+
+/**
+ * Invite rewards (features/invites): who brought the most friends. At 10, a
+ * month of Afterglow Plus is theirs: one tap gives it (the rules let only this
+ * account write Plus). The badges (Plus One, Bring the crew, Legend) come by
+ * themselves in the app.
+ */
+function InviteRewards({ plusOf, onGiven }: { plusOf: (uid: string) => { until?: string } | undefined; onGiven: () => void }) {
+  const social = useSocial();
+  const [rows, setRows] = useState<{ by: string; count: number; profile: Profile | null }[] | undefined>();
+  const [failed, setFailed] = useState(false);
+  const [giving, setGiving] = useState<string | undefined>();
+  const load = useCallback(async () => {
+    try {
+      const counts = (await social.service.inviteCounts()).slice(0, INVITERS_SHOWN);
+      const profiles = await Promise.all(counts.map((c) => social.service.profileOf(c.by).catch(() => null)));
+      setRows(counts.map((c, i) => ({ ...c, profile: profiles[i] })));
+      setFailed(false);
+    } catch {
+      setFailed(true);
+    }
+  }, [social.service]);
+  useEffect(() => {
+    void Promise.resolve().then(load);
+  }, [load]);
+  const earners = new Set(plusEarners(rows ?? []).map((r) => r.by));
+
+  const give = async (uid: string, name: string) => {
+    setGiving(uid);
+    try {
+      await social.service.setPlus(uid, { until: plusUntil(1, new Date()) });
+      haptic.settle();
+      onGiven();
+    } catch {
+      showAlert('Couldn’t give Plus', `Check the signal and try again, or give it to ${name} from their privileges above.`);
+    } finally {
+      setGiving(undefined);
+    }
+  };
+
+  return (
+    <>
+      <Text style={styles.section}>Invite rewards</Text>
+      <Text style={styles.small}>Who brought friends to Afterglow (they made a profile from the link). At 10, they’ve earned a month of Plus.</Text>
+      {failed ? (
+        <View style={styles.person}>
+          <Text style={[styles.small, { flex: 1 }]}>Couldn’t read the invites. Check the signal.</Text>
+          <Pressable onPress={() => void load()} accessibilityRole="button" hitSlop={8}>
+            <Text style={styles.retry}>Try again</Text>
+          </Pressable>
+        </View>
+      ) : null}
+      {!rows && !failed ? <ActivityIndicator color={color.glow} /> : null}
+      {rows && !rows.length ? <Text style={styles.small}>No invites yet.</Text> : null}
+      {rows?.map((r) => {
+        const plus = plusOf(r.by);
+        const name = r.profile?.displayName ?? r.by.slice(0, 8);
+        return (
+          <View key={r.by} style={styles.person}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.name}>{r.profile ? `${r.profile.displayName}` : `An account without a profile (${r.by.slice(0, 8)}…)`}</Text>
+              <Text style={styles.small}>
+                {r.profile ? `@${r.profile.handle} · ` : ''}
+                {r.count} {r.count === 1 ? 'friend' : 'friends'} joined{plus ? ` · ${plus.until ? `Plus until ${dateLabel(plus.until)}` : 'Plus'}` : ''}
+              </Text>
+            </View>
+            {earners.has(r.by) && !plus ? (
+              <Pressable
+                onPress={() => void give(r.by, name)}
+                disabled={giving === r.by}
+                accessibilityRole="button"
+                accessibilityLabel={`Give ${name} a month of Plus`}
+                style={({ pressed }) => [styles.save, { marginTop: 0, paddingHorizontal: space.md }, (pressed || giving === r.by) && styles.pressed]}
+              >
+                <Text style={styles.saveText}>{giving === r.by ? 'Giving…' : 'Give a month of Plus'}</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        );
+      })}
+    </>
   );
 }
 

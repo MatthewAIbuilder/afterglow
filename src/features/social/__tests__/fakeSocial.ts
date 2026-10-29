@@ -10,6 +10,7 @@ import { GARDEN_BACKUP_MAX } from '../../sprouts/backup';
 import { cleanDecor, type DecorId } from '../../sprouts/decor';
 import { cleanNote, cleanPublicKandi, cleanWord, isCharm, isPattern, KANDI_ID, type Kandi, type PublicKandi } from '../../kandi/kandi';
 import { SUPPORT_EMAIL } from '../../../config/app';
+import { countByInviter } from '../../invites/invites';
 import { nextPresence } from '../../admin/presence';
 import type { Hunt, Sticker } from '../../finds/finds';
 import { cleanOrg, cleanPostInput, findsByCode, isCounter, type Org, type OrgPost, type OrgRequest, orgToDoc, utcDay } from '../../organizers/organizers';
@@ -197,6 +198,10 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     dropChat(id, uid);
     crews.set(id, { ...c, members, owner: c.owner === uid ? members[0] : c.owner });
   };
+
+  /** Who invited whom: invitee uid -> inviter uid and when (as the `invites` collection). */
+  const invites = new Map<string, { by: string; at: string }>();
+  let inviteClock = 0;
 
   /** Push addresses registered: uid -> this phone's token and language. */
   const pushes = new Map<string, { token: string; lang: string }>();
@@ -758,6 +763,32 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     async setFriendCode(code) {
       if (network.down) throw new SocialError('network');
       friendCodes.set(me().uid, code);
+    },
+    async claimInvite(by) {
+      const u = me();
+      if (network.down) throw new SocialError('network');
+      // As the rules: you, with a profile, by someone else with a profile, once ever.
+      if (by === u.uid || !profiles.has(u.uid) || !profiles.has(by)) throw new SocialError('unknown');
+      if (invites.has(u.uid)) return;
+      invites.set(u.uid, { by, at: new Date(Date.UTC(2026, 9, 1) + ++inviteClock * 60_000).toISOString() });
+    },
+    async myInviter() {
+      const u = me();
+      if (network.down) throw new SocialError('network');
+      return invites.get(u.uid) ?? null;
+    },
+    async myInvites(max) {
+      const u = me();
+      if (network.down) throw new SocialError('network');
+      return [...invites]
+        .filter(([, v]) => v.by === u.uid)
+        .map(([uid, v]) => ({ uid, at: v.at }))
+        .sort((a, b) => b.at.localeCompare(a.at))
+        .slice(0, max);
+    },
+    async inviteCounts() {
+      needAdmin();
+      return countByInviter([...invites.values()]);
     },
     async addFriend(uid, code) {
       const u = me();
@@ -1564,5 +1595,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     reads.set(`${crewId}/${uid}`, now());
     readsChanged(crewId);
   };
-  return { service, gardens, glows, gardenBackups, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, covers, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, orgs, orgMembers, orgRequests, orgViews, orgPosts, currentUser: () => current, ticketTaps, pushes };
+  return { service, gardens, glows, gardenBackups, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, covers, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, orgs, orgMembers, orgRequests, orgViews, orgPosts, currentUser: () => current, ticketTaps, pushes, invites };
 }
