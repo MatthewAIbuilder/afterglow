@@ -3,6 +3,7 @@ import * as TaskManager from 'expo-task-manager';
 import { Platform } from 'react-native';
 import { t } from '../../i18n';
 import { color } from '../../theme/tokens';
+import { refreshLiveActivity } from '../../lib/glance';
 import type { Fix } from './trail';
 import { readActive, recordFixes, writeActive } from './trailStore';
 
@@ -21,6 +22,8 @@ if (Platform.OS !== 'web') {
     if (error) return;
     const fixes: Fix[] = (data?.locations ?? []).map((l) => ({ at: l.timestamp, lat: l.coords.latitude, lon: l.coords.longitude, accuracy: l.coords.accuracy }));
     if ((await recordFixes(fixes, Date.now())) === 'stop') await stopRecording();
+    // The same wake keeps the festival Live Activity on the right set, with the app closed.
+    await refreshLiveActivity(new Date());
   });
 }
 

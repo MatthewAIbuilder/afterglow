@@ -2,7 +2,7 @@
   "expo": {
     "name": "Afterglow",
     "slug": "afterglow",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -23,6 +23,10 @@
         "usesNonExemptEncryption": false
       },
       "bundleIdentifier": "app.afterglowmusic",
+      "appleTeamId": "Q49JAX2XV7",
+      "entitlements": {
+        "com.apple.security.application-groups": ["group.app.afterglowmusic"]
+      },
       "usesAppleSignIn": true,
       "privacyManifests": {
         "NSPrivacyTracking": false,
@@ -30,7 +34,8 @@
           {
             "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
             "NSPrivacyAccessedAPITypeReasons": [
-              "CA92.1"
+              "CA92.1",
+              "1C8F.1"
             ]
           },
           {
@@ -54,6 +59,7 @@
         ]
       },
       "infoPlist": {
+        "NSSupportsLiveActivities": true,
         "NSAppleMusicUsageDescription": "Afterglow reads which artists are in your Apple Music library to learn the sounds you love. Nothing about your library is shared."
       }
     },
@@ -164,7 +170,8 @@
           "color": "#A78BFA"
         }
       ],
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      "@bacons/apple-targets"
     ],
     "scheme": "afterglow",
     "backgroundColor": "#0A0918",

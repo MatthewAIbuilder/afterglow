@@ -11,6 +11,7 @@ import { PushRegistration } from '../features/notifications/PushRegistration';
 import { SentMoment } from '../features/memories/SentMoment';
 import '../features/care/trailRecorder';
 import { TrailKeeper } from '../features/care/TrailKeeper';
+import { GlanceSync } from '../features/glance/GlanceSync';
 import { TonightLauncher } from '../features/tonight/TonightLauncher';
 import { QuestTracker } from '../features/quests/QuestTracker';
 import { DailyQuestTracker } from '../features/quests/DailyQuestTracker';
@@ -268,6 +269,7 @@ export default function RootLayout() {
       <ReminderSync />
       <PushRegistration />
       <TrailKeeper />
+      <GlanceSync />
       <LikeSync />
       <QuestToast />
       <SentMoment />
