@@ -37,6 +37,10 @@ const COLORS: Record<MilestoneId | QuestId, [string, string]> = {
   display: ['#FFE58A', '#5B3BC4'],
   complete: ['#8AFFD0', '#2C7FB8'],
   glowing: ['#FFE58A', '#FF8AD8'],
+  'plus-one': ['#FFB0E0', '#7A3CC8'],
+  'bring-the-crew': ['#A97CFF', '#2C8FB8'],
+  legend: ['#FFF1A8', '#C9962B'],
+  'came-with': ['#9AFFD8', '#7A3CC8'],
   // Side quests.
   plur: ['#FF7EB6', '#7A3CC8'],
   wavelength: ['#6FC3FF', '#7A3CC8'],
@@ -346,6 +350,37 @@ function Glyph({ id, stroke }: { id: MilestoneId | QuestId; stroke: string }) {
     case 'stages':
       // Three stages, stepping up.
       return <Path d="M3 20 L3 15 L8.5 15 L8.5 11 L14.5 11 L14.5 6.5 L21 6.5 L21 20 Z M3 20 L21 20" {...p} />;
+    case 'plus-one':
+      // Two people, the second one new (a small plus).
+      return (
+        <G>
+          <Circle cx="9" cy="8" r="3" {...p} />
+          <Path d="M3.5 19 C3.5 15 6 13 9 13 C12 13 14.5 15 14.5 19" {...p} />
+          <Path d="M18 7 L18 13 M15 10 L21 10" {...p} />
+        </G>
+      );
+    case 'bring-the-crew':
+      // Three people side by side.
+      return (
+        <G>
+          <Circle cx="6" cy="9" r="2.4" {...p} />
+          <Circle cx="12" cy="7.5" r="2.6" {...p} />
+          <Circle cx="18" cy="9" r="2.4" {...p} />
+          <Path d="M2.5 19 C2.5 15.5 4 14 6 14 M21.5 19 C21.5 15.5 20 14 18 14 M7.5 19 C7.5 15 9.5 12.5 12 12.5 C14.5 12.5 16.5 15 16.5 19" {...p} />
+        </G>
+      );
+    case 'legend':
+      // A crown.
+      return <Path d="M4 18 L3 8 L8 12 L12 5 L16 12 L21 8 L20 18 Z M4 21 L20 21" {...p} />;
+    case 'came-with':
+      // Two hands meeting: a link of two loops.
+      return (
+        <G>
+          <Path d="M10 14 L8 16 A3.5 3.5 0 0 1 3 11 L5.5 8.5 A3.5 3.5 0 0 1 10.5 8.5" {...p} />
+          <Path d="M14 10 L16 8 A3.5 3.5 0 0 1 21 13 L18.5 15.5 A3.5 3.5 0 0 1 13.5 15.5" {...p} />
+          <Path d="M9.5 14.5 L14.5 9.5" {...p} />
+        </G>
+      );
     case 'og':
       // A star.
       return <Path d="M12 3.5 L14.4 9 L20.3 9.5 L15.8 13.4 L17.2 19.3 L12 16.2 L6.8 19.3 L8.2 13.4 L3.7 9.5 L9.6 9 Z" {...p} />;

@@ -261,6 +261,8 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
                 {/* Your people as an orbit: close friends on the inner ring (only you see who's on it). On the tab it starts tucked behind a bouncing button. */}
                 <FriendsCircle profiles={circle.profiles} close={circle.close} folded={inTab} />
                 <QuickActions handle={me.handle} festivals={upcoming} />
+                {/* Invite friends: your link, and the rewards it earns. */}
+                <InviteCard handle={me.handle} festivals={upcoming} />
                 {/* Someone asked you to join their crew: that's the first thing to answer. */}
                 <CrewInvitesCard />
                 {/* Crews, each one its chat; then 1-to-1 messages. */}

@@ -384,6 +384,19 @@ service cloud.firestore {
 
     // Friend links: proof you scanned someone's current code, made together with the follows.
     // Only the scanner can see or remove theirs.
+    // Invites (features/invites): you joined from someone's invite link. Written once by you, with your
+    // profile, naming someone else who has one; never changed (so an account counts once, for one inviter).
+    // Read by you, by whoever invited you (to count their invites), and by the support account (HQ's rewards).
+    match /invites/{uid} {
+      allow read: if signedIn() && (me() == uid || resource.data.by == me() || isAdmin());
+      allow create: if signedIn() && me() == uid
+        && request.resource.data.keys().hasOnly(['by', 'at'])
+        && request.resource.data.by is string && request.resource.data.by != uid
+        && request.resource.data.at == request.time
+        && exists(path('profiles', uid)) && exists(path('profiles', request.resource.data.by));
+      allow update: if false;
+      allow delete: if signedIn() && me() == uid;
+    }
     match /friendLinks/{id} {
       allow read, delete: if signedIn() && resource.data.from == me();
       allow create, update: if signedIn() && request.resource.data.from == me()

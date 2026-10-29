@@ -199,6 +199,14 @@ export interface SocialService {
    * when the code isn't their current one or they blocked you.
    */
   addFriend(uid: string, code: string): Promise<void>;
+  /** You joined from their invite link: recorded once, for one inviter (features/invites). Needs your profile. */
+  claimInvite(by: string): Promise<void>;
+  /** Who invited you, if you joined from someone's link. */
+  myInviter(): Promise<{ by: string; at: string } | null>;
+  /** Friends who joined from your invite link, newest first. */
+  myInvites(max: number): Promise<{ uid: string; at: string }[]>;
+  /** HQ: how many friends each person brought, most first. Support account only. */
+  inviteCounts(): Promise<{ by: string; count: number }[]>;
   /** Stop someone following you (used when you block them). */
   removeFollower(uid: string): Promise<void>;
   /** Who this person follows / who follows them, newest first, at most `max`. */

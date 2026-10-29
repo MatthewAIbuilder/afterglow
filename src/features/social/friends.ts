@@ -1,5 +1,6 @@
 import type { Festival } from '../../data/models';
 import { WEB_URL } from '../../config/app';
+import { friendLink, type FriendCard } from '../friends/qr';
 import type { Profile } from './models';
 import { t } from '../../i18n';
 
@@ -53,9 +54,10 @@ export function goerSuggestions(
  * to a festival links to that festival's page (where they can tap I'm going
  * and find you); otherwise to your profile, or the app.
  */
-export function inviteText(handle?: string, festival?: Festival): string {
+export function inviteText(handle?: string, festival?: Festival, card?: FriendCard): string {
   const where = festival ? ' ' + t("Let's plan {festival} together.", { festival: festival.name }) : ' ' + t('Find your sets, plan festivals together and see where your crew is.');
-  const link = festival ? `${WEB_URL}/festival/${festival.id}` : handle ? `${WEB_URL}/u/${handle}` : WEB_URL;
+  // Your friend link when you have one: it makes you friends, and a friend who joins from it counts for your invite rewards (features/invites).
+  const link = card ? friendLink(card) : festival ? `${WEB_URL}/festival/${festival.id}` : handle ? `${WEB_URL}/u/${handle}` : WEB_URL;
   return `${handle ? t("Join me on Afterglow, I'm @{handle}.", { handle }) : t('Join me on Afterglow.')}${where}\n${link}`;
 }
 

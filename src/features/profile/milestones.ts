@@ -5,7 +5,7 @@ import { t } from '../../i18n';
  * Milestone badges: a few quiet markers of your festival life, next to the
  * festival pins. Worked out on the phone from what you've done. Pure.
  */
-export type MilestoneId = 'first-festival' | 'hopper' | 'ten' | 'first-moment' | 'moments' | 'collector' | 'crate' | 'basshead' | 'road' | 'og' | 'streak7' | 'streak30' | 'neon' | 'green' | 'giver' | 'gardener' | 'scout' | 'kandi' | 'lucky' | 'hunter' | 'golden' | 'halfway' | 'lit' | 'display' | 'complete' | 'glowing' | 'roamer';
+export type MilestoneId = 'first-festival' | 'hopper' | 'ten' | 'first-moment' | 'moments' | 'collector' | 'crate' | 'basshead' | 'road' | 'og' | 'streak7' | 'streak30' | 'neon' | 'green' | 'giver' | 'gardener' | 'scout' | 'kandi' | 'lucky' | 'hunter' | 'golden' | 'halfway' | 'lit' | 'display' | 'complete' | 'glowing' | 'roamer' | 'plus-one' | 'bring-the-crew' | 'legend' | 'came-with';
 
 export type Milestone = {
   id: MilestoneId | QuestId;
@@ -68,6 +68,10 @@ export type MilestoneInput = {
   completeSets?: number;
   /** Glows visitors left on your garden. */
   glows?: number;
+  /** Friends who joined Afterglow from your invite link (features/invites). */
+  invited?: number;
+  /** The @handle of whoever invited you, when you joined from their link. */
+  cameWith?: string;
 };
 
 type Spec = { id: MilestoneId; title: string; how: string; about: string; target: number; value: (i: MilestoneInput) => number };
@@ -98,6 +102,9 @@ const SPECS: Spec[] = [
   { id: 'display', title: t('On display'), how: t('Pin 3 cards to your profile'), about: t('For a full showcase: three of your collectible cards pinned to your profile for everyone visiting to see.'), target: 3, value: (i) => i.pinned ?? 0 },
   { id: 'complete', title: t('Set complete'), how: t('Complete a set in Your collection'), about: t('For completing a whole set in Your collection: every one of them, nothing left in silhouette.'), target: 1, value: (i) => i.completeSets ?? 0 },
   { id: 'glowing', title: t('Glowing garden'), how: t('Get 10 glows on your garden'), about: t('For ten glows left on your garden by people who visited it and liked what they saw.'), target: 10, value: (i) => i.glows ?? 0 },
+  { id: 'plus-one', title: t('Plus One'), how: t('Invite a friend who joins'), about: t('For bringing a friend to Afterglow: they opened your invite link and made a profile.'), target: 1, value: (i) => i.invited ?? 0 },
+  { id: 'bring-the-crew', title: t('Bring the crew'), how: t('Invite 10 friends who join'), about: t('For bringing 10 friends to Afterglow. It comes with a month of Afterglow Plus: your videos show without the edge glow.'), target: 10, value: (i) => i.invited ?? 0 },
+  { id: 'legend', title: t('Legend'), how: t('Invite 25 friends who join'), about: t('For bringing 25 friends to Afterglow. A whole festival crew came because of you.'), target: 25, value: (i) => i.invited ?? 0 },
   { id: 'ten', title: t('10 festivals'), how: t('Go to 10 festivals'), about: t('For going to 10 festivals. A proper festival life.'), target: 10, value: (i) => i.been },
 ];
 
@@ -113,6 +120,16 @@ export function milestones(input: MilestoneInput): Milestone[] {
       title: 'Afterglow OG',
       how: t('One of the first 100 · #{n}', { n: input.founder }),
       about: t('One of the first 100 people on Afterglow. You’re number {n}, and nobody else will ever be.', { n: input.founder }),
+      current: 1,
+      target: 1,
+      earned: true,
+    });
+  if (input.cameWith)
+    list.unshift({
+      id: 'came-with',
+      title: t('Came with @{handle}', { handle: input.cameWith }),
+      how: t('Joined from a friend’s invite'),
+      about: t('You joined Afterglow from @{handle}’s invite. Every festival is better with the people who brought you.', { handle: input.cameWith }),
       current: 1,
       target: 1,
       earned: true,

@@ -587,3 +587,10 @@ export function huntFromDoc(id: string, d: unknown): Hunt | null {
   const o = d as Record<string, unknown>;
   return cleanHunt(id, { ...o, until: millisOf(o.until) }) ?? null;
 }
+
+/** An invite record (`invites/{invitee uid}`): who invited them, and when they joined. */
+export function inviteFromDoc(id: string, data: Record<string, unknown> | undefined): { uid: string; by: string; at: string } | null {
+  const by = typeof data?.by === 'string' ? data.by : undefined;
+  if (!by) return null;
+  return { uid: id, by, at: timeOf(data?.at) ?? '' };
+}

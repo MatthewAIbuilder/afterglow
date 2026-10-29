@@ -42,7 +42,7 @@ describe('Friends', () => {
     await flush();
     expect(app.getByText('Festivals are better together')).toBeTruthy();
     // Inviting friends to the app works before you have a profile.
-    expect(app.getByLabelText('Invite friends to Afterglow')).toBeTruthy();
+    expect(app.getByLabelText('Send an invite link')).toBeTruthy();
     await fireEvent.press(app.getByText('Create your profile'));
     await flush();
     expect(app.getAllByText(/community guidelines/i).length).toBeGreaterThan(0);

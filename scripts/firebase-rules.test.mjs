@@ -786,6 +786,27 @@ await t('crew invites: a member invites someone with a profile; only the two of 
   await assertSucceeds(getDocs(query(collection(B.firestore(), 'crewInvites'), where('crewId', '==', 'inv1'), where('from', '==', 'uidB'))));
   await assertFails(getDocs(collection(C.firestore(), 'crewInvites')));
 });
+await t('invites: you record once, with your profile, who invited you; they can count it, nobody else can read it', async () => {
+  const at = serverTimestamp();
+  // Not someone without a profile, not yourself, not with your own clock, not by someone without a profile.
+  await assertFails(setDoc(doc(C.firestore(), 'invites', 'uidC'), { by: 'uidB', at }));
+  await assertFails(setDoc(doc(D.firestore(), 'invites', 'uidD'), { by: 'uidD', at }));
+  await assertFails(setDoc(doc(D.firestore(), 'invites', 'uidD'), { by: 'uidB', at: now }));
+  await assertFails(setDoc(doc(D.firestore(), 'invites', 'uidD'), { by: 'uidNobody', at }));
+  await assertFails(setDoc(doc(B.firestore(), 'invites', 'uidD'), { by: 'uidB', at }));
+  await assertFails(setDoc(doc(D.firestore(), 'invites', 'uidD'), { by: 'uidB', at, extra: 1 }));
+  await assertSucceeds(setDoc(doc(D.firestore(), 'invites', 'uidD'), { by: 'uidB', at }));
+  // Once: never changed to someone else.
+  await assertFails(setDoc(doc(D.firestore(), 'invites', 'uidD'), { by: 'uidA', at }));
+  await assertSucceeds(getDoc(doc(D.firestore(), 'invites', 'uidD')));
+  await assertSucceeds(getDocs(query(collection(B.firestore(), 'invites'), where('by', '==', 'uidB'))));
+  await assertFails(getDoc(doc(C.firestore(), 'invites', 'uidD')));
+  await assertFails(getDocs(collection(C.firestore(), 'invites')));
+  await assertFails(getDocs(query(collection(C.firestore(), 'invites'), where('by', '==', 'uidB'))));
+  // Gone with your account.
+  await assertFails(deleteDoc(doc(B.firestore(), 'invites', 'uidD')));
+  await assertSucceeds(deleteDoc(doc(D.firestore(), 'invites', 'uidD')));
+});
 await t('crew invites: invited in the app, you join agreeing to the chat rules, no code needed', async () => {
   await assertFails(join(D, 'uidD', 'inv1', ['uidB', 'uidD'], null));
   await assertSucceeds(join(D, 'uidD', 'inv1', ['uidB', 'uidD'], { agreed: true, at: serverTimestamp() }));

@@ -1,3 +1,4 @@
+import { useMyInviter, useMyInvites } from '../../state/invites';
 import { useMemo, useState } from 'react';
 import { toCollect } from '../badges/badges';
 import { useBadges } from '../badges/useBadges';
@@ -72,6 +73,9 @@ export function useProfileBadges() {
     [catalog.festivals, forYou, going, memories, badges, loves, today],
   );
   const standing = useStanding(me?.uid);
+  // Invite rewards: friends who joined from your link, and who invited you.
+  const { count: invited } = useMyInvites();
+  const cameWith = useMyInviter();
   const scouted = useScouted(social.user?.uid);
   // Collecting: kandi, shinies, stickers, gold, and how much of Your collection you have.
   const { finds } = useFinds();
@@ -127,8 +131,10 @@ export function useProfileBadges() {
         pinned: showcase.pinned.length,
         completeSets: book.sets.filter((x) => x.total > 0 && x.have === x.total).length,
         glows: glows.length,
+        invited,
+        cameWith,
       }),
-    [glows.length, decor.length, showcase.pinned.length, book, kandi.received.length, finds, found, sprouts.artists, scouted.length, passport, throwbacks, memories.length, kept, ratings, catalog, standing?.founder, daily.book, daily.level.glow, sprouts.garden, sprouts.gifts, sprouts.collected],
+    [invited, cameWith, glows.length, decor.length, showcase.pinned.length, book, kandi.received.length, finds, found, sprouts.artists, scouted.length, passport, throwbacks, memories.length, kept, ratings, catalog, standing?.founder, daily.book, daily.level.glow, sprouts.garden, sprouts.gifts, sprouts.collected],
   );
   // Side quests: done ones come from the log, so they stay done.
   const quests = useQuests();

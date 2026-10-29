@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NightSky } from '../../components/NightSky';
@@ -10,6 +10,7 @@ import { cardFrom } from '../../features/friends/qr';
 import { t } from '../../i18n';
 import { haptic } from '../../lib/haptics';
 import { type AddResult, useFriendAdds } from '../../state/friendAdds';
+import { rememberInvite } from '../../state/invites';
 import { useSocial } from '../../state/social';
 import { color, radius, space, type, accentEdge } from '../../theme/tokens';
 
@@ -25,6 +26,13 @@ export default function AddFriendScreen() {
   const social = useSocial();
   const { add } = useFriendAdds();
   const [outcome, setOutcome] = useState<AddResult | 'adding' | undefined>();
+  // No profile yet: this is an invite. Kept on the phone, it counts for them (and makes you friends) once you make one.
+  const newcomer = social.ready && (!social.user || !social.profile);
+  useEffect(() => {
+    if (card && newcomer) void rememberInvite(card);
+    // Once per link opened.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [card?.uid, newcomer]);
 
   const go = async () => {
     if (!card) return;
@@ -43,7 +51,9 @@ export default function AddFriendScreen() {
           ? t('Saved. You’ll be friends with {name} as soon as there’s signal.', { name: card.name })
           : outcome === 'needs-profile'
             ? t('Make your profile and you’ll be friends with {name} once there’s signal.', { name: card.name })
-            : t('{name} wants to be friends on Afterglow. You’ll follow each other.', { name: card.name });
+            : newcomer
+              ? t('{name} invited you to Afterglow. Make your profile and you’ll be friends straight away.', { name: card.name })
+              : t('{name} wants to be friends on Afterglow. You’ll follow each other.', { name: card.name });
 
   return (
     <View style={styles.root}>
@@ -60,7 +70,7 @@ export default function AddFriendScreen() {
         {!card ? null : !social.availability.ok ? (
           <Text style={styles.body}>{t('Open Afterglow on your phone to add friends.')}</Text>
         ) : !social.ready ? null : !social.user ? (
-          <Primary label={t('Sign in to be friends')} onPress={() => router.push('/account')} />
+          <Primary label={t('Join Afterglow')} onPress={() => router.push('/account')} />
         ) : outcome === 'added' ? (
           <Primary label={t('See their profile')} onPress={() => router.replace({ pathname: '/u/[handle]', params: { handle: card.handle } })} />
         ) : outcome === 'needs-profile' ? (

@@ -7,6 +7,7 @@ import { haptic } from '../../lib/haptics';
 import { shareMessage } from '../../lib/share';
 import { color, space, type } from '../../theme/tokens';
 import { inviteText } from '../social/friends';
+import { useFriendAdds } from '../../state/friendAdds';
 import { Sprout } from '../sprouts/Sprout';
 import { t } from '../../i18n';
 
@@ -20,9 +21,11 @@ const INVITE_FESTIVALS = 3;
  * is adding the people in front of you.
  */
 export function QuickActions({ handle, festivals = [], atFestival = false }: { handle?: string; festivals?: readonly Festival[]; atFestival?: boolean }) {
+  // Your friend link: friends who join from it count for your invite rewards.
+  const { myCard } = useFriendAdds();
   const invite = () => {
     const chips = festivals.slice(0, INVITE_FESTIVALS);
-    const send = (f?: Festival) => void shareMessage(inviteText(handle, f), t('Join me on Afterglow'));
+    const send = (f?: Festival) => void shareMessage(inviteText(handle, f, myCard), t('Join me on Afterglow'));
     if (!chips.length) {
       send();
       return;
