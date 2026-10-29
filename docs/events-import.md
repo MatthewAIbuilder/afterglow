@@ -366,6 +366,38 @@ they replace the page's.
 Pages that only show set times as a picture (a poster) or build them with
 scripts can't be read this way; for those, use HQ → Data → read a photo.
 
+## Set times from Clashfinder (automatic, waiting on permission)
+
+Clashfinder (clashfinder.com) has fan-made timetables for most festivals,
+usually up within hours of the official set times, including Insomniac's,
+whose own set times are only a picture. The user chose it on 2026-10-29
+("do whatever you need to do") after the official-page reader could only
+reach 1 of 53 festivals.
+
+Every night, right after the official pages, `scripts/clashfinder-set-times.ts`
+(logic in `src/features/admin/clashfinder.ts`) takes every festival starting
+in the next 21 days that still has no set times, finds its clashfinder (same
+name, starting within a day; Clashfinder's own pick first, then the fullest),
+reads it (late-night sets stay on their night, names match artists already on
+Afterglow, "(DJ Set)" notes ignored) and runs the same checks as the official
+pages. Tested against EDC Colombia 2026: 126 of 132 acts matched, 115 set
+times identical to the hand-entered ones.
+
+- **Account**: the GitHub secrets `CLASHFINDER_USERNAME` and
+  `CLASHFINDER_PRIVATE_KEY` (the user's Clashfinder account, added
+  2026-10-29). Without them the step does nothing.
+- **Permission**: Clashfinder's data is CC BY-NC 3.0 ("free for
+  non-commercial use, contact halvin@clashfinder.com for other uses").
+  Until they say yes, `CLASHFINDER_PUBLISH` in the script is `false`: nothing
+  is published, and the nightly "Festival news" issue lists what would be.
+  Once they agree, set it to `true` (and add the credit they ask for).
+- **Limits**: at most 8 timetables a night, 31 s apart (Clashfinder allows 10
+  requests per 5 minutes from March 2027).
+- Published lineups are marked `"from": "clashfinder"` (the app ignores the
+  marker) and `"source": "page"`, so they only ever add, and set times
+  entered by hand always win. A night Clashfinder can't be reached keeps last
+  night's.
+
 ## Festival news by email (page watch)
 
 Every night, after the website is built, Afterglow looks at the official
