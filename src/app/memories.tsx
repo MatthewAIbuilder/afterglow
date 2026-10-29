@@ -19,6 +19,7 @@ import { useSocial } from '../state/social';
 import { color, radius, space, type, glowA, glowDeepA, pageColumn } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { t, tn } from '../i18n';
+import { PageFeedback } from '../components/PageFeedback';
 
 const TILE = 112;
 
@@ -99,6 +100,7 @@ export default function MemoriesScreen() {
         ) : (
           sections.map((s) => <Section key={s.key} section={s} uriOf={uriOf} lookup={lookup} />)
         )}
+        <PageFeedback />
       </ScrollView>
 
       <View style={[styles.back, { top: insets.top + space.sm }]}>

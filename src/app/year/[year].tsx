@@ -15,6 +15,7 @@ import { color, radius, space, type, pageColumn } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
 import { t } from '../../i18n';
 import { EmptyState } from '../../components/EmptyState';
+import { PageFeedback } from '../../components/PageFeedback';
 
 /**
  * Your year on Afterglow: your festivals, top artists, sound and the numbers,
@@ -78,6 +79,7 @@ export default function YearScreen() {
             {t('Nothing here yet. Mark the festivals you’re going to, watch some sets and rate artists, and your year fills in.')}
           </EmptyState>
         )}
+        <PageFeedback />
       </ScrollView>
     </View>
   );

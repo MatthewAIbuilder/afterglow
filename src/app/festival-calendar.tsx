@@ -41,6 +41,7 @@ import { isForYou, rankShows, showsByDay, showsInReach, upcomingShows } from '..
 import { router } from 'expo-router';
 import { color, radius, space, type, glowA } from '../theme/tokens';
 import { t, tn } from '../i18n';
+import { PageFeedback } from '../components/PageFeedback';
 
 const GOING = '#FF9AD5';
 /** Shows for you listed under a month (a day lists all of its own). */
@@ -319,6 +320,7 @@ export default function FestivalCalendarScreen() {
             <Text style={styles.backText}>{t('Back to this month')}</Text>
           </Pressable>
         )}
+        <PageFeedback />
       </ScrollView>
       <PageActions />
     </View>

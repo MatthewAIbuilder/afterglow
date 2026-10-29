@@ -26,6 +26,7 @@ import { shareMessage } from '../lib/share';
 import { useNow } from '../lib/useNow';
 import { useCare } from '../state/care';
 import { color, radius, space, type, glowA, accentEdge } from '../theme/tokens';
+import { PageFeedback } from '../components/PageFeedback';
 
 const HARM_REDUCTION_URL = 'https://dancesafe.org';
 
@@ -348,6 +349,7 @@ export default function CareScreen() {
             <Text style={styles.clearText}>{t('Clear everything')}</Text>
           </Pressable>
         </View>
+        <PageFeedback />
       </ScrollView>
       <BloomWash bloom={fromHeart} />
     </View>

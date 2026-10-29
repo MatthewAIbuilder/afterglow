@@ -9,6 +9,7 @@ import { haptic } from '../lib/haptics';
 import { revealSecret, useSecrets } from '../state/secrets';
 import { months, t } from '../i18n';
 import { color, radius, space, type, glowA, pageColumn } from '../theme/tokens';
+import { PageFeedback } from '../components/PageFeedback';
 
 const foundOn = (at: number) => {
   const d = new Date(at);
@@ -69,6 +70,7 @@ export default function SecretsScreen() {
             </View>
           );
         })}
+        <PageFeedback />
       </ScrollView>
       <PageActions />
     </View>

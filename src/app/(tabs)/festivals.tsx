@@ -54,6 +54,7 @@ import { color, radius, space, spectrum, tintA, type } from '../../theme/tokens'
 import { festivalLight, monthLight } from '../../features/festivals/light';
 import { datesLine } from '../../features/festivals/format';
 import { t, tn } from '../../i18n';
+import { PageFeedback } from '../../components/PageFeedback';
 
 const LOVE = 0.8;
 /** Tiles on the For you shelf are this big. */
@@ -368,6 +369,7 @@ function FestivalsScreen({ onlyOurs }: { onlyOurs?: () => void }) {
             <RequestRow />
           </>
         )}
+        <PageFeedback />
       </ScrollView>
     </View>
   );

@@ -11,6 +11,7 @@ import { useSocial } from '../../state/social';
 import { color, space, type } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
 import { t, tc } from '../../i18n';
+import { PageFeedback } from '../../components/PageFeedback';
 
 /**
  * Who's going to a festival: people you follow, then others on Afterglow,
@@ -50,6 +51,7 @@ export default function GoingScreen() {
             <Text style={styles.note}>{t('Only people who show the festivals they’re going to on their profile appear here.')}</Text>
           </>
         )}
+        <PageFeedback />
       </ScrollView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>
         <GlassCircleButton label={t('Back')} onPress={() => goBack()}>

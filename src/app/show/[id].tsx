@@ -37,6 +37,7 @@ import { TryFestivalMode } from '../../features/festivalMode/FestivalModeCard';
 import { showAsEvent } from '../../features/festivalMode/showEvent';
 import { goingShowOf } from '../../features/festivals/goingShows';
 import { showRun } from '../../features/festivals/showRuns';
+import { PageFeedback } from '../../components/PageFeedback';
 
 /**
  * One club show from the nightly EDMTrain feed: when and where, who's on the
@@ -244,6 +245,7 @@ export default function ShowScreen() {
         >
           <Text style={styles.creditText}>{t('Show info from EDMTrain ↗')}</Text>
         </Pressable>
+        <PageFeedback />
       </ScrollView>
       <PageActions shareLabel={t('Share {show}', { show: title })} onShare={share} />
     </View>

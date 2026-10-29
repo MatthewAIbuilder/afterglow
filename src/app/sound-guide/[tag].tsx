@@ -21,6 +21,7 @@ import { useCatalog } from '../../state/catalog';
 import { useRatings } from '../../state/ratings';
 import { useTaste } from '../../state/taste';
 import { color, radius, space, type } from '../../theme/tokens';
+import { PageFeedback } from '../../components/PageFeedback';
 
 const isTag = (x: unknown): x is SoundTag => typeof x === 'string' && (SOUND_TAGS as readonly string[]).includes(x);
 
@@ -166,6 +167,7 @@ export default function SoundGuideScreen() {
         <Pressable onPress={() => goBack()} accessibilityRole="button" hitSlop={8} style={{ alignSelf: 'center', marginTop: space.lg }}>
           <Text style={styles.back}>{t('Back to My Sound')}</Text>
         </Pressable>
+        <PageFeedback />
       </ScrollView>
     </View>
   );

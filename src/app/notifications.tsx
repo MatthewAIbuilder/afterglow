@@ -16,6 +16,7 @@ import { color, radius, space, type, glowA, pageColumn } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { t } from '../i18n';
 import { EmptyState } from '../components/EmptyState';
+import { PageFeedback } from '../components/PageFeedback';
 
 /**
  * Notifications: news about the festivals you're going to, new followers, likes, comments and tags. Newest
@@ -121,6 +122,7 @@ export default function NotificationsScreen() {
           {newOnes.length && earlier.length ? <Text style={styles.section}>{t('Earlier')}</Text> : null}
           {earlier.map(row)}
         </View>
+        <PageFeedback />
       </ScrollView>
 
       <View style={[styles.back, { top: insets.top + space.sm }]}>

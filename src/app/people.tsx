@@ -15,6 +15,7 @@ import { useSocial } from '../state/social';
 import { color, space, type, pageColumn } from '../theme/tokens';
 import { goBack } from '../lib/nav';
 import { t } from '../i18n';
+import { PageFeedback } from '../components/PageFeedback';
 
 /** Find people on Afterglow by name or @handle. People you've blocked never show up. */
 export default function PeopleScreen() {
@@ -66,6 +67,7 @@ export default function PeopleScreen() {
         {shown.map((p) => (
           <PersonRow key={p.uid} profile={p} follow />
         ))}
+        <PageFeedback />
       </ScrollView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>
         <GlassCircleButton label={t('Back')} onPress={() => goBack()}>

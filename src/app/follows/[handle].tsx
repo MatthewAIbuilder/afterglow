@@ -15,6 +15,7 @@ import { useSocial } from '../../state/social';
 import { color, space, type } from '../../theme/tokens';
 import { goBack } from '../../lib/nav';
 import { t } from '../../i18n';
+import { PageFeedback } from '../../components/PageFeedback';
 
 type List = 'followers' | 'following';
 /** Lists show the newest this many. */
@@ -109,6 +110,7 @@ export default function FollowsScreen() {
             <Text style={styles.quiet}>{empty}</Text>
           )}
         </View>
+        <PageFeedback />
       </ScrollView>
       <View style={[styles.back, { top: insets.top + space.sm }]}>
         <GlassCircleButton label={t('Back')} onPress={() => goBack()}>

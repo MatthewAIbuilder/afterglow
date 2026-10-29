@@ -43,6 +43,7 @@ import { CrewInvitesCard } from '../crews/CrewInvitesCard';
 import { t } from '../../i18n';
 import { useEventLookup } from '../festivalMode/useEvent';
 import { FestivalFriends } from '../festivalMode/FestivalFriends';
+import { PageFeedback } from '../../components/PageFeedback';
 
 /** How many of your festivals are asked who else is going. */
 const GOER_FESTIVALS = 3;
@@ -296,6 +297,7 @@ export function FriendsHub({ festival, inTab = false }: { festival?: Festival; i
             )}
           </>
         )}
+        <PageFeedback />
       </ScrollView>
     </View>
   );

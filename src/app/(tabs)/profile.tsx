@@ -77,6 +77,7 @@ import { useKandi } from '../../state/kandi';
 import { datesLine } from '../../features/festivals/format';
 import { GlassCircleButton } from '../../components/GlassCircleButton';
 import { useEventLookup } from '../../features/festivalMode/useEvent';
+import { PageFeedback } from '../../components/PageFeedback';
 
 /** How far the cover photo reaches below the safe area. */
 /** How far your profile background reaches: past the orbit and your name, fading out gently below them. */
@@ -410,6 +411,7 @@ function FullProfile() {
         ) : (
           <SavedTab clips={[...mine.saved, ...mine.liked].slice(0, 12)} clipCount={kept} followedCount={followedCount} artistOf={catalog.artist} width={width} />
         )}
+        <PageFeedback />
       </ScrollView>
       <BadgeCelebration unlock={b.unlock} onDone={b.finishUnlock} />
       {profileStory && me ? (

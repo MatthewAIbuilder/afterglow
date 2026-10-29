@@ -17,6 +17,7 @@ import { showAlert } from '../lib/dialog';
 import { haptic } from '../lib/haptics';
 import { useCatalog } from '../state/catalog';
 import { color, glowA, radius, space, type } from '../theme/tokens';
+import { PageFeedback } from '../components/PageFeedback';
 
 const MAP_HEIGHT = 340;
 
@@ -196,6 +197,7 @@ export default function TrailScreen() {
             ) : null}
           </View>
         ) : null}
+        <PageFeedback />
       </ScrollView>
     </View>
   );

@@ -40,6 +40,7 @@ import { themeOf } from '../features/themes/themes';
 import { backdropOf } from '../features/profile/backdrops';
 import { LANGUAGE, LANGUAGE_CHOICE, LANGUAGES, t, tn, type LanguageChoice } from '../i18n';
 import { writeStoredLanguage } from '../i18n/storedLanguage';
+import { PageFeedback } from '../components/PageFeedback';
 
 /**
  * Settings and more, from the menu on Profile: your account, the lists
@@ -183,6 +184,7 @@ export default function SettingsScreen() {
         >
           <Text style={styles.version}>{toes ? `${VERSION_LINE} · ${t('made with ten toes')}` : VERSION_LINE}</Text>
         </Pressable>
+        <PageFeedback />
       </ScrollView>
     </View>
   );

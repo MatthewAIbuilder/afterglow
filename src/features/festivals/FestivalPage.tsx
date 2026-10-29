@@ -54,6 +54,7 @@ import { coverPhotos } from './cover';
 import { CrowdVideos } from './CrowdVideos';
 import { LiveCrowdRow } from './LiveCrowdRow';
 import { FestivalCover } from './FestivalCover';
+import { PageFeedback } from '../../components/PageFeedback';
 
 type Order = 'match' | 'billing';
 /** The page's tabs: your plan, the whole lineup, and the practical things. */
@@ -448,6 +449,7 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above, be
             ) : null}
           </View>
         ) : null}
+        <PageFeedback />
       </Animated.ScrollView>
     </View>
   );

@@ -21,6 +21,7 @@ import { markQuestTipDone } from '../state/questTip';
 import { secretsLine } from '../features/secrets/secrets';
 import { t, tc } from '../i18n';
 import { color, motion, radius, space, type, pageColumn } from '../theme/tokens';
+import { PageFeedback } from '../components/PageFeedback';
 
 /** Taps on the level ring that wake the secret. */
 const SECRET_TAPS = 7;
@@ -192,6 +193,7 @@ export default function QuestsScreen() {
             )}
           </Text>
         </View>
+        <PageFeedback />
       </ScrollView>
       <PageActions
         shareLabel={t('Share your glow level')}
