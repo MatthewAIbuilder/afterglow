@@ -945,6 +945,19 @@ service cloud.firestore {
           || get(path('crews', id)).data.owner == me());
       }
 
+      // Each member's votes on the lineup (Must see / Maybe / Skip per act, a side per clash): written by
+      // that member while in the crew, with the server's time; read by members; removed by that member or
+      // the owner (and when they leave).
+      match /votes/{uid} {
+        allow read: if signedIn() && me() in get(path('crews', id)).data.members;
+        allow create, update: if signedIn() && me() == uid && me() in get(path('crews', id)).data.members
+          && request.resource.data.keys().hasOnly(['lineup', 'clashes', 'at'])
+          && request.resource.data.lineup is map && request.resource.data.lineup.size() <= 400
+          && request.resource.data.clashes is map && request.resource.data.clashes.size() <= 120
+          && request.resource.data.at == request.time;
+        allow delete: if signedIn() && (me() == uid || get(path('crews', id)).data.owner == me());
+      }
+
       // Crew meetups: a place and a time to find each other. Members read them and set them as
       // themselves (from an hour ago to a month ahead), stamped with the server's time; never edited.
       // Called off by whoever set one or the crew's owner.

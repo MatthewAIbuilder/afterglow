@@ -14,6 +14,9 @@ import { CrewLatest } from '../../features/crews/CrewLatest';
 import { CrewCoverPhoto } from '../../features/crews/CrewCoverPhoto';
 import { MeetSpotCard } from '../../features/crews/MeetSpotCard';
 import { MeetupsCard } from '../../features/crews/MeetupsCard';
+import { VoteCard } from '../../features/crews/VoteCard';
+import { clashSlots, mergeStars, starsFromVotes, tallyLineup, wanted } from '../../features/crews/votes';
+import { useCrewVotes } from '../../state/crewVotes';
 import { CrewChatCard } from '../../features/crews/CrewChatCard';
 import { CrewStayCard } from '../../features/crews/CrewStayCard';
 import { CHAT_RULES } from '../../features/crews/chat';
@@ -289,6 +292,14 @@ function Member({
     return all;
   }, [picks, me, myStars]);
   const { forYou } = useWeekends();
+  // The crew's votes: Must sees count as stars, and a clash the crew settled is a star from everyone.
+  const crewVotes = useCrewVotes(crew.id);
+  const routeStars = useMemo(() => {
+    if (!festival) return stars;
+    const rows = tallyLineup(crewVotes.votes, crew.members, festival.lineup);
+    const slots = festival.sets?.length ? clashSlots(festival, wanted(rows)) : [];
+    return mergeStars(stars, starsFromVotes(crewVotes.votes, crew.members, slots));
+  }, [stars, festival, crewVotes.votes, crew.members]);
 
   const problem = crewNameProblem(name);
   const saveName = async () => {
@@ -475,6 +486,8 @@ function Member({
       <MeetSpotCard crew={crew} />
       <MeetupsCard crew={crew} nameOf={who} />
 
+      {festival && others.length ? <VoteCard crew={crew} votes={crewVotes.votes} lineup={festival.lineup} /> : null}
+
       <Text style={styles.section}>{t('Sets you share')}</Text>
       {together.shared.length ? (
         together.shared.map((s) => {
@@ -489,7 +502,7 @@ function Member({
 
       {/* Once set times are out: one route for the crew, with who splits off where. */}
       {festival?.sets?.length && me && others.length ? (
-        <CrewRouteSection festival={forYou(festival)} me={me} members={crew.members} stars={stars} nameOf={who} crewName={crew.name} crew={crew} />
+        <CrewRouteSection festival={forYou(festival)} me={me} members={crew.members} stars={routeStars} nameOf={who} crewName={crew.name} crew={crew} />
       ) : null}
 
       {/* Everyone in the crew: a row each, opening to show their starred sets. */}

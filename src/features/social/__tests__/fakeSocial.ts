@@ -11,6 +11,7 @@ import { cleanDecor, type DecorId } from '../../sprouts/decor';
 import { cleanNote, cleanPublicKandi, cleanWord, isCharm, isPattern, KANDI_ID, type Kandi, type PublicKandi } from '../../kandi/kandi';
 import { SUPPORT_EMAIL } from '../../../config/app';
 import { cleanMeetupInput } from '../../crews/meetups';
+import { cleanVotes, type CrewVotes } from '../../crews/votes';
 import { countByInviter } from '../../invites/invites';
 import { nextPresence } from '../../admin/presence';
 import type { Hunt, Sticker } from '../../finds/finds';
@@ -106,6 +107,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   /** Each crew's meeting spot. */
   const meets = new Map<string, MeetSpot>();
   const meetups = new Map<string, CrewMeetup[]>();
+  const votes = new Map<string, Map<string, CrewVotes>>();
   const covers = new Map<string, CrewCover>();
   const reports: { id: string; by: string; target: ReportTarget; reason: ReportReason; note?: string; createdAt: string; status: 'open' | 'resolved' }[] = [];
   /** Support messages, and which emails have been confirmed (the support account needs it). */
@@ -1154,6 +1156,20 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         dmWatchers.delete(w);
       };
     },
+    async crewVotes(crewId) {
+      readable();
+      if (network.down) throw new SocialError('network');
+      const crew = memberOf(crewId);
+      return [...(votes.get(crewId)?.values() ?? [])].filter((v) => crew.members.includes(v.uid));
+    },
+    async setCrewVotes(crewId, input) {
+      if (network.down) throw new SocialError('network');
+      memberOf(crewId);
+      const clean = cleanVotes(me().uid, input, now())!;
+      const map = votes.get(crewId) ?? new Map<string, CrewVotes>();
+      map.set(me().uid, { ...clean, at: now() });
+      votes.set(crewId, map);
+    },
     async crewMeetups(crewId) {
       readable();
       if (network.down) throw new SocialError('network');
@@ -1620,5 +1636,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     reads.set(`${crewId}/${uid}`, now());
     readsChanged(crewId);
   };
-  return { service, gardens, glows, gardenBackups, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, meetups, covers, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, orgs, orgMembers, orgRequests, orgViews, orgPosts, currentUser: () => current, ticketTaps, pushes, invites };
+  return { service, gardens, glows, gardenBackups, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, meetups, votes, covers, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, orgs, orgMembers, orgRequests, orgViews, orgPosts, currentUser: () => current, ticketTaps, pushes, invites };
 }

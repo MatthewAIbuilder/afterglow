@@ -1,4 +1,5 @@
 import { cleanMeetupInput, meetupTime } from '../../crews/meetups';
+import { cleanVotes } from '../../crews/votes';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 import * as FirebaseAuth from 'firebase/auth';
@@ -28,7 +29,7 @@ import { cleanArtistName } from '../../../data/extraArtists';
 import { cutVideoPart } from '../../memories/cutPart';
 import { trackFields } from '../../memories/track';
 import { cleanPushAddress, PUSH_ENDPOINT, pushMessages, updatePushKind, withToken, type PushAddress, type PushEvent } from '../../notifications/push';
-import { inviteFromDoc, profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, meetupFromDoc, crewCoverFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc, orgRequestFromDoc, orgDayFromDoc, orgPostFromDoc } from './mapping';
+import { inviteFromDoc, profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, meetupFromDoc, votesFromDoc, crewCoverFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc, orgRequestFromDoc, orgDayFromDoc, orgPostFromDoc } from './mapping';
 
 
 /** Where a chat room lives: a crew, or a 1-to-1 chat (`dm_<a>_<b>` is `dms/<a>_<b>`). */
@@ -288,6 +289,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     const reads = await getDocs(collection(db, 'crews', id, 'reads')).catch(() => null);
     for (const d of reads?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
     await deleteDoc(doc(db, 'crews', id, 'meta', 'meet')).catch(() => {});
+    const votes = await getDocs(collection(db, 'crews', id, 'votes')).catch(() => null);
+    for (const d of votes?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
     const meetups = await getDocs(collection(db, 'crews', id, 'meetups')).catch(() => null);
     for (const d of meetups?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
     await deleteDoc(doc(db, 'crews', id, 'meta', 'cover')).catch(() => {});
@@ -1951,6 +1954,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         await removeChat(id, user.uid).catch(() => {});
         await deleteDoc(doc(db, 'crews', id, 'reads', user.uid)).catch(() => {});
         await deleteDoc(doc(db, 'crews', id, 'picks', user.uid));
+        await deleteDoc(doc(db, 'crews', id, 'votes', user.uid)).catch(() => {});
         await updateDoc(crewRef, { members, owner: c.owner === user.uid ? members[0] : c.owner });
       }),
     endCrew: (id) =>
@@ -1982,6 +1986,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         await removeChat(id, uid).catch(() => {});
         await deleteDoc(doc(db, 'crews', id, 'reads', uid)).catch(() => {});
         await deleteDoc(doc(db, 'crews', id, 'picks', uid));
+        await deleteDoc(doc(db, 'crews', id, 'votes', uid)).catch(() => {});
         const members = c.members.filter((m) => m !== uid);
         await updateDoc(crewRef, { members });
         // The invite link they came in with stops working, so they can't come straight back.
@@ -2193,6 +2198,20 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         (e) => onError?.(asSocialError(e)),
       );
     },
+    crewVotes: (crewId) =>
+      guard(async () => {
+        const snap = await serverDocs(collection(fb().db, 'crews', crewId, 'votes'));
+        return snap.docs.flatMap((d) => {
+          const v = votesFromDoc(d.id, d.data());
+          return v ? [v] : [];
+        });
+      }),
+    setCrewVotes: (crewId, votes) =>
+      guard(async () => {
+        const user = me();
+        const clean = cleanVotes(user.uid, votes);
+        await setDoc(doc(fb().db, 'crews', crewId, 'votes', user.uid), { lineup: clean?.lineup ?? {}, clashes: clean?.clashes ?? {}, at: serverTimestamp() });
+      }),
     crewMeetups: (crewId) =>
       guard(async () => {
         const snap = await getDocs(query(collection(fb().db, 'crews', crewId, 'meetups'), limit(MEETUPS_MAX)));

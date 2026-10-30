@@ -1,4 +1,5 @@
 import { forgetSetsSeen } from './setsSeen';
+import { forgetCrewVotes } from './crewVotesStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
@@ -35,6 +36,7 @@ const storage: ScopeStorage = {
 function forgetShared() {
   forgetAccountGlow();
   forgetSetsSeen();
+  forgetCrewVotes();
   forgetBadgeClaims();
   forgetCloseFriends();
   forgetDailyQuests();
