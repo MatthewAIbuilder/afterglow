@@ -91,6 +91,8 @@ import OrgScreen from '../org/[id]';
 import StudioScreen from '../studio';
 import GoogleAuthScreen from '../google-auth';
 import SpotsScreen from '../spots';
+import RateSetScreen from '../rate-set';
+import SeenScreen from '../seen';
 import PublicProfileScreen from '../u/[handle]';
 import WelcomeScreen from '../welcome';
 import YourSoundScreen from '../your-sound';
@@ -123,6 +125,8 @@ export const APP_ROUTES = {
   'add/[handle]': AddFriendScreen,
   'google-auth': GoogleAuthScreen,
   spots: SpotsScreen,
+  'rate-set': RateSetScreen,
+  seen: SeenScreen,
   'artist/[id]': ArtistScreen,
   'sound-guide/[tag]': SoundGuideScreen,
   'festival/[id]': FestivalScreen,

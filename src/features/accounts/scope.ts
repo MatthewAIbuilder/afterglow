@@ -57,6 +57,7 @@ export const ACCOUNT_KEYS = [
   'trailPrefs.v1',
   'trailActive.v1',
   'spots.v1',
+  'setsSeen.v1',
   'noticesRead.v1',
   'crewSeen.v1',
   'crewChatRead.v1',

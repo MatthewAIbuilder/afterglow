@@ -22,6 +22,7 @@ import { useDailyQuests } from '../quests/useDailyQuests';
 import { useCare } from '../../state/care';
 import { tonightFestival } from '../tonight/tonight';
 import { canRemindSets, setReminders, soonest } from './setReminders';
+import { rateReminders } from '../seen/ask';
 
 // While the app is open, a reminder still shows as a banner (quietly). Phones only.
 if (Platform.OS !== 'web') Notifications.setNotificationHandler({
@@ -85,7 +86,9 @@ function PhoneReminders() {
       syncing.current = syncing.current.then(async () => {
         try {
           const now = new Date();
-          const sets: Reminder[] = soonest(routes.flatMap(({ festival, route }) => setReminders(festival, route, now)));
+          // Before each set you need to move for, and "How was it?" after each one (the soonest, within the phone's limit).
+          const nameOf = (id: string) => artists.find((a) => a.id === id)?.name ?? '';
+          const sets: Reminder[] = soonest(routes.flatMap(({ festival, route }) => [...setReminders(festival, route, now), ...rateReminders(festival, route, nameOf, now)]));
           const water = careReminders(care, tonightFestival(festivals, going, now)?.festival.id, now);
           const evening = quests.ready ? questReminder(nudge.on, now, questsLeft, quests.streak) : undefined;
           // A few check-ins through a festival day you're at, when you've turned the festival trail on.
@@ -130,7 +133,7 @@ function PhoneReminders() {
         }
       });
     },
-    [festivals, going, routes, care, nudge.on, questsLeft, quests.ready, quests.streak, ratings, mustSeesAt, remindSets, tickedFor, customFor, prepLoaded],
+    [festivals, going, routes, artists, care, nudge.on, questsLeft, quests.ready, quests.streak, ratings, mustSeesAt, remindSets, tickedFor, customFor, prepLoaded],
   );
 
   // Only a change you make may ask for permission: going, or the set reminders switch. Not the sync when the app

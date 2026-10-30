@@ -27,10 +27,10 @@ describe('find my way back', () => {
     L.getForegroundPermissionsAsync.mockImplementation(async () => ({ granted: true }));
     L.getCurrentPositionAsync.mockImplementationOnce(async () => ({ coords: { latitude: 28.5, longitude: -81.4, accuracy: 8 } }));
     let report: ((p: { coords: { latitude: number; longitude: number; accuracy: number } }) => void) | undefined;
-    L.watchPositionAsync.mockImplementation(async (_o: unknown, cb: typeof report) => {
+    L.watchPositionAsync.mockImplementation((async (_o: unknown, cb: typeof report) => {
       report = cb;
       return { remove: jest.fn() };
-    });
+    }) as never);
 
     const app = await renderApp('/spots');
     await settle();

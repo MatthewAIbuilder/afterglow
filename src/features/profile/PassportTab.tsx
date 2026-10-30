@@ -121,6 +121,17 @@ export function PassportTab({ passport, artistOf, loves, recapIds, today, onFind
             <MapIcon color={color.glow} size={16} />
             <Text style={styles.mapLinkText}>{t('Your festivals on the map')}</Text>
           </Pressable>
+          <Pressable
+            onPress={() => {
+              haptic.select();
+              router.push('/seen');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('Sets you’ve seen: every set you were at, and how it was')}
+            style={({ pressed }) => [styles.mapLink, pressed && { opacity: 0.7 }]}
+          >
+            <Text style={styles.mapLinkText}>{t('Sets you’ve seen')}</Text>
+          </Pressable>
         </>
       )}
       {children}
