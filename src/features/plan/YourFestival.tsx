@@ -23,6 +23,7 @@ import { usePlan } from '../../state/plan';
 import { ArtistAvatar } from '../../components/ArtistAvatar';
 import { t, tn } from '../../i18n';
 import { FitCheckCard } from '../fitCheck/FitCheckCard';
+import { PlanPlaylist } from './PlanPlaylist';
 
 /**
  * "Your festival": who to see, from your live taste. Before set times it is a
@@ -110,6 +111,8 @@ export function YourFestival({ festival }: { festival: Festival }) {
             <Text style={styles.warmupGo}>YouTube ↗</Text>
           </Pressable>
         ) : null}
+        {/* Or the plan as a playlist in your own music service. */}
+        <PlanPlaylist festival={festival} picks={picks} />
       </View>
       {picks.length === 0 ? (
         <Text style={[styles.sub, styles.head]}>

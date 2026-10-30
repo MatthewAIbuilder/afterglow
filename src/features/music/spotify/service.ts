@@ -1,6 +1,8 @@
 import type { FetchLike } from '../http';
 import { SECRET_KEY, type SecretStore } from '../secrets';
-import { errorKind, type MusicService } from '../service';
+import { HttpStatusError } from '../http';
+import { errorKind, MusicServiceError, type MusicService } from '../service';
+import { makeSpotifyPlaylist } from './playlist';
 import { readSpotifyLibrary, spotifyClient, type SpotifySessionStore } from './api';
 import { normalizeSpotify } from './normalize';
 import type { SpotifySignIn } from './signIn';
@@ -63,6 +65,16 @@ export function spotifyService(opts: {
     async fetchLibrary(at) {
       const client = spotifyClient({ fetch: opts.fetch, sessions, clientId: opts.clientId, now });
       return normalizeSpotify(await readSpotifyLibrary(client.get), at);
+    },
+    async makePlaylist(req) {
+      const client = spotifyClient({ fetch: opts.fetch, sessions, clientId: opts.clientId, now });
+      try {
+        return await makeSpotifyPlaylist(client.get, client.send, req);
+      } catch (e) {
+        // Connected before playlists were asked for: Spotify says no until you connect again.
+        if (e instanceof HttpStatusError && e.status === 403) throw new MusicServiceError('denied', 'Spotify needs permission to make playlists');
+        throw e;
+      }
     },
     async disconnect() {
       // Spotify has no way for an app to revoke its own access: the sign-in is

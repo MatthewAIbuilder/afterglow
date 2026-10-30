@@ -1,3 +1,5 @@
+import type { PlaylistRequest, PlaylistResult } from '../features/music/playlist';
+import { MusicServiceError } from '../features/music/service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { MUSIC_RESYNC_MS } from '../config/music';
@@ -43,6 +45,8 @@ type Ctx = {
   importing: MusicProviderId[];
   /** Services whose sign-in sheet is open right now. */
   connecting: MusicProviderId[];
+  /** Your plan as a playlist in a connected service's library. */
+  makePlaylist: (provider: MusicProviderId, req: PlaylistRequest) => Promise<PlaylistResult>;
 };
 
 export const MUSIC_STORAGE_KEY = 'musicLibrary.v1';
@@ -181,9 +185,17 @@ export function MusicConnectionsProvider({ children, services: given }: { childr
     [services],
   );
 
+  const makePlaylist = useCallback(
+    async (provider: MusicProviderId, req: PlaylistRequest) => {
+      const make = services[provider].makePlaylist;
+      if (!make) throw new MusicServiceError('unavailable', 'This service can’t make playlists');
+      return make.call(services[provider], req);
+    },
+    [services],
+  );
   const value = useMemo<Ctx>(
-    () => ({ state, hydrated, availability, connect, sync, disconnect, library, imported, importing, connecting }),
-    [state, hydrated, availability, connect, sync, disconnect, library, imported, importing, connecting],
+    () => ({ state, hydrated, availability, connect, sync, disconnect, library, imported, importing, connecting, makePlaylist }),
+    [state, hydrated, availability, connect, sync, disconnect, library, imported, importing, connecting, makePlaylist],
   );
   return <MusicContext.Provider value={value}>{children}</MusicContext.Provider>;
 }

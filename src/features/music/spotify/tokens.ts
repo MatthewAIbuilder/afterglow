@@ -21,7 +21,7 @@ export const SPOTIFY_ENDPOINTS = {
  * - user-top-read: the artists you play most (about six months, and the last four weeks)
  * No playlists, no playback, no email or account details, and nothing that writes.
  */
-export const SPOTIFY_SCOPES = ['user-library-read', 'user-follow-read', 'user-top-read'] as const;
+export const SPOTIFY_SCOPES = ['user-library-read', 'user-follow-read', 'user-top-read', 'playlist-modify-private'] as const;
 
 export type SpotifySession = {
   accessToken: string;
