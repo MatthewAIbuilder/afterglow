@@ -315,4 +315,14 @@ export const es_memories: Dictionary = {
   'Retake': 'Repetir',
   'One photo a day of what you’re wearing. Your fits stay in Profile → Festivals.': 'Una foto al día de lo que llevas. Tus outfits se quedan en Perfil → Festivales.',
   'Your fit checks: what you wore, day by day': 'Tus outfits: lo que llevaste, día a día',
+  // Crowd tracklists.
+  'What the crowd heard': 'Lo que escuchó el público',
+  '{n}.': '{n}.',
+  '{title} by {artist}': '{title} de {artist}',
+  'Opens the video.': 'Abre el vídeo.',
+  '{n} track heard by the crowd': '{n} tema escuchado por el público',
+  '{n} tracks heard by the crowd': '{n} temas escuchados por el público',
+  '{n} person caught it': 'Lo grabó {n} persona',
+  '{n} people caught it': 'Lo grabaron {n} personas',
+  'Tracklists from the crowd': 'Tracklists del público',
 };
