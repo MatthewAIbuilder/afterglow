@@ -59,7 +59,7 @@ function PhoneReminders() {
   const { on: remindSets, hydrated: setsLoaded, changed } = useSetReminders();
   const { artists } = useCatalog();
   const { taste, informed } = useTaste();
-  const { mustSeesAt } = usePlan();
+  const { mustSeesAt, editsAt } = usePlan();
   // How far along each festival's Get ready checklist is, for its reminders (the evening before, and the morning).
   const { ratings } = useRatings();
   const { tickedFor, customFor, hydrated: prepLoaded } = usePrepTicks();
@@ -76,8 +76,8 @@ function PhoneReminders() {
       festivals
         // Only festivals you're still going to (stop going and their set reminders go too).
         .filter((f) => going.includes(f.id) && remindSets.has(f.id) && canRemindSets(f))
-        .map((f) => ({ festival: f, route: festivalRoute({ festival: f, artists, taste, informed, pinned: mustSeesAt(f.id), hours: hoursAt[f.id] }) })),
-    [festivals, going, remindSets, artists, taste, informed, mustSeesAt, hoursAt],
+        .map((f) => ({ festival: f, route: festivalRoute({ festival: f, artists, taste, informed, pinned: mustSeesAt(f.id), hours: hoursAt[f.id], edits: editsAt(f.id) }) })),
+    [festivals, going, remindSets, artists, taste, informed, mustSeesAt, hoursAt, editsAt],
   );
   const sync = useCallback(
     (mayAsk: boolean) => {

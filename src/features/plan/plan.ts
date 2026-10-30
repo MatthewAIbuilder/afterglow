@@ -1,5 +1,6 @@
 import type { Artist, Festival, SetTime, SoundTag, TasteProfile } from '../../data/types';
 import { type Similarity, soundSimilarity } from '../taste/similarity';
+import type { EditsAt } from './edits';
 
 /**
  * Personal festival plan. Pure, so it is easy to test and later to move
@@ -40,6 +41,8 @@ export type Pick = {
   tier: Tier;
   /** You marked this artist as a must-see. */
   pinned: boolean;
+  /** Your first choice here ("Go with this one"): it wins clashes, even against another star. */
+  first?: true;
   /** False when we have no real signal for this artist yet, so the match is a guess. */
   known: boolean;
   set?: SetTime;
@@ -59,6 +62,8 @@ export type PlanInput = {
   pinned?: ReadonlySet<string>;
   /** Which artists the taste engine actually has signal for. Defaults to anyone with a score. */
   informed?: Record<string, boolean>;
+  /** Your own changes (`edits.ts`): acts taken out, first choices, only your picks. */
+  edits?: EditsAt;
 };
 
 const TIER_ORDER: Record<Tier, number> = { 'must-see': 0, strong: 1, explore: 2 };
@@ -74,7 +79,7 @@ function tierFor(match: number, known: boolean, pinned: boolean): Tier | null {
 }
 
 /** The lineup as your ranked plan: must-sees first, then strong matches, then things to explore. */
-export function rankLineup({ festival, artists, taste, pinned, informed }: PlanInput): Pick[] {
+export function rankLineup({ festival, artists, taste, pinned, informed, edits }: PlanInput): Pick[] {
   const byId = new Map(artists.map((a) => [a.id, a]));
   const picks: Pick[] = [];
   for (const id of festival.lineup) {
@@ -83,12 +88,15 @@ export function rankLineup({ festival, artists, taste, pinned, informed }: PlanI
     const match = taste[id] ?? 0;
     const known = informed ? !!informed[id] : id in taste;
     const isPinned = !!pinned?.has(id);
+    // Taken out, or (only your picks) not one of yours: not in your plan.
+    if (edits?.out.has(id) || (edits?.own && !isPinned)) continue;
     const tier = tierFor(match, known, isPinned);
     if (!tier) continue;
-    picks.push({ artist, match, tier, pinned: isPinned, known, set: festival.sets?.find((s) => s.artistId === id) });
+    const first = isPinned && !!edits?.first.has(id);
+    picks.push({ artist, match, tier, pinned: isPinned, ...(first ? { first: true as const } : {}), known, set: festival.sets?.find((s) => s.artistId === id) });
   }
   return picks.sort(
-    (a, b) => TIER_ORDER[a.tier] - TIER_ORDER[b.tier] || Number(b.known) - Number(a.known) || b.match - a.match,
+    (a, b) => TIER_ORDER[a.tier] - TIER_ORDER[b.tier] || Number(!!b.first) - Number(!!a.first) || Number(b.known) - Number(a.known) || b.match - a.match,
   );
 }
 
@@ -152,8 +160,8 @@ export type Schedule = {
   unscheduled: Pick[];
 };
 
-/** Most important first: your must-sees, then the stronger match. */
-const priority = (a: Pick, b: Pick) => Number(b.pinned) - Number(a.pinned) || b.match - a.match;
+/** Most important first: your first choices, your must-sees, then the stronger match. */
+const priority = (a: Pick, b: Pick) => Number(!!b.first) - Number(!!a.first) || Number(b.pinned) - Number(a.pinned) || b.match - a.match;
 
 function catchable(keep: TimedPick, miss: TimedPick): Catch | undefined {
   const before = Math.max(0, Math.min(miss.end, keep.start) - miss.start);
@@ -167,7 +175,7 @@ function catchable(keep: TimedPick, miss: TimedPick): Catch | undefined {
 /** How to call a clash. `ranked` is most important first. */
 export function judgeClash(ranked: TimedPick[]): ClashVerdict {
   const [top, next] = ranked;
-  if (top.pinned && !next.pinned) return { kind: 'pinned', pick: top, other: next, catch: catchable(top, next) };
+  if ((top.pinned && !next.pinned) || (top.first && !next.first)) return { kind: 'pinned', pick: top, other: next, catch: catchable(top, next) };
   const lead = top.match - next.match;
   if (lead < CLOSE_CALL) return { kind: 'close', a: top, b: next, catch: catchable(top, next) };
   return { kind: 'clear', pick: top, other: next, lead, catch: catchable(top, next) };

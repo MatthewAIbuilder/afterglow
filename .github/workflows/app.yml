@@ -72,9 +72,26 @@ jobs:
           echo "version $before -> $now"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ -n "$before" -a "$before" != "$now" ]; then echo "build=true" >> "$GITHUB_OUTPUT"; else echo "build=false" >> "$GITHUB_OUTPUT"; fi
 
+      # Festival freezes: phones keep the build people took to the festival (the website still updates).
+      # One line per hold, "start end" in UTC; the next push after a hold ends sends everything.
+      - name: Is there a festival freeze on?
+        id: hold
+        if: env.HAS_EXPO == 'true'
+        run: |
+          now=$(date -u +%s)
+          hold=false
+          while read -r from to; do
+            [ -z "$from" ] && continue
+            if [ "$now" -ge "$(date -u -d "$from" +%s)" ] && [ "$now" -lt "$(date -u -d "$to" +%s)" ]; then hold=true; fi
+          done <<'HOLDS'
+          2026-11-03T04:00:00Z 2026-11-09T12:00:00Z
+          HOLDS
+          echo "hold=$hold" >> "$GITHUB_OUTPUT"
+          if [ "$hold" = true ]; then echo "Festival freeze: no instant update to phones this time (the website is updated)."; fi
+
       # Every checked push: the new screens and words to every phone on this version.
       - name: Instant update to every phone
-        if: env.HAS_EXPO == 'true' && github.event_name != 'workflow_dispatch'
+        if: env.HAS_EXPO == 'true' && github.event_name != 'workflow_dispatch' && steps.hold.outputs.hold != 'true'
         run: |
           msg=$(git log -1 --format=%s | head -c 200)
           npx --yes eas-cli@latest update --channel production --environment production --non-interactive --message "$msg"

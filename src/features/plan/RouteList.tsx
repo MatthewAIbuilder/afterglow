@@ -9,6 +9,7 @@ import { useCrews } from '../../state/crews';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { formatTime } from '../festivals/format';
 import { MustSeeToggle } from './MustSeeToggle';
+import { PlanEditButton } from './PlanEditButton';
 import { usePickReasons } from './usePickReasons';
 import type { ReactNode } from 'react';
 import { breakLabel, timeRange } from './hours';
@@ -162,7 +163,7 @@ function StopCard({
   const stage = stageName(festival, stop.set.stageId);
   const pct = `${Math.round(stop.match * 100)}%`;
   const stint = stintLabel(stop);
-  const label = stop.pinned ? t('Must see') : stop.known ? undefined : t('New to you');
+  const label = stop.first ? t('Your pick') : stop.pinned ? t('Must see') : stop.known ? undefined : t('New to you');
   return (
     <Pressable
       onPress={() => {
@@ -208,6 +209,8 @@ function StopCard({
         <View style={styles.side}>
           {stop.known ? <Text style={[styles.match, stop.match >= 0.9 && { color: color.glow }]}>{pct}</Text> : null}
           <MustSeeToggle artist={stop.artist} festivalId={festival.id} size={18} />
+          {/* Make it yours: go with this one over what's also on, or take it out. */}
+          <PlanEditButton artist={stop.artist} festivalId={festival.id} over={stop.alsoOn?.map((o) => o.artist.id)} />
         </View>
       </View>
       {/* What you're trading off: others you'd enjoy on at the same time. Star one to switch. */}
@@ -232,8 +235,9 @@ function StopCard({
                 </Text>
                 {o.known ? <Text style={styles.alsoPct}>{Math.round(o.match * 100)}%</Text> : null}
               </Pressable>
-              {/* Star them here to have the route switch to them. */}
+              {/* Star them here to have the route switch to them, or go with them over this one. */}
               <MustSeeToggle artist={o.artist} festivalId={festival.id} size={14} />
+              <PlanEditButton artist={o.artist} festivalId={festival.id} over={[stop.artist.id]} size={14} />
             </View>
           ))}
         </View>

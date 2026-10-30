@@ -1,6 +1,7 @@
 import type { Artist, Festival, SetTime, TasteProfile } from '../../data/types';
 import { cleanHours, type DayHours, freeMinutes, type Missed, missedBy } from './hours';
 import { t } from '../../i18n';
+import type { EditsAt } from './edits';
 import { toMinutes } from './plan';
 
 /**
@@ -29,6 +30,8 @@ import { toMinutes } from './plan';
 export const DISCOVERY_VALUE = 0.3;
 /** A must-see is worth this much per minute, so the route never skips one it can reach. */
 export const MUST_SEE_VALUE = 3;
+/** Your first choice ("Go with this one") is worth more than any other must-see, so it wins every clash. */
+export const FIRST_CHOICE_VALUE = 5;
 /** Below this match a set isn't worth your time; a break is suggested instead. */
 export const MIN_VALUE = 0.15;
 /** Cost of walking from one set to another, in minutes at a perfect match. */
@@ -50,6 +53,8 @@ export type RouteStop = {
   setEnd: number;
   match: number;
   pinned: boolean;
+  /** Your first choice here ("Go with this one"). */
+  first?: true;
   /** The app has real signal for this artist; otherwise it's a discovery. */
   known: boolean;
   /** Minutes of walking from the stage before, when you change stages. */
@@ -93,26 +98,31 @@ export type RouteInput = {
   pinned?: ReadonlySet<string>;
   /** Your hours, by day (when you arrive, leave and take breaks). A day without is all day. */
   hours?: Record<string, DayHours>;
+  /** Your own changes (`edits.ts`): acts taken out, first choices, only your picks. */
+  edits?: EditsAt;
 };
 
-type Timed = { set: SetTime; artist: Artist; start: number; end: number; value: number; match: number; known: boolean; pinned: boolean; rank: number };
+type Timed = { set: SetTime; artist: Artist; start: number; end: number; value: number; match: number; known: boolean; pinned: boolean; first: boolean; rank: number };
 
 function timedSets(input: RouteInput, day: string): Timed[] {
-  const { festival, artists, taste, informed, pinned } = input;
+  const { festival, artists, taste, informed, pinned, edits } = input;
   const byId = new Map(artists.map((a) => [a.id, a]));
   const billing = new Map(festival.lineup.map((id, i) => [id, i]));
   return (festival.sets ?? []).flatMap((set) => {
     if (set.day !== day) return [];
     const artist = byId.get(set.artistId);
     if (!artist) return [];
+    const isPinned = !!pinned?.has(artist.id);
+    // Taken out, or (only your picks) not one of yours: not on your day at all.
+    if (edits?.out.has(artist.id) || (edits?.own && !isPinned)) return [];
+    const first = isPinned && !!edits?.first.has(artist.id);
     const start = toMinutes(set.start);
     let end = toMinutes(set.end);
     if (end <= start) end += 24 * 60;
     const match = taste[artist.id] ?? 0;
     const known = !!informed[artist.id];
-    const isPinned = !!pinned?.has(artist.id);
-    const value = isPinned ? MUST_SEE_VALUE : known ? match : Math.max(match, DISCOVERY_VALUE);
-    return [{ set, artist, start, end, value, match, known, pinned: isPinned, rank: billing.get(artist.id) ?? 9999 }];
+    const value = first ? FIRST_CHOICE_VALUE : isPinned ? MUST_SEE_VALUE : known ? match : Math.max(match, DISCOVERY_VALUE);
+    return [{ set, artist, start, end, value, match, known, pinned: isPinned, first, rank: billing.get(artist.id) ?? 9999 }];
   });
 }
 
@@ -240,6 +250,7 @@ const stopFor = (s: Timed, from: number, to: number): RouteStop => ({
   setEnd: s.end,
   match: s.match,
   pinned: s.pinned,
+  ...(s.first ? { first: true as const } : {}),
   known: s.known,
 });
 

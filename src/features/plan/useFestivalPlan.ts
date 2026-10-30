@@ -17,19 +17,21 @@ import { planCard, planText, routeText } from './share';
 export function useFestivalPlan(festival: Festival) {
   const { taste, informed } = useTaste();
   const { artists } = useCatalog();
-  const { mustSeesAt } = usePlan();
+  const { mustSeesAt, editsAt } = usePlan();
+  // Your own changes: taken out, first choices, only your picks.
+  const edits = useMemo(() => editsAt(festival.id), [editsAt, festival.id]);
   // Your hours each day (arrive, leave, breaks): the route plans inside them.
   const { hours } = useDayHours(festival.id);
 
   const picks = useMemo(
-    () => rankLineup({ festival, artists, taste, informed, pinned: mustSeesAt(festival.id) }),
-    [festival, artists, taste, informed, mustSeesAt],
+    () => rankLineup({ festival, artists, taste, informed, pinned: mustSeesAt(festival.id), edits }),
+    [festival, artists, taste, informed, mustSeesAt, edits],
   );
   const schedule = useMemo(() => (festival.sets?.length ? buildSchedule(festival, picks) : null), [festival, picks]);
   // Every day set to set, from the same live taste and must-sees.
   const route = useMemo(
-    () => (festival.sets?.length ? festivalRoute({ festival, artists, taste, informed, pinned: mustSeesAt(festival.id), hours }) : undefined),
-    [festival, artists, taste, informed, mustSeesAt, hours],
+    () => (festival.sets?.length ? festivalRoute({ festival, artists, taste, informed, pinned: mustSeesAt(festival.id), hours, edits }) : undefined),
+    [festival, artists, taste, informed, mustSeesAt, hours, edits],
   );
   // Once set times are out, you share the whole route; before, your picks.
   const text = useMemo(

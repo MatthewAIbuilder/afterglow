@@ -112,7 +112,7 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
   const catalog = useCatalog();
   const { going } = useGoing();
   const { taste, informed } = useTaste();
-  const { mustSeesAt } = usePlan();
+  const { mustSeesAt, editsAt } = usePlan();
   const mem = useMemories();
   const existing = sharedMemory ?? (id ? mem.memories.find((m) => m.id === id) : undefined);
   const draft = existing ? undefined : mem.draft;
@@ -192,9 +192,9 @@ function MemoryTagSheet({ sharedMemory }: { sharedMemory?: Memory }) {
     if (!festival) return [];
     const minute = guessedHere && guessedHere.night === night ? guessedHere.minute : undefined;
     const pinned = mustSeesAt(festival.id);
-    const route = festival.sets?.length ? festivalRoute({ festival, artists: catalog.artists, taste, informed, pinned }) : undefined;
+    const route = festival.sets?.length ? festivalRoute({ festival, artists: catalog.artists, taste, informed, pinned, edits: editsAt(festival.id) }) : undefined;
     return guessArtists({ festival, night, minute, artists: catalog.artists, taste, pinned, route });
-  }, [festival, night, guessedHere, catalog.artists, taste, informed, mustSeesAt]);
+  }, [festival, night, guessedHere, catalog.artists, taste, informed, mustSeesAt, editsAt]);
   const artistSure = artistConfidence(artistGuesses);
 
   // The artist: yours when retagging, otherwise the top guess when it's a confident one, until you choose.
