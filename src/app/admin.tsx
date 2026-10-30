@@ -12,6 +12,7 @@ import { AdminOverview } from '../features/admin/AdminOverview';
 import { AdminOrganizers } from '../features/admin/AdminOrganizers';
 import { AdminReports } from '../features/admin/AdminReports';
 import { AdminStickers } from '../features/admin/AdminStickers';
+import { AdminMaps } from '../features/admin/AdminMaps';
 import { AdminSupport } from '../features/admin/AdminSupport';
 import { showAlert } from '../lib/dialog';
 import { haptic } from '../lib/haptics';
@@ -19,7 +20,7 @@ import { setGuestView } from '../state/adminView';
 import { useSocial } from '../state/social';
 import { color, radius, space, type, glowA } from '../theme/tokens';
 
-type Section = 'overview' | 'data' | 'stickers' | 'organizers' | 'accounts' | 'support' | 'reports';
+type Section = 'overview' | 'data' | 'stickers' | 'maps' | 'organizers' | 'accounts' | 'support' | 'reports';
 
 /**
  * Afterglow HQ: what the support account sees instead of the app. How
@@ -115,6 +116,7 @@ export default function AdminScreen() {
                   { key: 'overview', label: 'Overview' },
                   { key: 'data', label: 'Data' },
                   { key: 'stickers', label: 'Stickers' },
+                  { key: 'maps', label: 'Maps' },
                   { key: 'organizers', label: 'Organizers' },
                   { key: 'accounts', label: 'Accounts' },
                   { key: 'support', label: 'Support', count: open || undefined },
@@ -128,6 +130,8 @@ export default function AdminScreen() {
               <AdminData />
             ) : tab === 'stickers' ? (
               <AdminStickers />
+            ) : tab === 'maps' ? (
+              <AdminMaps />
             ) : tab === 'organizers' ? (
               <AdminOrganizers />
             ) : tab === 'accounts' ? (

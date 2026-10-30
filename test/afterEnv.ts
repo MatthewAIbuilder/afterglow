@@ -25,6 +25,7 @@ import { forgetCrewVotes } from '../src/state/crewVotesStore';
 import { forgetFitChecks } from '../src/state/fitChecks';
 import { forgetCrewLive } from '../src/state/crewLiveStore';
 import { forgetBatterySaver } from '../src/state/batterySaver';
+import { forgetVenueMaps } from '../src/state/venueMapsStore';
 import { forgetCollectionSeen } from '../src/state/collectionSeen';
 import { forgetGardenGlows } from '../src/state/gardenGlows';
 import { forgetGoingShows } from '../src/state/goingShows';
@@ -63,6 +64,7 @@ beforeEach(() => {
   forgetFitChecks();
   forgetCrewLive();
   forgetBatterySaver();
+  forgetVenueMaps();
   forgetCollectionSeen();
   forgetGardenGlows();
   forgetGoingShows();

@@ -100,6 +100,8 @@ export type RouteInput = {
   hours?: Record<string, DayHours>;
   /** Your own changes (`edits.ts`): acts taken out, first choices, only your picks. */
   edits?: EditsAt;
+  /** Minutes to walk between two stages, from the festival's map, when it has one (else `WALK_MINUTES`). */
+  walkBetween?: (fromStage: string, toStage: string) => number | undefined;
 };
 
 type Timed = { set: SetTime; artist: Artist; start: number; end: number; value: number; match: number; known: boolean; pinned: boolean; first: boolean; rank: number };
@@ -214,7 +216,7 @@ export function dayRoute(input: RouteInput, day: string): DayRoute {
     }
     stops.push(st < 0 ? breakFor(from, to, brk) : stopFor(sets[st], from, to));
   });
-  stops = walks(tidy(stops));
+  stops = walks(tidy(stops), input.walkBetween);
   // What else is on while you're at each stop, that you'd enjoy too.
   for (const stop of stops) {
     if (stop.kind !== 'set') continue;
@@ -304,26 +306,27 @@ export function clockTime(min: number) {
  * before ran to its end) you arrive a little into the next one. Either way the
  * stop after says how long the walk is.
  */
-function walks(stops: (RouteStop | RouteBreak)[]): (RouteStop | RouteBreak)[] {
+function walks(stops: (RouteStop | RouteBreak)[], walkBetween?: RouteInput['walkBetween']): (RouteStop | RouteBreak)[] {
   const out = [...stops];
   for (let i = 1; i < out.length; i++) {
     const prev = out[i - 1];
     const cur = out[i];
     if (prev.kind !== 'set' || cur.kind !== 'set' || prev.set.stageId === cur.set.stageId) continue;
-    cur.walk = WALK_MINUTES;
+    const walk = walkBetween?.(prev.set.stageId, cur.set.stageId) ?? WALK_MINUTES;
+    cur.walk = walk;
     if (prev.to !== cur.from) continue; // a break in between leaves time to walk
-    const canLeaveEarly = prev.to - prev.from - WALK_MINUTES >= MIN_STINT;
-    const canArriveLate = cur.to - cur.from - WALK_MINUTES >= MIN_STINT;
+    const canLeaveEarly = prev.to - prev.from - walk >= MIN_STINT;
+    const canArriveLate = cur.to - cur.from - walk >= MIN_STINT;
     if (prev.pinned && !cur.pinned) {
       // Never cut a must-see short for a walk: the next set gives way, or goes if only a sliver is left.
-      if (canArriveLate) cur.from += WALK_MINUTES;
+      if (canArriveLate) cur.from += walk;
       else out[i] = { kind: 'break', from: cur.from, to: cur.to };
     } else if (cur.pinned && !prev.pinned && canLeaveEarly) {
       // Be there for the start of a must-see.
-      prev.to -= WALK_MINUTES;
-    } else if (prev.to < prev.setEnd && canLeaveEarly) prev.to -= WALK_MINUTES;
-    else if (canArriveLate) cur.from += WALK_MINUTES;
-    else if (canLeaveEarly) prev.to -= WALK_MINUTES;
+      prev.to -= walk;
+    } else if (prev.to < prev.setEnd && canLeaveEarly) prev.to -= walk;
+    else if (canArriveLate) cur.from += walk;
+    else if (canLeaveEarly) prev.to -= walk;
   }
   // A dropped sliver at the end of the night isn't a break worth showing.
   while (out[out.length - 1]?.kind === 'break') out.pop();

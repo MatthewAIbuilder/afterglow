@@ -1,7 +1,8 @@
 import { field, requestJson, type FetchLike } from '../http';
 import { SECRET_KEY, type SecretStore } from '../secrets';
 import { errorKind, MusicServiceError, type MusicService } from '../service';
-import { appleMusicClient, readAppleMusicLibrary } from './api';
+import { appleMusicClient, appleMusicPost, readAppleMusicLibrary } from './api';
+import { makeApplePlaylist } from './playlist';
 import { MusicKitError, type AppleMusicAuthorizer } from './musicKit';
 import { normalizeAppleMusic } from './normalize';
 
@@ -76,6 +77,12 @@ export function appleMusicService(opts: {
         if (errorKind(e) === 'unavailable') developerToken = undefined;
         throw e;
       }
+    },
+    async makePlaylist(req) {
+      const userToken = await opts.secrets.get(SECRET_KEY['apple-music']);
+      if (!userToken) throw new MusicServiceError('expired', 'Not connected to Apple Music');
+      const tokens = { fetch: opts.fetch, developerToken: await getDeveloperToken(), userToken };
+      return makeApplePlaylist(appleMusicClient(tokens), appleMusicPost(tokens), req);
     },
     async disconnect() {
       // Apple has no call to revoke a Music User Token: it's forgotten here, and

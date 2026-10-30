@@ -54,6 +54,14 @@ service firebase.storage {
         && (request.resource == null || (request.resource.size < 25 * 1024 * 1024
           && request.resource.contentType.matches('^(image/.*|application/pdf|text/.*|application/json)$')));
     }
+    // Festival maps: a festival's map picture, uploaded by HQ (who has the rights to it); anyone can see it.
+    match /venueMaps/{festivalId}/{file} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.email == 'afterglowmusic.support@gmail.com'
+        && request.auth.token.email_verified == true
+        && file.matches('^map-[0-9]{1,15}[.](png|jpg|webp)$')
+        && (request.resource == null || (request.resource.contentType.matches('image/(png|jpeg|webp)') && request.resource.size < 15 * 1024 * 1024));
+    }
     match /avatars/{file} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && file == request.auth.uid + '.jpg'

@@ -879,6 +879,22 @@ service cloud.firestore {
       }
     }
 
+    // Festival maps: the festival's own map picture (in Storage, venueMaps/), pinned to the ground with
+    // three anchors, and markers. Anyone reads them (the website too); only HQ writes, with the server's time.
+    match /venueMaps/{festivalId} {
+      allow read: if true;
+      allow write: if isAdmin()
+        && (request.resource == null || (
+          request.resource.data.keys().hasOnly(['image', 'width', 'height', 'anchors', 'pins', 'by', 'updatedAt'])
+          && request.resource.data.image is string
+          && request.resource.data.image.matches('^https://firebasestorage[.]googleapis[.]com/v0/b/[a-z0-9._-]+/o/venueMaps%2F.+')
+          && request.resource.data.width is number && request.resource.data.height is number
+          && request.resource.data.anchors is list && request.resource.data.anchors.size() == 3
+          && request.resource.data.pins is list && request.resource.data.pins.size() <= 200
+          && request.resource.data.by == request.auth.uid
+          && request.resource.data.updatedAt == request.time));
+    }
+
     match /crews/{id} {
       allow get: if signedIn();
       allow list: if (signedIn() && me() in resource.data.members) || isAdmin();

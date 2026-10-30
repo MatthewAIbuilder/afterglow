@@ -1,4 +1,5 @@
 import type { CrewVotes } from '../crews/votes';
+import type { VenueMap } from '../venueMap/venueMap';
 import { t, type Language } from '../../i18n';
 import type { Track } from '../memories/track';
 import type { PastEvent } from '../memories/past';
@@ -330,6 +331,12 @@ export interface SocialService {
   openDirectChat(uid: string, org?: string): Promise<string>;
   /** Follow your 1-to-1 chats, now and whenever one starts. Returns a stop function. */
   watchDirectChats(listener: (chats: DirectChat[]) => void, onError?: (e: SocialError) => void): () => void;
+  /** A festival's map (its picture, pinned to the ground, and markers), when HQ has made one. Anyone can read it. */
+  venueMap(festivalId: string): Promise<VenueMap | null>;
+  /** HQ: save a festival's map. */
+  saveVenueMap(map: Omit<VenueMap, 'updatedAt'>): Promise<void>;
+  /** HQ: upload a festival's map picture; its link. */
+  uploadVenueMapImage(festivalId: string, uri: string, contentType: string): Promise<string>;
   /** Where crewmates who chose to share it are right now (members only; past their `until`, left out). */
   crewLive(crewId: string): Promise<CrewLive[]>;
   /** Share where you are with a crew, until a time (at most a day ahead). */

@@ -1,4 +1,5 @@
 import { cleanVotes, type CrewVotes } from '../../crews/votes';
+import { cleanVenueMap, type VenueMap } from '../../venueMap/venueMap';
 import { trackFromFields } from '../../memories/track';
 import { cleanArtistName, noteArtist } from '../../../data/extraArtists';
 import { cleanSocials } from '../socials';
@@ -271,6 +272,13 @@ export function meetSpotFromDoc(d: unknown): MeetSpot | null {
   const by = str(o.by);
   if (!text || !by) return null;
   return { text: text.slice(0, MEET_SPOT_MAX), by, at: timeOf(o.at) ?? '' };
+}
+
+/** A festival's map, from `venueMaps/{festivalId}`. */
+export function venueMapFromDoc(festivalId: string, d: unknown): VenueMap | null {
+  if (!d || typeof d !== 'object') return null;
+  const o = d as Record<string, unknown>;
+  return cleanVenueMap(festivalId, { ...o, updatedAt: timeOf(o.updatedAt) }) ?? null;
 }
 
 /** Where a crewmate is, from `crews/{id}/live/{uid}`. */

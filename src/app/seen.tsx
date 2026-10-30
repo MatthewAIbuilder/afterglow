@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtistAvatar } from '../components/ArtistAvatar';
@@ -7,7 +7,11 @@ import { NightSky } from '../components/NightSky';
 import { PageActions } from '../components/PageActions';
 import { PageFeedback } from '../components/PageFeedback';
 import { PageTitle } from '../components/PageTitle';
-import { seenByFestival, seenFromMemories, timesSeen, VERDICT_LABEL, type SeenFestival } from '../features/seen/seen';
+import { seenByFestival, seenFromMemories, seenKey, timesSeen, VERDICT_LABEL, type SeenFestival } from '../features/seen/seen';
+import { readTrails } from '../features/care/trailStore';
+import type { TrailPoint, Trails } from '../features/care/trail';
+import { setsFromTrail } from '../features/venueMap/venueMap';
+import { useVenueMap } from '../state/venueMaps';
 import { datesLine } from '../features/festivals/format';
 import { showActionSheet } from '../lib/dialog';
 import { haptic } from '../lib/haptics';
@@ -30,6 +34,16 @@ export default function SeenScreen() {
   const most = useMemo(() => timesSeen(groups).filter((a) => a.times > 1).slice(0, 5), [groups]);
   const total = groups.reduce((n, g) => n + g.sets.length, 0);
   const artists = new Set(groups.flatMap((g) => g.sets.map((s) => s.artistId))).size;
+  // Your festival trails, for "Were you at…?".
+  const [trails, setTrails] = useState<Trails>({});
+  useEffect(() => {
+    let live = true;
+    void readTrails().then((t) => live && setTrails(t));
+    return () => {
+      live = false;
+    };
+  }, []);
+  const trailIds = Object.keys(trails).filter((id) => (trails[id]?.length ?? 0) > 1);
 
   return (
     <View style={styles.root}>
@@ -76,6 +90,11 @@ export default function SeenScreen() {
           </View>
         ) : null}
 
+        {/* Sets your festival trail says you stood at, where the festival has a map: yours to add. */}
+        {trailIds.map((id) => (
+          <TrailSuggestions key={id} festivalId={id} points={trails[id] ?? []} />
+        ))}
+
         {groups.map((g) => (
           <FestivalGroup key={g.festivalId} group={g} onForget={(festivalId, artistId, day) => unmark(festivalId, artistId, day)} />
         ))}
@@ -88,6 +107,53 @@ export default function SeenScreen() {
         ) : null}
         <PageFeedback />
       </ScrollView>
+    </View>
+  );
+}
+
+/** "Were you at…?": sets at this festival where your trail stayed near the stage, not in Sets you've seen yet. */
+function TrailSuggestions({ festivalId, points }: { festivalId: string; points: TrailPoint[] }) {
+  const catalog = useCatalog();
+  const festival = catalog.festival(festivalId);
+  const map = useVenueMap(festivalId);
+  const { sets, waved, mark, wave } = useSetsSeen();
+  const found = useMemo(() => (map && festival ? setsFromTrail(map, festival, points) : []), [map, festival, points]);
+  const open = found.filter((x) => !sets[seenKey(festivalId, x.artistId, x.day)] && !waved.includes(seenKey(festivalId, x.artistId, x.day))).slice(0, 6);
+  if (!festival || !open.length) return null;
+  return (
+    <View style={styles.group}>
+      <Text style={styles.festival}>{t('Were you at these?')}</Text>
+      <Text style={styles.festivalMeta}>{t('Your trail at {festival} stayed near their stage.', { festival: festival.name })}</Text>
+      {open.map((x) => {
+        const a = catalog.artist(x.artistId);
+        if (!a) return null;
+        return (
+          <View key={`${x.artistId}:${x.day}`} style={styles.row}>
+            <ArtistAvatar artist={a} size={40} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.name} numberOfLines={1}>
+                {a.name}
+              </Text>
+              <Text style={styles.meta}>{`${t(x.day)} · ${t('{n} min near the stage', { n: x.minutes })}`}</Text>
+            </View>
+            <Pressable
+              onPress={() => {
+                haptic.tap();
+                mark({ festivalId, artistId: x.artistId, day: x.day, at: x.endsAt });
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t('Yes, I saw {artist}', { artist: a.name })}
+              hitSlop={6}
+              style={styles.yes}
+            >
+              <Text style={styles.yesText}>{t('I was there')}</Text>
+            </Pressable>
+            <Pressable onPress={() => wave(festivalId, x.artistId, x.day)} accessibilityRole="button" accessibilityLabel={t('No, I didn’t see {artist}', { artist: a.name })} hitSlop={6}>
+              <Text style={styles.meta}>{t('No')}</Text>
+            </Pressable>
+          </View>
+        );
+      })}
     </View>
   );
 }
@@ -185,4 +251,6 @@ const styles = StyleSheet.create({
   empty: { marginTop: space.lg, gap: space.xs },
   emptyTitle: { ...type.headline, color: color.moon },
   emptyText: { ...type.body, color: color.moonDim },
+  yes: { paddingHorizontal: space.md, paddingVertical: 5, borderRadius: radius.pill, backgroundColor: 'rgba(180,140,255,0.22)' },
+  yesText: { ...type.caption, color: color.moon },
 });
