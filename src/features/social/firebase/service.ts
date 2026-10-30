@@ -1,3 +1,4 @@
+import { cleanMeetupInput, meetupTime } from '../../crews/meetups';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 import * as FirebaseAuth from 'firebase/auth';
@@ -9,7 +10,7 @@ import { Platform } from 'react-native';
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
 import type { FIREBASE_CONFIG } from '../../../config/social';
 import { firebaseConfigured } from '../../../config/social';
-import { appSettingsFromDoc, ARTISTS_SHOWN, CHAT_MAX, CHAT_SEND_TIMEOUT_MS, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, DROP_FILE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type SocialUser, type ClipComment, type Comment, validClipId, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type Profile, DM_PREFIX, directRoom, isDirectRoom, SUPPORT_REPLIES_MAX, type ReportRecord, TIP_TEXT_MAX, VIDEO_TAGS_MAX, type VideoTag } from '../models';
+import { appSettingsFromDoc, ARTISTS_SHOWN, CHAT_MAX, CHAT_SEND_TIMEOUT_MS, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, DROP_FILE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type SocialUser, type ClipComment, type Comment, validClipId, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, MEETUPS_MAX, type Profile, DM_PREFIX, directRoom, isDirectRoom, SUPPORT_REPLIES_MAX, type ReportRecord, TIP_TEXT_MAX, VIDEO_TAGS_MAX, type VideoTag } from '../models';
 import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 import { throwbackShares } from '../../memories/throwbackLimit';
@@ -27,7 +28,7 @@ import { cleanArtistName } from '../../../data/extraArtists';
 import { cutVideoPart } from '../../memories/cutPart';
 import { trackFields } from '../../memories/track';
 import { cleanPushAddress, PUSH_ENDPOINT, pushMessages, updatePushKind, withToken, type PushAddress, type PushEvent } from '../../notifications/push';
-import { inviteFromDoc, profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, crewCoverFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc, orgRequestFromDoc, orgDayFromDoc, orgPostFromDoc } from './mapping';
+import { inviteFromDoc, profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, meetupFromDoc, crewCoverFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc, orgRequestFromDoc, orgDayFromDoc, orgPostFromDoc } from './mapping';
 
 
 /** Where a chat room lives: a crew, or a 1-to-1 chat (`dm_<a>_<b>` is `dms/<a>_<b>`). */
@@ -287,6 +288,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     const reads = await getDocs(collection(db, 'crews', id, 'reads')).catch(() => null);
     for (const d of reads?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
     await deleteDoc(doc(db, 'crews', id, 'meta', 'meet')).catch(() => {});
+    const meetups = await getDocs(collection(db, 'crews', id, 'meetups')).catch(() => null);
+    for (const d of meetups?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
     await deleteDoc(doc(db, 'crews', id, 'meta', 'cover')).catch(() => {});
     await deleteDoc(doc(db, 'crews', id, 'meta', 'invite')).catch(() => {});
     const push = await getDocs(collection(db, 'crews', id, 'push')).catch(() => null);
@@ -2190,6 +2193,43 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         (e) => onError?.(asSocialError(e)),
       );
     },
+    crewMeetups: (crewId) =>
+      guard(async () => {
+        const snap = await getDocs(query(collection(fb().db, 'crews', crewId, 'meetups'), limit(MEETUPS_MAX)));
+        return snap.docs
+          .flatMap((d) => {
+            const m = meetupFromDoc(crewId, d.id, d.data());
+            return m ? [m] : [];
+          })
+          .sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+      }),
+    addMeetup: (crewId, input) =>
+      guard(async () => {
+        const user = me();
+        const clean = cleanMeetupInput(input, Date.now());
+        if (!clean.ok) throw new SocialError('unknown');
+        const { place, atMs, note } = clean.value;
+        const ref_ = doc(collection(fb().db, 'crews', crewId, 'meetups'));
+        await setDoc(ref_, { place, atMs, ...(note ? { note } : {}), by: user.uid, createdAt: serverTimestamp() });
+        // Tidy: the oldest past meetups go once the crew has too many.
+        void (async () => {
+          const all = await getDocs(collection(fb().db, 'crews', crewId, 'meetups')).catch(() => null);
+          const past = (all?.docs ?? []).filter((d) => d.data().by === user.uid && typeof d.data().atMs === 'number' && (d.data().atMs as number) < Date.now() - 24 * 3600_000);
+          if ((all?.size ?? 0) > MEETUPS_MAX) for (const d of past) await deleteDoc(d.ref).catch(() => {});
+        })();
+        const crew = getDoc(doc(fb().db, 'crews', crewId)).then((d) => crewFromDoc(crewId, d.data()));
+        sendPush(
+          async () => roomPushAddresses(crewId, (await crew)?.members),
+          async () => ({ kind: 'meetup', from: await myPushName(), room: (await crew)?.name ?? 'Afterglow', place, time: meetupTime({ at: new Date(atMs).toISOString() }) }),
+          `/crew/${crewId}`,
+        );
+        return { id: ref_.id, crewId, place, at: new Date(atMs).toISOString(), ...(note ? { note } : {}), by: user.uid, createdAt: new Date().toISOString() };
+      }),
+    removeMeetup: (crewId, meetupId) =>
+      guard(async () => {
+        me();
+        await deleteDoc(doc(fb().db, 'crews', crewId, 'meetups', meetupId));
+      }),
     meetSpot: (crewId) =>
       guard(async () => meetSpotFromDoc((await readDoc(doc(fb().db, 'crews', crewId, 'meta', 'meet'))).data())),
     setMeetSpot: (crewId, raw) =>

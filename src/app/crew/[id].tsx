@@ -13,6 +13,7 @@ import { CrewRouteSection } from '../../features/crews/CrewRouteSection';
 import { CrewLatest } from '../../features/crews/CrewLatest';
 import { CrewCoverPhoto } from '../../features/crews/CrewCoverPhoto';
 import { MeetSpotCard } from '../../features/crews/MeetSpotCard';
+import { MeetupsCard } from '../../features/crews/MeetupsCard';
 import { CrewChatCard } from '../../features/crews/CrewChatCard';
 import { CrewStayCard } from '../../features/crews/CrewStayCard';
 import { CHAT_RULES } from '../../features/crews/chat';
@@ -472,6 +473,7 @@ function Member({
       {/* Where everyone is, while the festival is on or coming up. */}
       <CrewLatest crew={crew} nameOf={who} />
       <MeetSpotCard crew={crew} />
+      <MeetupsCard crew={crew} nameOf={who} />
 
       <Text style={styles.section}>{t('Sets you share')}</Text>
       {together.shared.length ? (
@@ -487,7 +489,7 @@ function Member({
 
       {/* Once set times are out: one route for the crew, with who splits off where. */}
       {festival?.sets?.length && me && others.length ? (
-        <CrewRouteSection festival={forYou(festival)} me={me} members={crew.members} stars={stars} nameOf={who} crewName={crew.name} />
+        <CrewRouteSection festival={forYou(festival)} me={me} members={crew.members} stars={stars} nameOf={who} crewName={crew.name} crew={crew} />
       ) : null}
 
       {/* Everyone in the crew: a row each, opening to show their starred sets. */}

@@ -1,3 +1,7 @@
+import { useCrewUpdates } from '../../state/crewUpdates';
+import type { Crew } from '../social/models';
+import { NewMeetup } from './MeetupsCard';
+import { minuteTime, suggestMeetups } from './meetups';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -27,7 +31,10 @@ export function CrewRouteSection({
   stars,
   nameOf,
   crewName,
+  crew,
 }: {
+  /** The crew itself, to turn a suggested meetup into a real one. */
+  crew?: Crew;
   festival: Festival;
   me: string;
   members: readonly string[];
@@ -72,6 +79,7 @@ export function CrewRouteSection({
         />
       ) : null}
       <DayList festival={festival} day={day} me={me} nameOf={nameOf} />
+      {crew ? <FindEachOther festival={festival} day={day} crew={crew} nameOf={nameOf} /> : null}
       {card ? (
         <PictureShareSheet
           visible
@@ -147,6 +155,45 @@ function DayList({ festival, day, me, nameOf }: { festival: Festival; day: CrewD
               ? t('{names} → {artist}, {time}, {stage} (crew at {during}). Meet up at {back}.', { ...splitVars(s), during: s.during.name })
               : t('{names} → {artist}, {time}, {stage}. Meet up at {back}.', splitVars(s))}
           </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/**
+ * When the crew splits up: where and when to find each other again (the
+ * stage of the next set you share, or your meeting spot), one tap from being
+ * a meetup everyone's reminded about.
+ */
+function FindEachOther({ festival, day, crew, nameOf }: { festival: Festival; day: CrewDay; crew: Crew; nameOf: (uid: string) => string }) {
+  const { meetSpotFor } = useCrewUpdates();
+  const spot = meetSpotFor(crew.id)?.text;
+  const [making, setMaking] = useState<number | undefined>();
+  const ideas = suggestMeetups(festival, [day], spot, nameOf);
+  if (!ideas.length) return null;
+  return (
+    <View style={styles.list}>
+      <Text style={styles.splitHead}>{t('Find each other again')}</Text>
+      {ideas.map((m, i) => (
+        <View key={`${m.minute}-${m.place}`} style={styles.split}>
+          <Text style={styles.splitText}>
+            {m.before ? t('{place} at {time}, before {artist}', { place: m.place, time: minuteTime(m.minute), artist: m.before }) : t('{place} at {time}', { place: m.place, time: minuteTime(m.minute) })}
+          </Text>
+          {m.atMs && making !== i ? (
+            <Pressable
+              onPress={() => {
+                haptic.select();
+                setMaking(i);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t('Make {place} at {time} our meetup', { place: m.place, time: minuteTime(m.minute) })}
+              hitSlop={6}
+            >
+              <Text style={styles.link}>{t('Make it our meetup')}</Text>
+            </Pressable>
+          ) : null}
+          {making === i ? <NewMeetup crew={crew} spot={spot} place={m.place} atMs={m.atMs} onDone={() => setMaking(undefined)} /> : null}
         </View>
       ))}
     </View>

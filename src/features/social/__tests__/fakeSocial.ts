@@ -1,6 +1,6 @@
 import { cleanTrack } from '../../memories/track';
 import { throwbackShares } from '../../memories/throwbackLimit';
-import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, type ClipComment, type Comment, validClipId, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type CrewCover, type AdminPresence, type Drop, type LivePatch, type AppSettings, DEFAULT_APP_SETTINGS, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX, type Sprout, type DirectChat, directRoom, isDirectRoom, otherInRoom, SUPPORT_REPLIES_MAX, type SetTimesTip, type VideoTag, VIDEO_TAGS_MAX } from '../models';
+import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, type ClipComment, type Comment, validClipId, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type CrewMeetup, type CrewCover, type AdminPresence, type Drop, type LivePatch, type AppSettings, DEFAULT_APP_SETTINGS, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX, type Sprout, type DirectChat, directRoom, isDirectRoom, otherInRoom, SUPPORT_REPLIES_MAX, type SetTimesTip, type VideoTag, VIDEO_TAGS_MAX } from '../models';
 import { cleanBackdrop } from '../../profile/backdrops';
 import { cleanArtistName } from '../../../data/extraArtists';
 import { canGiveThemes, isGiftTheme } from '../../themes/gifts';
@@ -10,6 +10,7 @@ import { GARDEN_BACKUP_MAX } from '../../sprouts/backup';
 import { cleanDecor, type DecorId } from '../../sprouts/decor';
 import { cleanNote, cleanPublicKandi, cleanWord, isCharm, isPattern, KANDI_ID, type Kandi, type PublicKandi } from '../../kandi/kandi';
 import { SUPPORT_EMAIL } from '../../../config/app';
+import { cleanMeetupInput } from '../../crews/meetups';
 import { countByInviter } from '../../invites/invites';
 import { nextPresence } from '../../admin/presence';
 import type { Hunt, Sticker } from '../../finds/finds';
@@ -104,6 +105,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   };
   /** Each crew's meeting spot. */
   const meets = new Map<string, MeetSpot>();
+  const meetups = new Map<string, CrewMeetup[]>();
   const covers = new Map<string, CrewCover>();
   const reports: { id: string; by: string; target: ReportTarget; reason: ReportReason; note?: string; createdAt: string; status: 'open' | 'resolved' }[] = [];
   /** Support messages, and which emails have been confirmed (the support account needs it). */
@@ -1152,6 +1154,29 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         dmWatchers.delete(w);
       };
     },
+    async crewMeetups(crewId) {
+      readable();
+      if (network.down) throw new SocialError('network');
+      memberOf(crewId);
+      return [...(meetups.get(crewId) ?? [])].sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+    },
+    async addMeetup(crewId, input) {
+      if (network.down) throw new SocialError('network');
+      memberOf(crewId);
+      const clean = cleanMeetupInput(input, Date.now());
+      if (!clean.ok) throw new SocialError('unknown');
+      const { place, atMs, note } = clean.value;
+      const m = { id: `meetup-${++n}`, crewId, place, at: new Date(atMs).toISOString(), ...(note ? { note } : {}), by: me().uid, createdAt: now() };
+      meetups.set(crewId, [...(meetups.get(crewId) ?? []), m]);
+      return m;
+    },
+    async removeMeetup(crewId, meetupId) {
+      if (network.down) throw new SocialError('network');
+      const crew = memberOf(crewId);
+      const m = (meetups.get(crewId) ?? []).find((x) => x.id === meetupId);
+      if (m && m.by !== me().uid && crew.owner !== me().uid) throw new SocialError('unknown');
+      meetups.set(crewId, (meetups.get(crewId) ?? []).filter((x) => x.id !== meetupId));
+    },
     async meetSpot(crewId) {
       readable();
       if (network.down) throw new SocialError('network');
@@ -1595,5 +1620,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     reads.set(`${crewId}/${uid}`, now());
     readsChanged(crewId);
   };
-  return { service, gardens, glows, gardenBackups, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, covers, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, orgs, orgMembers, orgRequests, orgViews, orgPosts, currentUser: () => current, ticketTaps, pushes, invites };
+  return { service, gardens, glows, gardenBackups, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, meetups, covers, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, orgs, orgMembers, orgRequests, orgViews, orgPosts, currentUser: () => current, ticketTaps, pushes, invites };
 }

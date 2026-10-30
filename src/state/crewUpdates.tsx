@@ -29,7 +29,7 @@ import { CARE_NOTE, careAlerts as alertsOf, cleanNotified, helpBody, helpTitle, 
 import type { Memory } from '../features/memories/models';
 import { isOffline } from '../features/offline/status';
 import { keptAt } from '../features/offline/lastKnown';
-import type { CrewCare, CrewUpdate, CrewUpdateInput, MeetSpot, Profile } from '../features/social/models';
+import type { CrewCare, CrewMeetup, CrewMeetupInput, CrewUpdate, CrewUpdateInput, MeetSpot, Profile } from '../features/social/models';
 import { notifyNow } from '../lib/notifyNow';
 import { t } from '../i18n';
 import { forgetCrewPhoto, keepCrewPhoto } from '../features/crews/photoFile';
@@ -82,6 +82,14 @@ type Ctx = {
   meetSpotFor: (crewId: string) => MeetSpot | undefined;
   /** Set (or, with empty words, clear) a crew's meeting spot. Needs signal: throws when it can't be saved. */
   setMeetSpot: (crewId: string, text: string) => Promise<void>;
+  /** A crew's meetups (as last read, kept on the phone), soonest first. */
+  meetupsFor: (crewId: string) => CrewMeetup[];
+  /** Every crew's meetups, for the reminders. */
+  allMeetups: { crewId: string; meetup: CrewMeetup }[];
+  /** Set a meetup for a crew. Needs signal: throws when it can't be saved. */
+  addMeetup: (crewId: string, input: CrewMeetupInput) => Promise<void>;
+  /** Call one off (yours, or any as the crew's owner). Needs signal. */
+  removeMeetup: (crewId: string, meetupId: string) => Promise<void>;
   /** "Can't find you": a check-in to every crew you're in at this festival, waiting for signal like any other. */
   callLost: (festivalId: string) => string | false;
   /** "I'm OK" or "come find me" to every crew you're in at this festival; the update's id, or false. */
@@ -216,6 +224,8 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
   const [updates, setUpdates] = useState<{ uid?: string; byCrew: Record<string, CrewUpdate[]> }>({ byCrew: {} });
   // Each crew's meeting spot, read with its updates (a crew that couldn't be read keeps what it had).
   const [meets, setMeets] = useState<{ uid?: string; byCrew: Record<string, MeetSpot | null> }>({ byCrew: {} });
+  // Each crew's meetups, read with its updates (a crew that couldn't be read keeps what it had, or this phone's copy).
+  const [meetups, setMeetups] = useState<{ uid?: string; byCrew: Record<string, CrewMeetup[]> }>({ byCrew: {} });
   const liveKey = live.map((c) => `${c.id}:${c.members.join(',')}`).join('|');
   const profiles = useRef(new Map<string, Profile | undefined>());
   // Crewmates shown from this phone's copy: read again once there's signal.
@@ -256,6 +266,15 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
       }
       return { uid, byCrew };
     });
+    const plans = await Promise.all(live.map(async (c) => [c.id, await service.crewMeetups(c.id).catch(() => undefined)] as const));
+    setMeetups((s) => {
+      const byCrew = s.uid === uid ? { ...s.byCrew } : {};
+      for (const [id, list] of plans) {
+        if (list) byCrew[id] = list;
+        else if (!byCrew[id] && kept?.meetups?.[id]) byCrew[id] = kept.meetups[id];
+      }
+      return { uid, byCrew };
+    });
     // Crewmates' names and faces, once each (with no signal, this phone's copy until they can be read).
     const missing = [...new Set(live.flatMap((c) => c.members))].filter((m) => m !== uid && (!profiles.current.has(m) || keptPeople.current.has(m)));
     const people: Record<string, Profile> = {};
@@ -280,8 +299,9 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
     }
     const readUpdates = Object.fromEntries(read.flatMap(([id, list]) => (list ? [[id, { value: list, at: now }]] : [])));
     const readSpots = Object.fromEntries(spots.flatMap(([id, spot]) => (spot !== undefined ? [[id, spot]] : [])));
-    if (Object.keys(readUpdates).length || Object.keys(readSpots).length || Object.keys(people).length)
-      rememberLastKnown(uid, { updates: readUpdates, meets: readSpots, people });
+    const readPlans = Object.fromEntries(plans.flatMap(([id, list]) => (list ? [[id, list]] : [])));
+    if (Object.keys(readUpdates).length || Object.keys(readSpots).length || Object.keys(readPlans).length || Object.keys(people).length)
+      rememberLastKnown(uid, { updates: readUpdates, meets: readSpots, meetups: readPlans, people });
     // liveKey stands for `live`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, uid, liveKey, service]);
@@ -525,6 +545,38 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
     [service, uid],
   );
 
+  const meetupsFor = useCallback((crewId: string) => (meetups.uid === uid ? (meetups.byCrew[crewId] ?? []) : []), [meetups, uid]);
+  const allMeetups = useMemo(
+    () => (meetups.uid === uid ? live.flatMap((c) => (meetups.byCrew[c.id] ?? []).map((meetup) => ({ crewId: c.id, meetup }))) : []),
+    // liveKey stands for `live`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [meetups, uid, liveKey],
+  );
+  const keepMeetups = useCallback(
+    (crewId: string, change: (list: CrewMeetup[]) => CrewMeetup[]) =>
+      setMeetups((s) => {
+        const byCrew = s.uid === uid ? s.byCrew : {};
+        const list = change(byCrew[crewId] ?? []).sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+        if (uid) rememberLastKnown(uid, { meetups: { [crewId]: list } });
+        return { uid, byCrew: { ...byCrew, [crewId]: list } };
+      }),
+    [uid],
+  );
+  const addMeetup = useCallback(
+    async (crewId: string, input: CrewMeetupInput) => {
+      const m = await service.addMeetup(crewId, input);
+      keepMeetups(crewId, (list) => [...list.filter((x) => x.id !== m.id), m]);
+    },
+    [service, keepMeetups],
+  );
+  const removeMeetup = useCallback(
+    async (crewId: string, meetupId: string) => {
+      await service.removeMeetup(crewId, meetupId);
+      keepMeetups(crewId, (list) => list.filter((x) => x.id !== meetupId));
+    },
+    [service, keepMeetups],
+  );
+
   const reply = useCallback(
     (target: CrewUpdate, words: string) => {
       const note = cleanNote(words);
@@ -636,8 +688,8 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
   const crewCount = ready ? live.length : 0;
   const crewFestivals = useMemo(() => (ready ? [...new Set(live.map((c) => c.festivalId))] : []), [ready, live]);
   const value = useMemo<Ctx>(
-    () => ({ ready, crewCount, crewFestivals, stories, updatesFor, outbox: myOutbox, dropped, profileOf, checkIn, callLost, sendCare, sendPhoto, careAlerts, myCare, meetSpotFor, setMeetSpot, reply, repliesFor, sendVideo, markSeen, remove, refresh, readAt, readLive }),
-    [ready, crewCount, crewFestivals, stories, updatesFor, myOutbox, dropped, profileOf, checkIn, callLost, sendCare, sendPhoto, careAlerts, myCare, meetSpotFor, setMeetSpot, reply, repliesFor, sendVideo, markSeen, remove, refresh, readAt, readLive],
+    () => ({ ready, crewCount, crewFestivals, stories, updatesFor, outbox: myOutbox, dropped, profileOf, checkIn, callLost, sendCare, sendPhoto, careAlerts, myCare, meetSpotFor, setMeetSpot, meetupsFor, allMeetups, addMeetup, removeMeetup, reply, repliesFor, sendVideo, markSeen, remove, refresh, readAt, readLive }),
+    [ready, crewCount, crewFestivals, stories, updatesFor, myOutbox, dropped, profileOf, checkIn, callLost, sendCare, sendPhoto, careAlerts, myCare, meetSpotFor, setMeetSpot, meetupsFor, allMeetups, addMeetup, removeMeetup, reply, repliesFor, sendVideo, markSeen, remove, refresh, readAt, readLive],
   );
   return <CrewUpdatesContext.Provider value={value}>{children}</CrewUpdatesContext.Provider>;
 }
@@ -659,6 +711,10 @@ const OFF: Ctx = {
   myCare: undefined,
   meetSpotFor: () => undefined,
   setMeetSpot: async () => {},
+  meetupsFor: () => [],
+  allMeetups: [],
+  addMeetup: async () => {},
+  removeMeetup: async () => {},
   reply: () => false,
   repliesFor: () => [],
   sendVideo: () => false,

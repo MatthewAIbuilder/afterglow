@@ -1,6 +1,6 @@
 import { months, t } from '../../i18n';
 import { formatTime } from '../festivals/format';
-import type { Crew, CrewMessage, CrewPicks, CrewUpdate, MeetSpot, Profile } from '../social/models';
+import type { Crew, CrewMessage, CrewPicks, CrewMeetup, CrewUpdate, MeetSpot, Profile } from '../social/models';
 
 /**
  * What this phone last read about people, kept per account so a festival
@@ -26,6 +26,8 @@ export type AccountKept = {
   updates?: Record<string, Kept<CrewUpdate[]>>;
   /** Crew id -> meeting spot (null: none set). */
   meets?: Record<string, MeetSpot | null>;
+  /** Crew id -> its meetups, as last read. */
+  meetups?: Record<string, CrewMeetup[]>;
   /** Chat room id -> the newest messages, as last read, and when. */
   chat?: Record<string, Kept<CrewMessage[]>>;
 };
@@ -51,6 +53,7 @@ const isCrew = (c: unknown): c is Crew => isObj(c) && str(c.id) && str(c.festiva
 const isPicks = (p: unknown): p is CrewPicks => isObj(p) && str(p.uid) && Array.isArray(p.artists) && p.artists.every(str);
 const isUpdate = (u: unknown): u is CrewUpdate => isObj(u) && str(u.id) && str(u.crewId) && str(u.uid) && str(u.kind) && str(u.at) && str(u.festivalId);
 const isMessage = (m: unknown): m is CrewMessage => isObj(m) && str(m.id) && str(m.crewId) && str(m.uid) && typeof m.text === 'string' && str(m.at);
+const isMeetup = (m: unknown): m is CrewMeetup => isObj(m) && str(m.id) && str(m.crewId) && str(m.place) && str(m.at) && str(m.by);
 const isMeet = (m: unknown): m is MeetSpot => isObj(m) && str(m.text) && typeof m.by === 'string' && typeof m.at === 'string';
 
 function cleanKept<T>(raw: unknown, now: number, ok: (v: unknown) => v is T, max?: number): Kept<T[]> | undefined {
@@ -87,6 +90,8 @@ function cleanAccount(raw: unknown, now: number): AccountKept | undefined {
   if (updates) out.updates = updates;
   const meets = cleanRecord(raw.meets, (v) => (v === null ? null : isMeet(v) ? v : undefined));
   if (meets) out.meets = meets;
+  const meetups = cleanRecord(raw.meetups, (v) => (Array.isArray(v) ? v.filter(isMeetup) : undefined));
+  if (meetups) out.meetups = meetups;
   const chat = cleanRecord(raw.chat, (v) => cleanKept(v, now, isMessage, KEPT_MESSAGES_MAX));
   if (chat) out.chat = chat;
   return out;
@@ -115,7 +120,7 @@ const newest = (a: AccountKept) =>
 export function keep(book: LastKnownBook, uid: string, patch: AccountKept): LastKnownBook {
   const cur = book[uid] ?? {};
   const next: AccountKept = { ...cur, ...patch };
-  for (const k of ['picks', 'people', 'updates', 'meets', 'chat'] as const)
+  for (const k of ['picks', 'people', 'updates', 'meets', 'meetups', 'chat'] as const)
     if (patch[k]) (next as Record<string, unknown>)[k] = { ...(cur[k] ?? {}), ...patch[k] };
   const all = { ...book, [uid]: next };
   const uids = Object.keys(all);

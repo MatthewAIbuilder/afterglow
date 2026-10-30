@@ -548,6 +548,29 @@ await t('crew meeting spot: members set it as themselves with the server time; o
   await assertFails(getDoc(meet(C.firestore())));
   await assertFails(setDoc(meet(C.firestore()), { text: 'x', by: 'uidC', at: serverTimestamp() }));
 });
+await t('crew meetups: members set them as themselves, an hour ago to a month ahead; never edited; called off by whoever set it or the owner', async () => {
+  const at = (db, id) => doc(db, 'crews', 'c1', 'meetups', id);
+  const meetup = (by, over = {}) => ({ place: 'Main Stage', atMs: Date.now() + 3600 * 1000, by, createdAt: serverTimestamp(), ...over });
+  await assertSucceeds(setDoc(at(B.firestore(), 'm000001'), meetup('uidB', { note: 'By the left speaker' })));
+  await assertSucceeds(getDoc(at(A.firestore(), 'm000001')));
+  await assertFails(getDoc(at(C.firestore(), 'm000001')));
+  await assertFails(setDoc(at(C.firestore(), 'm000002'), meetup('uidC')));
+  await assertFails(setDoc(at(A.firestore(), 'm000003'), meetup('uidB')));
+  await assertFails(setDoc(at(A.firestore(), 'm000004'), meetup('uidA', { place: '' })));
+  await assertFails(setDoc(at(A.firestore(), 'm000005'), meetup('uidA', { place: 'x'.repeat(81) })));
+  await assertFails(setDoc(at(A.firestore(), 'm000006'), meetup('uidA', { note: 'x'.repeat(141) })));
+  await assertFails(setDoc(at(A.firestore(), 'm000007'), meetup('uidA', { atMs: Date.now() - 3 * 3600 * 1000 })));
+  await assertFails(setDoc(at(A.firestore(), 'm000008'), meetup('uidA', { atMs: Date.now() + 40 * 24 * 3600 * 1000 })));
+  await assertFails(setDoc(at(A.firestore(), 'm000009'), meetup('uidA', { createdAt: Date.now() })));
+  await assertFails(setDoc(at(A.firestore(), 'm000010'), meetup('uidA', { extra: 1 })));
+  await assertFails(setDoc(at(B.firestore(), 'm000001'), meetup('uidB', { place: 'Elsewhere' })));
+  await assertSucceeds(setDoc(at(A.firestore(), 'm000011'), meetup('uidA')));
+  await assertSucceeds(deleteDoc(at(A.firestore(), 'm000011')));
+  await assertSucceeds(setDoc(at(A.firestore(), 'm000012'), meetup('uidA')));
+  await assertFails(deleteDoc(at(B.firestore(), 'm000012')));
+  // The owner can call off anyone's.
+  await assertSucceeds(deleteDoc(at(A.firestore(), 'm000001')));
+});
 await t('crew cover photo: members set it as themselves, pointing at their own file; others can’t', async () => {
   const cover = (db) => doc(db, 'crews', 'c1', 'meta', 'cover');
   const url = (uid) => `https://firebasestorage.googleapis.com/v0/b/demo-afterglow.appspot.com/o/crews%2Fc1%2F${uid}%2Fcover.jpg?alt=media&token=abc-123`;

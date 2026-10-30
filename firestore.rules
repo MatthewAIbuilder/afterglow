@@ -945,6 +945,25 @@ service cloud.firestore {
           || get(path('crews', id)).data.owner == me());
       }
 
+      // Crew meetups: a place and a time to find each other. Members read them and set them as
+      // themselves (from an hour ago to a month ahead), stamped with the server's time; never edited.
+      // Called off by whoever set one or the crew's owner.
+      match /meetups/{meetupId} {
+        allow read: if signedIn() && me() in get(path('crews', id)).data.members;
+        allow create: if signedIn() && me() in get(path('crews', id)).data.members
+          && meetupId.matches('^[A-Za-z0-9_-]{6,64}$')
+          && request.resource.data.keys().hasOnly(['place', 'atMs', 'note', 'by', 'createdAt'])
+          && request.resource.data.place is string && request.resource.data.place.size() > 0 && request.resource.data.place.size() <= 80
+          && (!('note' in request.resource.data) || (request.resource.data.note is string && request.resource.data.note.size() <= 140))
+          && request.resource.data.atMs is number
+          && request.resource.data.atMs >= request.time.toMillis() - 3600 * 1000
+          && request.resource.data.atMs <= request.time.toMillis() + 31 * 24 * 3600 * 1000
+          && request.resource.data.by == me()
+          && request.resource.data.createdAt == request.time;
+        allow update: if false;
+        allow delete: if signedIn() && (resource.data.by == me() || get(path('crews', id)).data.owner == me());
+      }
+
       // How each member got in: that they agreed to the chat rules, and the link code they used (when
       // they weren't invited in the app). Written only by that person; read by them and the owner.
       match /joins/{uid} {

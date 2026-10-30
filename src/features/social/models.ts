@@ -299,6 +299,18 @@ export type MeetSpot = { text: string; by: string; at: string };
 /** Meeting spots are at most this long. */
 export const MEET_SPOT_MAX = 80;
 
+/**
+ * A crew meetup: a place and a time to find each other (set by any member).
+ * `at` is the meetup's time; everyone's phone reminds them before it.
+ */
+export type CrewMeetup = { id: string; crewId: string; place: string; at: string; note?: string; by: string; createdAt: string };
+export type CrewMeetupInput = { place: string; atMs: number; note?: string };
+/** A meetup's place and note are at most this long. */
+export const MEETUP_PLACE_MAX = 80;
+export const MEETUP_NOTE_MAX = 140;
+/** A crew keeps at most this many meetups (the oldest past ones go first). */
+export const MEETUPS_MAX = 24;
+
 /** A crew's group photo (any member can set it): the picture's link, who put it there and when. Shown only to the crew. */
 export type CrewCover = { url: string; by: string; at: string };
 
