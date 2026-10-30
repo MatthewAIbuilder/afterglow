@@ -51,7 +51,7 @@ import { useToday } from '../../lib/useToday';
 import { artistStory, hasStory, nextShow, nextShowLine, storyLines } from '../../features/artists/story';
 import { ArtistSproutCard } from '../../features/sprouts/ArtistSproutCard';
 import { ArtistRow } from '../../components/ArtistRow';
-import { ArtistCrowdRow } from '../../features/artists/ArtistCrowdRow';
+import { ArtistCrowdRow, ArtistTracklists } from '../../features/artists/ArtistCrowdRow';
 import { filmParams, filmTonight } from '../../features/artists/filmTonight';
 import { CameraIcon } from '../../features/camera/icons';
 import { localDay, showDateBlock, showLabel, showTitle, showWhere, SHOWS_SHOWN, withLine } from '../../features/artists/shows';
@@ -473,6 +473,7 @@ export default function ArtistScreen() {
 
         {/* Everyone's videos of them, before the uploads: footage from the crowd is what plays everywhere. */}
         <ArtistCrowdRow artist={artist} />
+        <ArtistTracklists artist={artist} />
         {clips.length > 0 && (
           <Section title={t('Live clips')}>
             {clips.map((c) => {

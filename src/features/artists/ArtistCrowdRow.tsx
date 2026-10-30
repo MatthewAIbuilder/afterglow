@@ -1,3 +1,5 @@
+import { TracklistCard } from '../community/TracklistCard';
+import { tracklists } from '../community/tracklist';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -28,10 +30,10 @@ const TILE_H = 170;
  * where they were filmed and who filmed them. Each opens the video. Nothing
  * when there are none, or when signed out.
  */
-export function ArtistCrowdRow({ artist, inset = space.xl }: { artist: Artist; inset?: number }) {
+/** Everyone's videos of an artist (newest first, no blocked people or hidden videos), read once and shared. */
+export function useArtistCrowd(artist: Artist): SharedMemory[] {
   const social = useSocial();
   const { hidden } = useCommunity();
-  const catalog = useCatalog();
   const signedIn = social.availability.ok && !!social.user;
   const [read, setRead] = useState<{ id: string; list: SharedMemory[] }>();
   useEffect(() => {
@@ -51,7 +53,12 @@ export function ArtistCrowdRow({ artist, inset = space.xl }: { artist: Artist; i
     };
   }, [signedIn, artist.id, social.service]);
   const raw = read?.id === artist.id ? read.list : cache.get(artist.id)?.list;
-  const videos = useMemo(() => (signedIn && raw ? crowdVideos(raw, { blocked: [...social.blocked], hidden: [...hidden] }) : []), [signedIn, raw, social.blocked, hidden]);
+  return useMemo(() => (signedIn && raw ? crowdVideos(raw, { blocked: [...social.blocked], hidden: [...hidden] }) : []), [signedIn, raw, social.blocked, hidden]);
+}
+
+export function ArtistCrowdRow({ artist, inset = space.xl }: { artist: Artist; inset?: number }) {
+  const catalog = useCatalog();
+  const videos = useArtistCrowd(artist);
   if (!videos.length) return null;
   const people = new Set(videos.map((v) => v.uid)).size;
   return (
@@ -113,3 +120,19 @@ const styles = StyleSheet.create({
   where: { ...type.caption, fontWeight: '700', color: color.moon },
   handle: { ...type.caption, fontSize: 10, color: color.moonDim },
 });
+
+/** On an artist's page: what the crowd heard at their sets, festival by festival (the latest three). */
+export function ArtistTracklists({ artist, inset = space.xl }: { artist: Artist; inset?: number }) {
+  const catalog = useCatalog();
+  const videos = useArtistCrowd(artist);
+  const lists = useMemo(() => tracklists(videos).slice(0, 3), [videos]);
+  if (!lists.length) return null;
+  return (
+    <View style={[styles.wrap, { paddingHorizontal: inset, gap: space.md }]}>
+      <Text style={styles.title}>{t('What the crowd heard')}</Text>
+      {lists.map((l) => (
+        <TracklistCard key={`${l.festivalId}|${l.night ?? ''}`} list={l} title={[catalog.festival(l.festivalId)?.name ?? t('A festival'), l.night ? t(l.night) : undefined].filter(Boolean).join(' · ')} />
+      ))}
+    </View>
+  );
+}

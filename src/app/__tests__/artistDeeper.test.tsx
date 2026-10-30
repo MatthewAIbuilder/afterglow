@@ -73,4 +73,17 @@ describe('the deeper artist page', () => {
     expect(app.getByLabelText('SUBTRONICS at Cyclops Cove 4, filmed by @maya')).toBeTruthy();
     expect(app.getByLabelText('SUBTRONICS at a throwback, Lost Lands ’24, filmed by @maya')).toBeTruthy();
   });
+
+  it('what the crowd heard: the songs people’s Track IDs found at their sets', async () => {
+    await person('maya');
+    await s().shareMemory({ memoryId: 't1', videoUri: 'file:///t1.mov', capturedAt: '2026-09-01T22:10:00.000Z', festivalId: 'cyclops-cove-4', artistId: 'subtronics', track: { title: 'Griztronics', artist: 'Subtronics' } });
+    await s().signOut();
+    await person('sam');
+    await s().shareMemory({ memoryId: 't2', videoUri: 'file:///t2.mov', capturedAt: '2026-09-01T22:05:00.000Z', festivalId: 'cyclops-cove-4', artistId: 'subtronics', track: { title: 'Griztronics', artist: 'Subtronics' } });
+    const app = await renderApp('/artist/subtronics');
+    await flush();
+    expect(app.getByText('What the crowd heard')).toBeTruthy();
+    expect(app.getByText('1 track heard by the crowd')).toBeTruthy();
+    expect(app.getByLabelText(/^1\. Griztronics by Subtronics, .*, 2 people caught it\. Opens the video\.$/)).toBeTruthy();
+  });
 });

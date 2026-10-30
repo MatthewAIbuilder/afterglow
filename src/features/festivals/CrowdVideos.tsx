@@ -1,3 +1,5 @@
+import { TracklistCard } from '../community/TracklistCard';
+import { tracklists } from '../community/tracklist';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
@@ -29,6 +31,8 @@ export function CrowdVideos({ festival }: { festival: Festival }) {
   const [artistId, setArtistId] = useState<string | undefined>();
   const picked = artists.some((a) => a.artistId === artistId) ? artistId : undefined;
   const nights = useMemo(() => (videos ? crowdByNight(videos, festival, picked) : []), [videos, festival, picked]);
+  // Crowd tracklists: the songs people's videos caught, set by set (the artist you picked, or the latest few).
+  const lists = useMemo(() => (videos ? tracklists(videos).filter((l) => !picked || l.artistId === picked) : []), [videos, picked]);
 
   if (!social.availability.ok) return <Note title={t('Videos from the crowd')} body={t('See what people filmed here in the Afterglow app.')} />;
   if (!social.user)
@@ -68,6 +72,16 @@ export function CrowdVideos({ festival }: { festival: Festival }) {
           value={picked}
           onChange={setArtistId}
         />
+      ) : null}
+      {lists.length ? (
+        <View style={styles.night}>
+          <Text style={styles.nightTitle}>{t('Tracklists from the crowd')}</Text>
+          <View style={{ gap: space.md }}>
+            {lists.slice(0, picked ? 10 : 3).map((l) => (
+              <TracklistCard key={`${l.artistId}|${l.night ?? ''}`} list={l} title={[catalog.artist(l.artistId)?.name ?? t('Artist'), l.night ? t(l.night) : undefined].filter(Boolean).join(' · ')} />
+            ))}
+          </View>
+        </View>
       ) : null}
       {nights.map((n) => (
         <View key={n.night} style={styles.night}>
