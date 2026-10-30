@@ -9,6 +9,7 @@ import { CrewStarsLine, crewStarsSaid, useCrewStars } from './CrewStars';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { exploreLine, matchLabel, moreToExplore, TIER_HINT, TIER_LABEL } from './copy';
 import { MustSeeToggle } from './MustSeeToggle';
+import { PlanEditButton } from './PlanEditButton';
 import { usePickReasons } from './usePickReasons';
 import { EXPLORE_SHOWN, exploreReason, type Pick, type Tier } from './plan';
 import { t } from '../../i18n';
@@ -102,7 +103,10 @@ export function PickRow({
         <CrewStarsLine names={friends} />
       </View>
       <Text style={[styles.match, pick.tier === 'must-see' && pick.known && { color: color.glow }]}>{match}</Text>
-      <MustSeeToggle artist={artist} festivalId={festivalId} />
+      <View style={styles.actions}>
+        <MustSeeToggle artist={artist} festivalId={festivalId} />
+        <PlanEditButton artist={artist} festivalId={festivalId} />
+      </View>
     </Pressable>
   );
 }
@@ -119,6 +123,7 @@ const styles = StyleSheet.create({
   tier: { ...type.label, color: color.moon },
   hint: { ...type.caption, color: color.moonFaint, marginTop: 2, marginBottom: space.xs },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: space.md, gap: space.md },
+  actions: { flexDirection: 'row', alignItems: 'center', marginRight: -space.sm },
   rank: { ...type.label, color: color.moonFaint, width: 20, fontVariant: ['tabular-nums'] },
   text: { flex: 1 },
   name: { ...type.headline, color: color.moon },

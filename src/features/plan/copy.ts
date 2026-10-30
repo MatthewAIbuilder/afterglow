@@ -66,7 +66,7 @@ export function verdictLines(v: ClashVerdict): { head: string; sub: string } {
   switch (v.kind) {
     case 'pinned':
       return {
-        head: t('{name} is on your must-see list.', { name: plainName(v.pick.artist) }),
+        head: v.pick.first ? t('You chose {name} for this time.', { name: plainName(v.pick.artist) }) : t('{name} is on your must-see list.', { name: plainName(v.pick.artist) }),
         sub: v.other.known
           ? t('{name} is a {match} match if you change your mind.', { name: plainName(v.other.artist), match: pct(v.other.match) })
           : t('{name} is on too, if you change your mind.', { name: plainName(v.other.artist) }),

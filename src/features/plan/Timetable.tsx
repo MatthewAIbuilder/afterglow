@@ -13,6 +13,8 @@ import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { catchLine, exploreLine, matchLabel, TIER_LABEL, verdictLines } from './copy';
 import { BoltIcon } from './icons';
 import { MustSeeToggle } from './MustSeeToggle';
+import { PlanEditButton } from './PlanEditButton';
+import { usePlan } from '../../state/plan';
 import { PickRow } from './MustSeeList';
 import type { ClashVerdict, Schedule, ScheduleDay, ScheduleItem, TimedPick } from './plan';
 import type { DayRoute } from './route';
@@ -204,12 +206,15 @@ function ArtistLine({
   label,
   labelGlow,
   dim,
+  over,
 }: {
   festival: Festival;
   pick: TimedPick;
   label?: string;
   labelGlow?: boolean;
   dim?: boolean;
+  /** What it clashes with (artist ids), for "Go with this one". */
+  over?: readonly string[];
 }) {
   const match = matchLabel(pick);
   const friends = useCrewStars(festival.id, pick.artist.id);
@@ -234,6 +239,7 @@ function ArtistLine({
       <View style={styles.side}>
         <Text style={[styles.match, pick.tier === 'must-see' && pick.known && { color: color.glow }]}>{match}</Text>
         <MustSeeToggle artist={pick.artist} festivalId={festival.id} size={18} />
+        <PlanEditButton artist={pick.artist} festivalId={festival.id} over={over} />
       </View>
     </Pressable>
   );
@@ -320,6 +326,7 @@ function ClashCard({ festival, item }: { festival: Festival; item: Extract<Sched
             label={pickId === p.artist.id ? t('Your pick') : undefined}
             labelGlow
             dim={!!pickId && pickId !== p.artist.id}
+            over={item.picks.filter((o) => o !== p).map((o) => o.artist.id)}
           />
         </View>
       ))}
@@ -328,7 +335,39 @@ function ClashCard({ festival, item }: { festival: Festival; item: Extract<Sched
         <Text style={styles.verdictSub}>{sub}</Text>
         {verdict.catch ? <Text style={styles.verdictSub}>{catchLine(verdict.catch)}</Text> : null}
       </View>
+      <GoWith festival={festival} picks={item.picks} />
       <Alternatives festival={festival} picks={item.alternatives} />
+    </View>
+  );
+}
+
+/** Settle a clash yourself: "Go with" either side; your choice wins it from then on. */
+function GoWith({ festival, picks }: { festival: Festival; picks: TimedPick[] }) {
+  const { goWith } = usePlan();
+  return (
+    <View style={styles.goRow}>
+      {picks.map((p) =>
+        p.first ? (
+          <Text key={p.artist.id} style={styles.goChosen} numberOfLines={1}>
+            {t('You’re going with {name}', { name: p.artist.name })}
+          </Text>
+        ) : (
+          <Pressable
+            key={p.artist.id}
+            onPress={() => {
+              haptic.tap();
+              goWith(festival.id, p.artist.id, picks.filter((o) => o !== p).map((o) => o.artist.id));
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('Go with {name} at this time', { name: p.artist.name })}
+            style={({ pressed }) => [styles.goPill, pressed && { opacity: 0.6 }]}
+          >
+            <Text style={styles.goText} numberOfLines={1}>
+              {t('Go with {name}', { name: p.artist.name })}
+            </Text>
+          </Pressable>
+        ),
+      )}
     </View>
   );
 }
@@ -431,6 +470,18 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   verdictHead: { ...type.label, color: color.moon },
+  goRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.md },
+  goPill: {
+    maxWidth: '100%',
+    paddingHorizontal: space.md,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    backgroundColor: glowA(0.14),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: glowA(0.45),
+  },
+  goText: { ...type.label, color: color.moon },
+  goChosen: { ...type.label, color: color.glow, paddingVertical: 6 },
   verdictSub: { ...type.caption, color: color.moonDim },
   reason: { ...type.caption, color: color.moonDim, marginLeft: AVATAR + space.sm + 2 },
 
