@@ -23,6 +23,8 @@ import { useCare } from '../../state/care';
 import { tonightFestival } from '../tonight/tonight';
 import { canRemindSets, setReminders, soonest } from './setReminders';
 import { rateReminders } from '../seen/ask';
+import { heatReminders } from '../weather/weather';
+import { readForecasts } from '../../state/weather';
 
 // While the app is open, a reminder still shows as a banner (quietly). Phones only.
 if (Platform.OS !== 'web') Notifications.setNotificationHandler({
@@ -90,6 +92,9 @@ function PhoneReminders() {
           const nameOf = (id: string) => artists.find((a) => a.id === id)?.name ?? '';
           const sets: Reminder[] = soonest(routes.flatMap(({ festival, route }) => [...setReminders(festival, route, now), ...rateReminders(festival, route, nameOf, now)]));
           const water = careReminders(care, tonightFestival(festivals, going, now)?.festival.id, now);
+          // A heads-up before the hottest hour on a hot festival day you're going to.
+          const forecasts = await readForecasts();
+          const heat = festivals.filter((f) => going.includes(f.id)).flatMap((f) => heatReminders(f, forecasts[f.id], now));
           const evening = quests.ready ? questReminder(nudge.on, now, questsLeft, quests.streak) : undefined;
           // A few check-ins through a festival day you're at, when you've turned the festival trail on.
           const trailOn = (await readPrefs()).mode === 'on';
@@ -110,7 +115,7 @@ function PhoneReminders() {
               }),
             now,
           );
-          const wanted = [...festivalReminders(festivals, going, now), ...(prepLoaded ? checklist : []), ...sets, ...water, ...feelReminders(care, now), ...checkins, ...(evening ? [evening] : [])];
+          const wanted = [...festivalReminders(festivals, going, now), ...(prepLoaded ? checklist : []), ...sets, ...water, ...heat, ...feelReminders(care, now), ...checkins, ...(evening ? [evening] : [])];
           const scheduled = await Notifications.getAllScheduledNotificationsAsync();
           const { cancel, schedule } = reminderChanges(
             wanted,

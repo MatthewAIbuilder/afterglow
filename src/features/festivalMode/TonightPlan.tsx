@@ -1,3 +1,5 @@
+import { WeatherCard } from '../weather/WeatherCard';
+import { dayStarts } from '../notifications/setReminders';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -39,6 +41,9 @@ export function TonightPlan({ mode }: { mode: ModeNow }) {
   const day = (chosen && days.includes(chosen) ? chosen : undefined) ?? (mode.night && days.includes(mode.night) ? mode.night : days[0]);
   // A test shows the first night as if it were tonight.
   const tonight = day === mode.night;
+  // The date of tonight's night (a set after midnight still belongs to it).
+  const nightStart = tonight && day ? dayStarts(festival)?.get(day) : undefined;
+  const nightDate = nightStart ? `${nightStart.getFullYear()}-${String(nightStart.getMonth() + 1).padStart(2, '0')}-${String(nightStart.getDate()).padStart(2, '0')}` : undefined;
   const dayRoute = route?.find((r) => r.day === day);
   const byDay = picksByDay(festival, picks);
   const nightPicks: Pick[] = (
@@ -85,6 +90,8 @@ export function TonightPlan({ mode }: { mode: ModeNow }) {
           </ScrollView>
         ) : null}
 
+        {/* Tonight's weather, and what it means for looking after yourself. */}
+        {tonight && nightDate ? <WeatherCard festival={festival} only={nightDate} /> : null}
         {schedule && dayRoute ? (
           <>
             {tonight ? (
