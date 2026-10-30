@@ -60,6 +60,7 @@ export const ACCOUNT_KEYS = [
   'setsSeen.v1',
   'crewVotes.v1',
   'fitChecks.v1',
+  'crewLive.v1',
   'noticesRead.v1',
   'crewSeen.v1',
   'crewChatRead.v1',

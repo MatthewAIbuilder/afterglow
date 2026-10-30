@@ -44,6 +44,7 @@ import { FestivalModeProvider } from '../state/festivalMode';
 import { FriendAddsProvider } from '../state/friendAdds';
 import { InviteClaim } from '../state/invites';
 import { MeetupReminders } from '../features/crews/MeetupReminders';
+import { LiveSharer } from '../state/crewLive';
 import { TasteProvider } from '../state/taste';
 import { FollowedArtistsProvider } from '../state/followedArtists';
 import { GoingProvider } from '../state/going';
@@ -292,6 +293,7 @@ export default function RootLayout() {
       <TrailKeeper />
       <InviteClaim />
       <MeetupReminders />
+      <LiveSharer />
       <LikeSync />
       <QuestToast />
       <SentMoment />

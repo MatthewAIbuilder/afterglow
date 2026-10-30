@@ -548,6 +548,22 @@ await t('crew meeting spot: members set it as themselves with the server time; o
   await assertFails(getDoc(meet(C.firestore())));
   await assertFails(setDoc(meet(C.firestore()), { text: 'x', by: 'uidC', at: serverTimestamp() }));
 });
+await t('crew live location: each member shares their own, for a day at most; members read it, others can’t', async () => {
+  const at = (db, uid) => doc(db, 'crews', 'c1', 'live', uid);
+  const live = (over = {}) => ({ lat: 28.54, lon: -81.4, accuracy: 12, until: Date.now() + 6 * 3600 * 1000, at: serverTimestamp(), ...over });
+  await assertSucceeds(setDoc(at(B.firestore(), 'uidB'), live()));
+  await assertSucceeds(getDoc(at(A.firestore(), 'uidB')));
+  await assertFails(getDoc(at(C.firestore(), 'uidB')));
+  await assertFails(setDoc(at(A.firestore(), 'uidB'), live()));
+  await assertFails(setDoc(at(C.firestore(), 'uidC'), live()));
+  await assertFails(setDoc(at(A.firestore(), 'uidA'), live({ until: Date.now() + 3 * 24 * 3600 * 1000 })));
+  await assertFails(setDoc(at(A.firestore(), 'uidA'), live({ lat: 200 })));
+  await assertFails(setDoc(at(A.firestore(), 'uidA'), live({ at: Date.now() })));
+  await assertFails(setDoc(at(A.firestore(), 'uidA'), live({ name: 'x' })));
+  await assertSucceeds(setDoc(at(A.firestore(), 'uidA'), live()));
+  await assertFails(deleteDoc(at(B.firestore(), 'uidA')));
+  await assertSucceeds(deleteDoc(at(B.firestore(), 'uidB')));
+});
 await t('crew votes: each member writes their own, members read them, others can’t', async () => {
   const at = (db, uid) => doc(db, 'crews', 'c1', 'votes', uid);
   const votes = (over = {}) => ({ lineup: { subtronics: 2, illenium: 0 }, clashes: { 'Friday|a+b': 'a' }, at: serverTimestamp(), ...over });

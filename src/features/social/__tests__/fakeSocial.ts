@@ -1,6 +1,6 @@
 import { cleanTrack } from '../../memories/track';
 import { throwbackShares } from '../../memories/throwbackLimit';
-import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, type ClipComment, type Comment, validClipId, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type CrewMeetup, type CrewCover, type AdminPresence, type Drop, type LivePatch, type AppSettings, DEFAULT_APP_SETTINGS, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX, type Sprout, type DirectChat, directRoom, isDirectRoom, otherInRoom, SUPPORT_REPLIES_MAX, type SetTimesTip, type VideoTag, VIDEO_TAGS_MAX } from '../models';
+import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, type ClipComment, type Comment, validClipId, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type CrewMeetup, type CrewLive, type CrewCover, type AdminPresence, type Drop, type LivePatch, type AppSettings, DEFAULT_APP_SETTINGS, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX, type Sprout, type DirectChat, directRoom, isDirectRoom, otherInRoom, SUPPORT_REPLIES_MAX, type SetTimesTip, type VideoTag, VIDEO_TAGS_MAX } from '../models';
 import { cleanBackdrop } from '../../profile/backdrops';
 import { cleanArtistName } from '../../../data/extraArtists';
 import { canGiveThemes, isGiftTheme } from '../../themes/gifts';
@@ -108,6 +108,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const meets = new Map<string, MeetSpot>();
   const meetups = new Map<string, CrewMeetup[]>();
   const votes = new Map<string, Map<string, CrewVotes>>();
+  const live = new Map<string, Map<string, CrewLive>>();
   const covers = new Map<string, CrewCover>();
   const reports: { id: string; by: string; target: ReportTarget; reason: ReportReason; note?: string; createdAt: string; status: 'open' | 'resolved' }[] = [];
   /** Support messages, and which emails have been confirmed (the support account needs it). */
@@ -1156,6 +1157,23 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         dmWatchers.delete(w);
       };
     },
+    async crewLive(crewId) {
+      readable();
+      if (network.down) throw new SocialError('network');
+      const crew = memberOf(crewId);
+      return [...(live.get(crewId)?.values() ?? [])].filter((l) => crew.members.includes(l.uid) && l.until > Date.now());
+    },
+    async shareLive(crewId, where) {
+      if (network.down) throw new SocialError('network');
+      memberOf(crewId);
+      const map = live.get(crewId) ?? new Map<string, CrewLive>();
+      map.set(me().uid, { uid: me().uid, lat: where.lat, lon: where.lon, ...(where.accuracy != null ? { accuracy: where.accuracy } : {}), until: Math.min(where.until, Date.now() + 24 * 3600_000), at: now() });
+      live.set(crewId, map);
+    },
+    async stopLive(crewId) {
+      if (network.down) throw new SocialError('network');
+      live.get(crewId)?.delete(me().uid);
+    },
     async crewVotes(crewId) {
       readable();
       if (network.down) throw new SocialError('network');
@@ -1636,5 +1654,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     reads.set(`${crewId}/${uid}`, now());
     readsChanged(crewId);
   };
-  return { service, gardens, glows, gardenBackups, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, meetups, votes, covers, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, orgs, orgMembers, orgRequests, orgViews, orgPosts, currentUser: () => current, ticketTaps, pushes, invites };
+  return { service, gardens, glows, gardenBackups, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, meetups, votes, live, covers, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, orgs, orgMembers, orgRequests, orgViews, orgPosts, currentUser: () => current, ticketTaps, pushes, invites };
 }

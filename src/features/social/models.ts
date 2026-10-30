@@ -311,6 +311,12 @@ export const MEETUP_NOTE_MAX = 140;
 /** A crew keeps at most this many meetups (the oldest past ones go first). */
 export const MEETUPS_MAX = 24;
 
+/**
+ * Where a crewmate is right now, when they chose to share it with the crew
+ * (festival days only; it switches itself off at `until`).
+ */
+export type CrewLive = { uid: string; lat: number; lon: number; accuracy?: number; at: string; until: number };
+
 /** A crew's group photo (any member can set it): the picture's link, who put it there and when. Shown only to the crew. */
 export type CrewCover = { url: string; by: string; at: string };
 

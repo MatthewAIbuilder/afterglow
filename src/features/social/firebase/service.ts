@@ -29,7 +29,7 @@ import { cleanArtistName } from '../../../data/extraArtists';
 import { cutVideoPart } from '../../memories/cutPart';
 import { trackFields } from '../../memories/track';
 import { cleanPushAddress, PUSH_ENDPOINT, pushMessages, updatePushKind, withToken, type PushAddress, type PushEvent } from '../../notifications/push';
-import { inviteFromDoc, profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, meetupFromDoc, votesFromDoc, crewCoverFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc, orgRequestFromDoc, orgDayFromDoc, orgPostFromDoc } from './mapping';
+import { inviteFromDoc, profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, meetupFromDoc, votesFromDoc, liveFromDoc, crewCoverFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc, orgRequestFromDoc, orgDayFromDoc, orgPostFromDoc } from './mapping';
 
 
 /** Where a chat room lives: a crew, or a 1-to-1 chat (`dm_<a>_<b>` is `dms/<a>_<b>`). */
@@ -289,6 +289,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     const reads = await getDocs(collection(db, 'crews', id, 'reads')).catch(() => null);
     for (const d of reads?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
     await deleteDoc(doc(db, 'crews', id, 'meta', 'meet')).catch(() => {});
+    const live = await getDocs(collection(db, 'crews', id, 'live')).catch(() => null);
+    for (const d of live?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
     const votes = await getDocs(collection(db, 'crews', id, 'votes')).catch(() => null);
     for (const d of votes?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
     const meetups = await getDocs(collection(db, 'crews', id, 'meetups')).catch(() => null);
@@ -1955,6 +1957,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         await deleteDoc(doc(db, 'crews', id, 'reads', user.uid)).catch(() => {});
         await deleteDoc(doc(db, 'crews', id, 'picks', user.uid));
         await deleteDoc(doc(db, 'crews', id, 'votes', user.uid)).catch(() => {});
+        await deleteDoc(doc(db, 'crews', id, 'live', user.uid)).catch(() => {});
         await updateDoc(crewRef, { members, owner: c.owner === user.uid ? members[0] : c.owner });
       }),
     endCrew: (id) =>
@@ -1987,6 +1990,7 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         await deleteDoc(doc(db, 'crews', id, 'reads', uid)).catch(() => {});
         await deleteDoc(doc(db, 'crews', id, 'picks', uid));
         await deleteDoc(doc(db, 'crews', id, 'votes', uid)).catch(() => {});
+        await deleteDoc(doc(db, 'crews', id, 'live', uid)).catch(() => {});
         const members = c.members.filter((m) => m !== uid);
         await updateDoc(crewRef, { members });
         // The invite link they came in with stops working, so they can't come straight back.
@@ -2198,6 +2202,32 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         (e) => onError?.(asSocialError(e)),
       );
     },
+    crewLive: (crewId) =>
+      guard(async () => {
+        const snap = await serverDocs(collection(fb().db, 'crews', crewId, 'live'));
+        const now = Date.now();
+        return snap.docs.flatMap((d) => {
+          const l = liveFromDoc(d.id, d.data());
+          return l && l.until > now ? [l] : [];
+        });
+      }),
+    shareLive: (crewId, where) =>
+      guard(async () => {
+        const user = me();
+        const round = (v: number) => Math.round(v * 1e5) / 1e5;
+        await setDoc(doc(fb().db, 'crews', crewId, 'live', user.uid), {
+          lat: round(where.lat),
+          lon: round(where.lon),
+          ...(where.accuracy != null && Number.isFinite(where.accuracy) ? { accuracy: Math.round(Math.min(where.accuracy, 100_000)) } : {}),
+          until: Math.min(where.until, Date.now() + 24 * 3600_000),
+          at: serverTimestamp(),
+        });
+      }),
+    stopLive: (crewId) =>
+      guard(async () => {
+        const user = me();
+        await deleteDoc(doc(fb().db, 'crews', crewId, 'live', user.uid));
+      }),
     crewVotes: (crewId) =>
       guard(async () => {
         const snap = await serverDocs(collection(fb().db, 'crews', crewId, 'votes'));
