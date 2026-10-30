@@ -216,6 +216,7 @@ export default function RootLayout() {
         />
         <Stack.Screen name="crew-story" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         <Stack.Screen name="year/[year]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="wrapped/[year]" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         <Stack.Screen
           name="sound-scope"
           options={{

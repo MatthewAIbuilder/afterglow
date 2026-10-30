@@ -16,7 +16,8 @@ import { arrivalNotices, bloomNotices, sproutNotices, wildNotices } from '../fea
 import { useSprouts } from './sprouts';
 import { themeGiftNotices } from '../features/themes/gifts';
 import { themeOf } from '../features/themes/themes';
-import { useRecapFestivals } from '../features/recap/useRecap';
+import { useRecapFestivals, useYear } from '../features/recap/useRecap';
+import { wrappedNotice } from '../features/recap/year';
 import type { Activity, CrewInvite, Profile } from '../features/social/models';
 import { useToday } from '../lib/useToday';
 import { t } from '../i18n';
@@ -193,7 +194,13 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
   const orgList = useMemo(() => (orgPosts && orgPosts.uid === uid && followedKey ? orgPostNotices(orgPosts.posts.filter((p) => followedKey.split(',').includes(p.orgId)), orgs) : []), [orgPosts, uid, followedKey, orgs]);
   // Festivals that ended lately with a recap for you.
   const recapFestivals = useRecapFestivals();
-  const recapList = useMemo(() => recapNotices(recapFestivals, today), [recapFestivals, today]);
+  // In December (and early January): your Wrapped.
+  const wrappedYear = today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
+  const wrapped = useYear(wrappedYear);
+  const recapList = useMemo(() => {
+    const w = wrappedNotice(today, () => !!wrapped);
+    return [...recapNotices(recapFestivals, today), ...(w ? [w] : [])];
+  }, [recapFestivals, today, wrapped]);
   // Sprouts you gave that someone picked up.
   const { gifts, blooms, garden, giftThemes } = useSprouts();
   const sproutList = useMemo(
