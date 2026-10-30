@@ -1,3 +1,4 @@
+import type { PlaylistRequest, PlaylistResult } from './playlist';
 import type { MusicErrorKind, MusicLibrarySnapshot, MusicProviderId } from './models';
 
 /**
@@ -27,6 +28,8 @@ export interface MusicService {
   fetchLibrary(now: Date): Promise<MusicLibrarySnapshot>;
   /** Forget this service's credentials on the phone (and revoke them where the service allows). */
   disconnect(): Promise<void>;
+  /** Make a private playlist in your library from these artists' top songs (where the service can). */
+  makePlaylist?(req: PlaylistRequest): Promise<PlaylistResult>;
 }
 
 /**

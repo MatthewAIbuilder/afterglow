@@ -223,8 +223,8 @@ describe('Spotify client', () => {
     expect(net.calls.some((c) => c.url.includes('evil'))).toBe(false);
   });
 
-  it('asks only for the three read scopes it needs', () => {
-    expect([...SPOTIFY_SCOPES].sort()).toEqual(['user-follow-read', 'user-library-read', 'user-top-read']);
+  it('asks only for the three read scopes it needs, and private playlists (Plan to playlist, only when you tap it)', () => {
+    expect([...SPOTIFY_SCOPES].sort()).toEqual(['playlist-modify-private', 'user-follow-read', 'user-library-read', 'user-top-read']);
   });
 });
 

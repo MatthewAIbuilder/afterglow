@@ -68,7 +68,19 @@ export function spotifyClient(opts: { fetch: FetchLike; sessions: SpotifySession
     }
   }
 
-  return { get };
+  /** A change on your account (making a playlist): the same sign-in and refresh as `get`. */
+  async function send(url: string, method: string, body: unknown): Promise<unknown> {
+    if (!url.startsWith(`${SPOTIFY_API}/`)) throw new MusicServiceError('unknown', 'Refused a link outside the Spotify API');
+    const call = async (t: string) => requestJson(opts.fetch, url, { method, headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, 'Spotify');
+    try {
+      return await call(await token());
+    } catch (e) {
+      if (!(e instanceof HttpStatusError) || e.status !== 401) throw e;
+    }
+    return call(await token(true));
+  }
+
+  return { get, send };
 }
 
 export async function readSpotifyLibrary(get: (url: string) => Promise<unknown>, limits = SPOTIFY_LIMITS): Promise<SpotifyLibrary> {

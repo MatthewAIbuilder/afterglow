@@ -78,3 +78,22 @@ export async function readAppleMusicLibrary(get: (path: string) => Promise<unkno
     gaps,
   };
 }
+
+/** A change in the library (making a playlist), with the same two tokens. */
+export function appleMusicPost(opts: { fetch: FetchLike; developerToken: string; userToken: string }) {
+  return async function post(path: string, body: unknown): Promise<unknown> {
+    if (!path.startsWith('/v1/me/')) throw new MusicServiceError('unknown', 'Refused a change outside your library');
+    try {
+      return await requestJson(
+        opts.fetch,
+        `${APPLE_MUSIC_API}${path}`,
+        { method: 'POST', headers: { Authorization: `Bearer ${opts.developerToken}`, 'Music-User-Token': opts.userToken, 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
+        'Apple Music',
+      );
+    } catch (e) {
+      if (e instanceof HttpStatusError && e.status === 401) throw new MusicServiceError('unavailable', 'Apple Music refused the developer token');
+      if (e instanceof HttpStatusError && e.status === 403) throw new MusicServiceError('expired', 'Apple Music no longer accepts the permission');
+      throw e;
+    }
+  };
+}

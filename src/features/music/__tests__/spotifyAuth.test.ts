@@ -58,7 +58,7 @@ describe('PKCE', () => {
 });
 
 describe('the authorize link', () => {
-  it('asks for a code with PKCE, the three read scopes, the redirect and a random state', async () => {
+  it('asks for a code with PKCE, the three read scopes and private playlists, the redirect and a random state', async () => {
     const r = await spotifyAuthRequest('client-123', REDIRECT, nodeCrypto);
     expect(r.url.startsWith('https://accounts.spotify.com/authorize?')).toBe(true);
     const p = params(r.url);
@@ -67,7 +67,7 @@ describe('the authorize link', () => {
       response_type: 'code',
       redirect_uri: REDIRECT,
       code_challenge_method: 'S256',
-      scope: 'user-library-read user-follow-read user-top-read',
+      scope: 'user-library-read user-follow-read user-top-read playlist-modify-private',
     });
     expect(p.state).toBe(r.state);
     expect(p.state.length).toBeGreaterThanOrEqual(32);
