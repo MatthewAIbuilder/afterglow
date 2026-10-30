@@ -945,6 +945,22 @@ service cloud.firestore {
           || get(path('crews', id)).data.owner == me());
       }
 
+      // Where a member is right now, only when they chose to share it with the crew (festival days, with
+      // an end at most a day ahead): written by that member while in the crew, with the server's time;
+      // read by members; removed by that member or the owner (and when they leave).
+      match /live/{uid} {
+        allow read: if signedIn() && me() in get(path('crews', id)).data.members;
+        allow create, update: if signedIn() && me() == uid && me() in get(path('crews', id)).data.members
+          && request.resource.data.keys().hasOnly(['lat', 'lon', 'accuracy', 'until', 'at'])
+          && request.resource.data.lat is number && request.resource.data.lat >= -90 && request.resource.data.lat <= 90
+          && request.resource.data.lon is number && request.resource.data.lon >= -180 && request.resource.data.lon <= 180
+          && (!('accuracy' in request.resource.data) || request.resource.data.accuracy is number)
+          && request.resource.data.until is number
+          && request.resource.data.until <= request.time.toMillis() + 24 * 3600 * 1000 + 60000
+          && request.resource.data.at == request.time;
+        allow delete: if signedIn() && (me() == uid || get(path('crews', id)).data.owner == me());
+      }
+
       // Each member's votes on the lineup (Must see / Maybe / Skip per act, a side per clash): written by
       // that member while in the crew, with the server's time; read by members; removed by that member or
       // the owner (and when they leave).

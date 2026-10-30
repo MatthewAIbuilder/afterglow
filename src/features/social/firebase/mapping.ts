@@ -8,7 +8,7 @@ import { cleanWith } from '../../memories/b2b';
 import { cleanClip } from '../../memories/trim';
 import { cleanBackdrop } from '../../profile/backdrops';
 import { SOUND_TAGS, type SoundTag } from '../../../data/models';
-import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, type Comment, type ClipComment, MEET_SPOT_MAX, type MeetSpot, type CrewCover, type CrewMeetup, MEETUP_NOTE_MAX, MEETUP_PLACE_MAX, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, LEVEL_MAX, REPORT_REASONS, DROP_STATUSES, type Drop, type DropFile, type LivePatch, type Privileges, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportTopic, type Sprout, type SetTimesTip, TIP_PHOTO_MAX, TIP_TEXT_MAX, type SupportReply, type VideoTag } from '../models';
+import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, type Comment, type ClipComment, MEET_SPOT_MAX, type MeetSpot, type CrewCover, type CrewLive, type CrewMeetup, MEETUP_NOTE_MAX, MEETUP_PLACE_MAX, COMMENT_MAX, FLAIR_KINDS, FOUNDERS_MAX, LEVEL_MAX, REPORT_REASONS, DROP_STATUSES, type Drop, type DropFile, type LivePatch, type Privileges, type Profile, type ReportRecord, type SharedMemory, type Standing, type SupportMessage, type SupportTopic, type Sprout, type SetTimesTip, TIP_PHOTO_MAX, TIP_TEXT_MAX, type SupportReply, type VideoTag } from '../models';
 import { SocialError, type SocialErrorKind } from '../service';
 import { GIFT_NOTE_MAX } from '../../finds/finds';
 import { cleanPostInput, isCounter, isEventId, type OrgDay, type OrgPost, type OrgRequest, REQUEST_KINDS, REQUEST_REPLY_MAX, REQUEST_TEXT_MAX } from '../../organizers/organizers';
@@ -271,6 +271,15 @@ export function meetSpotFromDoc(d: unknown): MeetSpot | null {
   const by = str(o.by);
   if (!text || !by) return null;
   return { text: text.slice(0, MEET_SPOT_MAX), by, at: timeOf(o.at) ?? '' };
+}
+
+/** Where a crewmate is, from `crews/{id}/live/{uid}`. */
+export function liveFromDoc(uid: string, d: unknown): CrewLive | null {
+  if (!d || typeof d !== 'object') return null;
+  const o = d as Record<string, unknown>;
+  const ok = (v: unknown, lo: number, hi: number): v is number => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
+  if (!ok(o.lat, -90, 90) || !ok(o.lon, -180, 180) || !ok(o.until, 0, 8.64e15)) return null;
+  return { uid, lat: o.lat, lon: o.lon, ...(ok(o.accuracy, 0, 100_000) ? { accuracy: o.accuracy } : {}), at: timeOf(o.at) ?? '', until: o.until };
 }
 
 /** One member's votes in a crew, from `crews/{id}/votes/{uid}`. */

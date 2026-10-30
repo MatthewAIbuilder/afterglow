@@ -15,6 +15,7 @@ import { CrewCoverPhoto } from '../../features/crews/CrewCoverPhoto';
 import { MeetSpotCard } from '../../features/crews/MeetSpotCard';
 import { MeetupsCard } from '../../features/crews/MeetupsCard';
 import { VoteCard } from '../../features/crews/VoteCard';
+import { CrewMapCard } from '../../features/crews/CrewMapCard';
 import { clashSlots, mergeStars, starsFromVotes, tallyLineup, wanted } from '../../features/crews/votes';
 import { useCrewVotes } from '../../state/crewVotes';
 import { CrewChatCard } from '../../features/crews/CrewChatCard';
@@ -485,6 +486,7 @@ function Member({
       <CrewLatest crew={crew} nameOf={who} />
       <MeetSpotCard crew={crew} />
       <MeetupsCard crew={crew} nameOf={who} />
+      {festival ? <CrewMapCard crew={crew} festival={festival} nameOf={who} /> : null}
 
       {festival && others.length ? <VoteCard crew={crew} votes={crewVotes.votes} lineup={festival.lineup} /> : null}
 

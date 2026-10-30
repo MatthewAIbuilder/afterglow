@@ -23,6 +23,7 @@ import { forgetSetsSeen } from '../src/state/setsSeen';
 import { forgetWeather } from '../src/state/weather';
 import { forgetCrewVotes } from '../src/state/crewVotesStore';
 import { forgetFitChecks } from '../src/state/fitChecks';
+import { forgetCrewLive } from '../src/state/crewLiveStore';
 import { forgetCollectionSeen } from '../src/state/collectionSeen';
 import { forgetGardenGlows } from '../src/state/gardenGlows';
 import { forgetGoingShows } from '../src/state/goingShows';
@@ -59,6 +60,7 @@ beforeEach(() => {
   forgetWeather();
   forgetCrewVotes();
   forgetFitChecks();
+  forgetCrewLive();
   forgetCollectionSeen();
   forgetGardenGlows();
   forgetGoingShows();

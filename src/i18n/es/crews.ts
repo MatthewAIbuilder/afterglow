@@ -521,4 +521,16 @@ export const es_crews: Dictionary = {
   'Must see: {names}': 'Imprescindible: {names}',
   'Maybe: {names}': 'Quizás: {names}',
   'Skip: {names}': 'Paso: {names}',
+  // Crew on the map.
+  'until {day} {time}': 'hasta el {day} a las {time}',
+  'Allow location to share where you are with your crew.': 'Permite la ubicación para compartir dónde estás con tu grupo.',
+  'Crew on the map': 'El grupo en el mapa',
+  'Share where I am with {crew}': 'Compartir dónde estoy con {crew}',
+  'On {until}. Only your crew sees it, and it switches itself off.': 'Activado {until}. Solo lo ve tu grupo y se desactiva solo.',
+  'Only this crew, only while the festival is on. It switches itself off.': 'Solo este grupo y solo mientras dura el festival. Se desactiva solo.',
+  '{distance} away, {direction}': 'a {distance}, hacia el {direction}',
+  'sharing where they are': 'comparte dónde está',
+  'Sharing where they are': 'Comparte dónde está',
+  'Nobody in the crew is sharing where they are yet.': 'Nadie del grupo comparte todavía dónde está.',
+  '{n} min ago': 'hace {n} min',
 };

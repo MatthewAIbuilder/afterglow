@@ -9,7 +9,7 @@ import type { PublicResident } from '../sprouts/publicGarden';
 import type { Kandi, KandiInput, OpenKandiInput, PublicKandi } from '../kandi/kandi';
 import type { DecorId } from '../sprouts/decor';
 import type { Org, OrgCounter, OrgDay, OrgPost, OrgPostInput, OrgRequest, OrgRequestInput, OrgRequestStatus } from '../organizers/organizers';
-import type { Published, Activity, ClipComment, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewMeetup, CrewMeetupInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, CrewCover, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, AppSettings, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic, Sprout, SproutInput, DirectChat, SetTimesTip, VideoTag } from './models';
+import type { Published, Activity, ClipComment, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewLive, CrewMeetup, CrewMeetupInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, CrewCover, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, AppSettings, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic, Sprout, SproutInput, DirectChat, SetTimesTip, VideoTag } from './models';
 import type { ProviderProof } from './providerAuth';
 
 /**
@@ -330,6 +330,12 @@ export interface SocialService {
   openDirectChat(uid: string, org?: string): Promise<string>;
   /** Follow your 1-to-1 chats, now and whenever one starts. Returns a stop function. */
   watchDirectChats(listener: (chats: DirectChat[]) => void, onError?: (e: SocialError) => void): () => void;
+  /** Where crewmates who chose to share it are right now (members only; past their `until`, left out). */
+  crewLive(crewId: string): Promise<CrewLive[]>;
+  /** Share where you are with a crew, until a time (at most a day ahead). */
+  shareLive(crewId: string, where: { lat: number; lon: number; accuracy?: number; until: number }): Promise<void>;
+  /** Stop sharing where you are with a crew (removes it). */
+  stopLive(crewId: string): Promise<void>;
   /** Everyone's votes on the lineup in a crew (members only). */
   crewVotes(crewId: string): Promise<CrewVotes[]>;
   /** Your votes in a crew (the whole set, replacing what was there). */

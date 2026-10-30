@@ -1,6 +1,7 @@
 import { forgetSetsSeen } from './setsSeen';
 import { forgetCrewVotes } from './crewVotesStore';
 import { forgetFitChecks } from './fitChecks';
+import { forgetCrewLive } from './crewLiveStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
@@ -39,6 +40,7 @@ function forgetShared() {
   forgetSetsSeen();
   forgetCrewVotes();
   forgetFitChecks();
+  forgetCrewLive();
   forgetBadgeClaims();
   forgetCloseFriends();
   forgetDailyQuests();
