@@ -120,3 +120,19 @@ export function useCrewVotes(crewId: string | undefined) {
   const votes = [...list.filter((v) => v.uid !== uid), ...(mine ? [mine] : list.filter((v) => v.uid === uid))];
   return { votes, mine, vote, pick, waiting: !!draft?.dirty, loaded: others.crewId === crewId && others.loaded };
 }
+
+/** How many acts you've voted on with your crews (your busiest crew), for the Crew vote badge. */
+export function useMyCrewVoteCount(): number {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    let live = true;
+    const read = () => void load().then((d) => live && setN(Math.max(0, ...Object.values(d).map((x) => Object.keys(x.lineup).length))));
+    listeners.add(read);
+    read();
+    return () => {
+      live = false;
+      listeners.delete(read);
+    };
+  }, []);
+  return n;
+}

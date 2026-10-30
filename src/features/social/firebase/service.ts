@@ -12,7 +12,7 @@ import { Platform } from 'react-native';
 import { deleteObject, getDownloadURL, getStorage, ref, uploadBytesResumable, type FirebaseStorage } from 'firebase/storage';
 import type { FIREBASE_CONFIG } from '../../../config/social';
 import { firebaseConfigured } from '../../../config/social';
-import { appSettingsFromDoc, ARTISTS_SHOWN, CHAT_MAX, CHAT_SEND_TIMEOUT_MS, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, DROP_FILE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type SocialUser, type ClipComment, type Comment, validClipId, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, MEETUPS_MAX, type Profile, DM_PREFIX, directRoom, isDirectRoom, SUPPORT_REPLIES_MAX, type ReportRecord, TIP_TEXT_MAX, VIDEO_TAGS_MAX, type VideoTag } from '../models';
+import { appSettingsFromDoc, ARTISTS_SHOWN, CHAT_MAX, CHAT_SEND_TIMEOUT_MS, type CrewMessage, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, DROP_FILE_MAX, FOUNDERS_MAX, SUPPORT_MAX, type Activity, type SocialUser, type ClipComment, type Comment, validClipId, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, CREW_ITEM_MAX, MEET_SPOT_MAX, MEETUPS_MAX, type Profile, DM_PREFIX, directRoom, isDirectRoom, SUPPORT_REPLIES_MAX, type ReportRecord, TIP_TEXT_MAX, VIDEO_TAGS_MAX, type VideoTag } from '../models';
 import { SocialError, MAX_SHARE_BYTES, type SocialService } from '../service';
 import { cleanComment, cleanCrewName, cleanProfileInput, commentProblem, crewNameProblem, handleProblem, normalizeHandle, profileProblems } from '../validate';
 import { throwbackShares } from '../../memories/throwbackLimit';
@@ -30,7 +30,7 @@ import { cleanArtistName } from '../../../data/extraArtists';
 import { cutVideoPart } from '../../memories/cutPart';
 import { trackFields } from '../../memories/track';
 import { cleanPushAddress, PUSH_ENDPOINT, pushMessages, updatePushKind, withToken, type PushAddress, type PushEvent } from '../../notifications/push';
-import { inviteFromDoc, profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, meetupFromDoc, votesFromDoc, liveFromDoc, venueMapFromDoc, crewCoverFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc, orgRequestFromDoc, orgDayFromDoc, orgPostFromDoc } from './mapping';
+import { inviteFromDoc, profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, meetupFromDoc, votesFromDoc, liveFromDoc, venueMapFromDoc, crewItemFromDoc, crewCoverFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc, orgRequestFromDoc, orgDayFromDoc, orgPostFromDoc } from './mapping';
 
 
 /** Where a chat room lives: a crew, or a 1-to-1 chat (`dm_<a>_<b>` is `dms/<a>_<b>`). */
@@ -290,6 +290,8 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     const reads = await getDocs(collection(db, 'crews', id, 'reads')).catch(() => null);
     for (const d of reads?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
     await deleteDoc(doc(db, 'crews', id, 'meta', 'meet')).catch(() => {});
+    const list = await getDocs(collection(db, 'crews', id, 'list')).catch(() => null);
+    for (const d of list?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
     const live = await getDocs(collection(db, 'crews', id, 'live')).catch(() => null);
     for (const d of live?.docs ?? []) await deleteDoc(d.ref).catch(() => {});
     const votes = await getDocs(collection(db, 'crews', id, 'votes')).catch(() => null);
@@ -2203,6 +2205,35 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         (e) => onError?.(asSocialError(e)),
       );
     },
+    crewList: (crewId) =>
+      guard(async () => {
+        const snap = await serverDocs(collection(fb().db, 'crews', crewId, 'list'));
+        return snap.docs
+          .flatMap((d) => {
+            const x = crewItemFromDoc(d.id, d.data());
+            return x ? [x] : [];
+          })
+          .sort((a, b) => a.at.localeCompare(b.at));
+      }),
+    addCrewItem: (crewId, raw) =>
+      guard(async () => {
+        const user = me();
+        const text = raw.replace(/\s+/g, ' ').trim().slice(0, CREW_ITEM_MAX);
+        if (!text) throw new SocialError('unknown');
+        const ref_ = doc(collection(fb().db, 'crews', crewId, 'list'));
+        await setDoc(ref_, { text, by: user.uid, at: serverTimestamp() });
+        return { id: ref_.id, text, by: user.uid, at: new Date().toISOString() };
+      }),
+    setCrewItemDone: (crewId, itemId, done) =>
+      guard(async () => {
+        const user = me();
+        await updateDoc(doc(fb().db, 'crews', crewId, 'list', itemId), done ? { done: true, doneBy: user.uid } : { done: false, doneBy: deleteField() });
+      }),
+    removeCrewItem: (crewId, itemId) =>
+      guard(async () => {
+        me();
+        await deleteDoc(doc(fb().db, 'crews', crewId, 'list', itemId));
+      }),
     venueMap: (festivalId) =>
       guard(async () => {
         return venueMapFromDoc(festivalId, (await readDoc(doc(fb().db, 'venueMaps', festivalId))).data());

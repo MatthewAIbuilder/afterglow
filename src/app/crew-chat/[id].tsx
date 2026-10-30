@@ -1,3 +1,4 @@
+import { CrewPulse } from '../../features/crews/CrewPulse';
 import { useNetworkState } from 'expo-network';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -183,6 +184,8 @@ export default function CrewChatScreen() {
     const rules = direct ? DM_RULES : CHAT_RULES;
     return (
       <>
+        {/* Where everyone last checked in, while the festival is on. */}
+        {crew && canCheckIn ? <CrewPulse crew={crew} profiles={profiles} me={me} /> : null}
         <View style={styles.rules} accessible accessibilityLabel={`${direct ? t('Chat rules.') : t('Crew chat rules.')} ${rules.map((r) => t(r)).join(' ')}`}>
           <Text style={styles.rulesTitle}>{direct ? t('Only you and {name} can see this chat', { name: otherName }) : t('Only people in this crew can see this chat')}</Text>
           {rules.map((r) => (

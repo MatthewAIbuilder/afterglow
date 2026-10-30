@@ -317,6 +317,11 @@ export const MEETUPS_MAX = 24;
  */
 export type CrewLive = { uid: string; lat: number; lon: number; accuracy?: number; at: string; until: number };
 
+/** The crew's list: who's bringing what (sunscreen, a charger, the totem), ticked off by anyone. */
+export type CrewItem = { id: string; text: string; by: string; at: string; done?: boolean; doneBy?: string };
+export const CREW_ITEM_MAX = 60;
+export const CREW_ITEMS_MAX = 50;
+
 /** A crew's group photo (any member can set it): the picture's link, who put it there and when. Shown only to the crew. */
 export type CrewCover = { url: string; by: string; at: string };
 

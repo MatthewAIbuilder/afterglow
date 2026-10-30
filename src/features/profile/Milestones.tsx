@@ -41,6 +41,8 @@ const COLORS: Record<MilestoneId | QuestId, [string, string]> = {
   'bring-the-crew': ['#A97CFF', '#2C8FB8'],
   legend: ['#FFF1A8', '#C9962B'],
   'came-with': ['#9AFFD8', '#7A3CC8'],
+  'full-crew': ['#FFC38A', '#C2416B'],
+  'crew-vote': ['#B9F2FF', '#4C5BD4'],
   // Side quests.
   plur: ['#FF7EB6', '#7A3CC8'],
   wavelength: ['#6FC3FF', '#7A3CC8'],
@@ -379,6 +381,25 @@ function Glyph({ id, stroke }: { id: MilestoneId | QuestId; stroke: string }) {
           <Path d="M10 14 L8 16 A3.5 3.5 0 0 1 3 11 L5.5 8.5 A3.5 3.5 0 0 1 10.5 8.5" {...p} />
           <Path d="M14 10 L16 8 A3.5 3.5 0 0 1 21 13 L18.5 15.5 A3.5 3.5 0 0 1 13.5 15.5" {...p} />
           <Path d="M9.5 14.5 L14.5 9.5" {...p} />
+        </G>
+      );
+    case 'full-crew':
+      // Five heads in a row.
+      return (
+        <G>
+          {[4, 8, 12, 16, 20].map((x, i) => (
+            <Circle key={x} cx={x} cy={i % 2 ? 9 : 11} r={2} {...p} />
+          ))}
+          <Path d="M2.5 19 Q12 13 21.5 19" {...p} />
+        </G>
+      );
+    case 'crew-vote':
+      // A ballot going into a box.
+      return (
+        <G>
+          <Path d="M4 13 H20 V20 H4 Z" {...p} />
+          <Path d="M9 13 V5 H15 V13" {...p} />
+          <Path d="M10.5 9 L12 10.5 L14 7.5" {...p} />
         </G>
       );
     case 'og':
