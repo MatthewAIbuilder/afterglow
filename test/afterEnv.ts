@@ -19,6 +19,8 @@ import { forgetGardenLayout } from '../src/state/gardenLayout';
 import { forgetShowcase } from '../src/state/showcase';
 import { forgetDecorSeen } from '../src/state/decorSeen';
 import { forgetInvites } from '../src/state/invitesStore';
+import { forgetSetsSeen } from '../src/state/setsSeen';
+import { forgetWeather } from '../src/state/weather';
 import { forgetCollectionSeen } from '../src/state/collectionSeen';
 import { forgetGardenGlows } from '../src/state/gardenGlows';
 import { forgetGoingShows } from '../src/state/goingShows';
@@ -51,6 +53,8 @@ beforeEach(() => {
   forgetShowcase();
   forgetDecorSeen();
   forgetInvites();
+  forgetSetsSeen();
+  forgetWeather();
   forgetCollectionSeen();
   forgetGardenGlows();
   forgetGoingShows();

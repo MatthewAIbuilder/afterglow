@@ -9,6 +9,7 @@ import { liveNow, liveRoute } from './live';
 import type { Schedule, TimedPick } from './plan';
 import { clockTime, type DayRoute, type RouteStop } from './route';
 import { dayWord, t } from '../../i18n';
+import { AskCard } from '../seen/AskCard';
 
 /**
  * During the festival, above your plan: what to watch right now and what's
@@ -16,7 +17,14 @@ import { dayWord, t } from '../../i18n';
  */
 export function LiveNow({ festival, schedule, route }: { festival: Festival; schedule: Schedule; route?: DayRoute[] }) {
   const now = useNow();
-  if (route) return <RouteNow festival={festival} route={route} now={now} />;
+  if (route)
+    return (
+      <>
+        {/* How was the set you just left? */}
+        <AskCard festival={festival} route={route} />
+        <RouteNow festival={festival} route={route} now={now} />
+      </>
+    );
   const live = liveNow(festival, schedule, now);
   if (!live) return null;
 

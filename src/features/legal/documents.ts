@@ -13,7 +13,7 @@ export type LegalSection = { heading?: string; paragraphs: string[] };
 export type LegalDocument = { id: LegalDoc; title: string; updated: string; intro: string; sections: LegalSection[] };
 
 /** When these words last changed (shown as "Last updated"). */
-export const LEGAL_UPDATED = 'October 18, 2026';
+export const LEGAL_UPDATED = 'October 30, 2026';
 
 /** Who runs Afterglow, named on the Privacy Policy and the Terms. */
 export const OPERATOR = 'Matthew Smith, in Florida, United States';
@@ -59,6 +59,8 @@ export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL, opts:
               'Your memories (videos you add) stay on your phone until you choose to share one. When you add a video, Afterglow may read when and where it was filmed to guess the festival and set. Only the city and region are kept, on your phone; exact coordinates are not stored.',
               'If you turn on festivals near you, Afterglow asks for your location, rounds it to about a kilometre and keeps it on your phone (or in your browser) to show how far festivals are. Your phone’s maps service may be asked which town that is, and where a festival’s venue is. It isn’t sent to us, and you can turn it off on the Festivals tab.',
               'Festival trail (only if you turn it on): on the days a festival you’re going to is on, Afterglow records where you walk, including while the app is closed (it needs “Always” location for that), and stops by itself when the festival is over. It draws your day on a map, with how far you walked. It is kept only on your phone, never sent to us or shown to anyone, and removed when you delete it in the app or delete the app.',
+              'Find my way back: if you save where you parked, camped or any spot, Afterglow keeps that place on your phone (or in your browser) to point you back to it. It is never sent to us, and Forget removes it.',
+              'Festival weather: for a festival coming up soon, Afterglow asks Open-Meteo (a free weather service) for the forecast at the festival’s location, not yours. Nothing about you is sent with it.',
               'If you connect Spotify or Apple Music, your sign-in is kept in your phone’s secure storage and a summary of your library (which artists, not song titles or playlists) is kept on your phone to shape your recommendations. None of it is sent to us. Disconnecting removes it.',
               'Reminders are scheduled on your phone. If you allow notifications and are signed in, your phone’s notification address is stored with your account: in each crew and 1-to-1 chat you’re in (so the people there can notify you of their messages, check-ins and meeting spot), and on its own for friends who follow you back (crew invites) and Afterglow support (replies to your messages). Turning notifications off in your phone’s settings stops them, and signing out removes this phone’s address.',
               'Messages you write in a crew’s chat are seen only by the people in that crew, with when you wrote them and when they arrived; leaving the crew removes yours and ending it removes them all. 1-to-1 messages are seen only by the two of you, and deleting your account removes yours. Afterglow support can read crew chats and 1-to-1 messages, and does so only when handling a report or a safety issue; it can remove messages that break the rules. Joining a crew also records that you agreed to its chat rules and how you were invited.',

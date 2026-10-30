@@ -152,6 +152,16 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="rate-set"
+          options={{
+            presentation: 'formSheet',
+            sheetAllowedDetents: [0.75, 0.95],
+            sheetGrabberVisible: true,
+            sheetCornerRadius: 32,
+            contentStyle: { backgroundColor: SHEET_BACKGROUND },
+          }}
+        />
+        <Stack.Screen
           name="feedback"
           options={{
             presentation: 'formSheet',

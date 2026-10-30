@@ -1,3 +1,4 @@
+import { forgetSetsSeen } from './setsSeen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
@@ -33,6 +34,7 @@ const storage: ScopeStorage = {
 /** The shared stores kept in memory: forgotten on a switch, so they read the new account's. */
 function forgetShared() {
   forgetAccountGlow();
+  forgetSetsSeen();
   forgetBadgeClaims();
   forgetCloseFriends();
   forgetDailyQuests();
