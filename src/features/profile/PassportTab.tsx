@@ -132,6 +132,17 @@ export function PassportTab({ passport, artistOf, loves, recapIds, today, onFind
           >
             <Text style={styles.mapLinkText}>{t('Sets you’ve seen')}</Text>
           </Pressable>
+          <Pressable
+            onPress={() => {
+              haptic.select();
+              router.push('/fits');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('Your fit checks: what you wore, day by day')}
+            style={({ pressed }) => [styles.mapLink, pressed && { opacity: 0.7 }]}
+          >
+            <Text style={styles.mapLinkText}>{t('Your fit checks')}</Text>
+          </Pressable>
         </>
       )}
       {children}

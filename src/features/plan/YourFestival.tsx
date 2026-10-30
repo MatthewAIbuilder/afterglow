@@ -22,6 +22,7 @@ import { useCatalog } from '../../state/catalog';
 import { usePlan } from '../../state/plan';
 import { ArtistAvatar } from '../../components/ArtistAvatar';
 import { t, tn } from '../../i18n';
+import { FitCheckCard } from '../fitCheck/FitCheckCard';
 
 /**
  * "Your festival": who to see, from your live taste. Before set times it is a
@@ -117,6 +118,7 @@ export function YourFestival({ festival }: { festival: Festival }) {
       ) : schedule ? (
         <>
           {maybeLive && <LiveNow festival={festival} schedule={schedule} route={route} />}
+          {maybeLive ? <FitCheckCard festival={festival} /> : null}
           <Timetable festival={festival} schedule={schedule} route={route} initialDay={tonight} />
         </>
       ) : byDayPossible ? (
