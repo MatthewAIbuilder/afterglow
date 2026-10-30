@@ -1,5 +1,6 @@
 import { cleanMeetupInput, meetupTime } from '../../crews/meetups';
 import { cleanVotes } from '../../crews/votes';
+import { cleanVenueMap } from '../../venueMap/venueMap';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 import * as FirebaseAuth from 'firebase/auth';
@@ -29,7 +30,7 @@ import { cleanArtistName } from '../../../data/extraArtists';
 import { cutVideoPart } from '../../memories/cutPart';
 import { trackFields } from '../../memories/track';
 import { cleanPushAddress, PUSH_ENDPOINT, pushMessages, updatePushKind, withToken, type PushAddress, type PushEvent } from '../../notifications/push';
-import { inviteFromDoc, profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, meetupFromDoc, votesFromDoc, liveFromDoc, crewCoverFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc, orgRequestFromDoc, orgDayFromDoc, orgPostFromDoc } from './mapping';
+import { inviteFromDoc, profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, meetupFromDoc, votesFromDoc, liveFromDoc, venueMapFromDoc, crewCoverFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc, orgRequestFromDoc, orgDayFromDoc, orgPostFromDoc } from './mapping';
 
 
 /** Where a chat room lives: a crew, or a 1-to-1 chat (`dm_<a>_<b>` is `dms/<a>_<b>`). */
@@ -2202,6 +2203,31 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
         (e) => onError?.(asSocialError(e)),
       );
     },
+    venueMap: (festivalId) =>
+      guard(async () => {
+        return venueMapFromDoc(festivalId, (await readDoc(doc(fb().db, 'venueMaps', festivalId))).data());
+      }),
+    saveVenueMap: (map) =>
+      guard(async () => {
+        const user = me();
+        const clean = cleanVenueMap(map.festivalId, map);
+        if (!clean || clean.anchors.length < 3) throw new SocialError('unknown');
+        await setDoc(doc(fb().db, 'venueMaps', map.festivalId), {
+          image: clean.image,
+          width: clean.width,
+          height: clean.height,
+          anchors: clean.anchors,
+          pins: clean.pins,
+          by: user.uid,
+          updatedAt: serverTimestamp(),
+        });
+      }),
+    uploadVenueMapImage: (festivalId, uri, contentType) =>
+      guard(async () => {
+        me();
+        const ext = contentType === 'image/png' ? 'png' : contentType === 'image/webp' ? 'webp' : 'jpg';
+        return upload(`venueMaps/${festivalId}/map-${Date.now()}.${ext}`, uri, contentType);
+      }),
     crewLive: (crewId) =>
       guard(async () => {
         const snap = await serverDocs(collection(fb().db, 'crews', crewId, 'live'));

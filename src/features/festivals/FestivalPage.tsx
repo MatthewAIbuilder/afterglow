@@ -1,4 +1,5 @@
 import { WeatherCard } from '../weather/WeatherCard';
+import { VenueMapCard } from '../venueMap/VenueMapCard';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { type ReactNode, useMemo, useState } from 'react';
@@ -330,6 +331,8 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above, be
                 ) : null}
                 {/* From about two weeks out: the weather on its days, and what to bring. */}
                 <WeatherCard festival={whole} />
+                {/* The festival's own map, when HQ has added it. */}
+                <VenueMapCard festival={whole} />
               </View>
             ) : (
               <View style={styles.pad}>

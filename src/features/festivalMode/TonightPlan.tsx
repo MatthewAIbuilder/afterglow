@@ -1,6 +1,7 @@
 import { useBatterySaver } from '../../state/batterySaver';
 import { chooseSaver, SAVER_LABEL } from '../care/saver';
 import { FitCheckCard } from '../fitCheck/FitCheckCard';
+import { VenueMapCard } from '../venueMap/VenueMapCard';
 import { WeatherCard } from '../weather/WeatherCard';
 import { dayStarts } from '../notifications/setReminders';
 import { router } from 'expo-router';
@@ -95,6 +96,7 @@ export function TonightPlan({ mode }: { mode: ModeNow }) {
 
         {/* Battery saver, one tap away on the night. */}
         {tonight ? <SaverPill /> : null}
+        <VenueMapCard festival={festival} />
         {/* Tonight's weather, and what it means for looking after yourself. */}
         {tonight && nightDate ? <WeatherCard festival={festival} only={nightDate} /> : null}
         {/* Today's outfit, yours and your crew's. */}

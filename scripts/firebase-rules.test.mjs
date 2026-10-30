@@ -1658,6 +1658,23 @@ await t('push addresses: only the people who may notify you read them; each writ
   await assertFails(deleteDoc(doc(P('uidP1'), 'dms', 'uidP1_uidP3', 'push', 'uidP3')));
   await assertSucceeds(deleteDoc(doc(P('uidP3'), 'dms', 'uidP1_uidP3', 'push', 'uidP3')));
 });
+await t('festival maps: anyone reads them, only HQ writes them, with three anchors and the server time', async () => {
+  const H = env.authenticatedContext('uidHQ', { email: 'afterglowmusic.support@gmail.com', email_verified: true });
+  const map = (over = {}) => ({
+    image: 'https://firebasestorage.googleapis.com/v0/b/demo-afterglow.appspot.com/o/venueMaps%2Fedc%2Fmap-1.jpg?alt=media',
+    width: 2000, height: 1400,
+    anchors: [{ x: 10, y: 10, lat: 28.5, lon: -81.4 }, { x: 1900, y: 20, lat: 28.5, lon: -81.39 }, { x: 30, y: 1300, lat: 28.49, lon: -81.4 }],
+    pins: [{ id: 'p1', kind: 'stage', label: 'Kinetic Field', x: 500, y: 600, stageId: 'kinetic' }],
+    by: 'uidHQ', updatedAt: serverTimestamp(), ...over,
+  });
+  await assertSucceeds(setDoc(doc(H.firestore(), 'venueMaps', 'edc'), map()));
+  await assertSucceeds(getDoc(doc(env.unauthenticatedContext().firestore(), 'venueMaps', 'edc')));
+  await assertFails(setDoc(doc(A.firestore(), 'venueMaps', 'edc'), map({ by: 'uidA' })));
+  await assertFails(setDoc(doc(H.firestore(), 'venueMaps', 'edc'), map({ image: 'https://example.com/map.jpg' })));
+  await assertFails(setDoc(doc(H.firestore(), 'venueMaps', 'edc'), map({ anchors: [] })));
+  await assertFails(setDoc(doc(H.firestore(), 'venueMaps', 'edc'), map({ updatedAt: Date.now() })));
+  await assertFails(deleteDoc(doc(A.firestore(), 'venueMaps', 'edc')));
+});
 console.log(`\n${pass} passed, ${fail} failed`);
 await env.cleanup();
 process.exit(fail ? 1 : 0);

@@ -8,6 +8,8 @@ import { useTaste } from '../../state/taste';
 import { buildSchedule, rankLineup } from './plan';
 import { festivalRoute } from './route';
 import { planCard, planText, routeText } from './share';
+import { useVenueMap } from '../../state/venueMaps';
+import { fitOf, stageWalk } from '../venueMap/venueMap';
 
 /**
  * Your plan for a festival, from your live taste and must-sees: ranked picks,
@@ -22,6 +24,12 @@ export function useFestivalPlan(festival: Festival) {
   const edits = useMemo(() => editsAt(festival.id), [editsAt, festival.id]);
   // Your hours each day (arrive, leave, breaks): the route plans inside them.
   const { hours } = useDayHours(festival.id);
+  // Real walks between stages, when the festival has a map with its stages pinned.
+  const venue = useVenueMap(festival.id);
+  const walkBetween = useMemo(() => {
+    const fit = venue ? fitOf(venue.anchors) : undefined;
+    return venue && fit ? (a: string, b: string) => stageWalk(venue, fit, a, b) : undefined;
+  }, [venue]);
 
   const picks = useMemo(
     () => rankLineup({ festival, artists, taste, informed, pinned: mustSeesAt(festival.id), edits }),
@@ -30,8 +38,8 @@ export function useFestivalPlan(festival: Festival) {
   const schedule = useMemo(() => (festival.sets?.length ? buildSchedule(festival, picks) : null), [festival, picks]);
   // Every day set to set, from the same live taste and must-sees.
   const route = useMemo(
-    () => (festival.sets?.length ? festivalRoute({ festival, artists, taste, informed, pinned: mustSeesAt(festival.id), hours, edits }) : undefined),
-    [festival, artists, taste, informed, mustSeesAt, hours, edits],
+    () => (festival.sets?.length ? festivalRoute({ festival, artists, taste, informed, pinned: mustSeesAt(festival.id), hours, edits, walkBetween }) : undefined),
+    [festival, artists, taste, informed, mustSeesAt, hours, edits, walkBetween],
   );
   // Once set times are out, you share the whole route; before, your picks.
   const text = useMemo(

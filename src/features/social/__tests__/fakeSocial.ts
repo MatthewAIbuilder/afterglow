@@ -12,6 +12,7 @@ import { cleanNote, cleanPublicKandi, cleanWord, isCharm, isPattern, KANDI_ID, t
 import { SUPPORT_EMAIL } from '../../../config/app';
 import { cleanMeetupInput } from '../../crews/meetups';
 import { cleanVotes, type CrewVotes } from '../../crews/votes';
+import { cleanVenueMap, type VenueMap } from '../../venueMap/venueMap';
 import { countByInviter } from '../../invites/invites';
 import { nextPresence } from '../../admin/presence';
 import type { Hunt, Sticker } from '../../finds/finds';
@@ -109,6 +110,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const meetups = new Map<string, CrewMeetup[]>();
   const votes = new Map<string, Map<string, CrewVotes>>();
   const live = new Map<string, Map<string, CrewLive>>();
+  const venueMaps = new Map<string, VenueMap>();
   const covers = new Map<string, CrewCover>();
   const reports: { id: string; by: string; target: ReportTarget; reason: ReportReason; note?: string; createdAt: string; status: 'open' | 'resolved' }[] = [];
   /** Support messages, and which emails have been confirmed (the support account needs it). */
@@ -1157,6 +1159,22 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         dmWatchers.delete(w);
       };
     },
+    async venueMap(festivalId) {
+      if (network.down) throw new SocialError('network');
+      return venueMaps.get(festivalId) ?? null;
+    },
+    async saveVenueMap(map) {
+      if (network.down) throw new SocialError('network');
+      needAdmin();
+      const clean = cleanVenueMap(map.festivalId, map);
+      if (!clean || clean.anchors.length < 3) throw new SocialError('unknown');
+      venueMaps.set(map.festivalId, { ...clean, updatedAt: now() });
+    },
+    async uploadVenueMapImage(festivalId) {
+      if (network.down) throw new SocialError('network');
+      needAdmin();
+      return `https://firebasestorage.googleapis.com/v0/b/test/o/venueMaps%2F${festivalId}%2Fmap.jpg?alt=media`;
+    },
     async crewLive(crewId) {
       readable();
       if (network.down) throw new SocialError('network');
@@ -1654,5 +1672,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     reads.set(`${crewId}/${uid}`, now());
     readsChanged(crewId);
   };
-  return { service, gardens, glows, gardenBackups, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, meetups, votes, live, covers, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, orgs, orgMembers, orgRequests, orgViews, orgPosts, currentUser: () => current, ticketTaps, pushes, invites };
+  return { service, gardens, glows, gardenBackups, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, meetups, votes, live, venueMaps, covers, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, orgs, orgMembers, orgRequests, orgViews, orgPosts, currentUser: () => current, ticketTaps, pushes, invites };
 }
