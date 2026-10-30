@@ -37,6 +37,7 @@ export type PushEvent =
   | { kind: 'chat'; from: string; room?: string; text: string; more: number }
   | { kind: 'update'; from: string; room: string; update: 'help' | 'ok' | 'lost' | 'checkin' | 'video' | 'photo' | 'reply'; stage?: string; note?: string }
   | { kind: 'meet'; from: string; room: string; text: string }
+  | { kind: 'meetup'; from: string; room: string; place: string; time: string }
   | { kind: 'invite'; from: string; room: string }
   | { kind: 'support'; text: string };
 
@@ -97,6 +98,8 @@ export function pushText(e: PushEvent, lang: Language): { title: string; body: s
     }
     case 'meet':
       return { title: e.room, body: t('{name} set the meeting spot: {text}', { name: e.from, text: short(e.text) }) };
+    case 'meetup':
+      return { title: e.room, body: t('{name} set a meetup: {place}, {time}', { name: e.from, place: short(e.place), time: e.time }) };
     case 'invite':
       return { title: 'Afterglow', body: t('{name} invited you to {crew}', { name: e.from, crew: e.room }) };
     case 'support':

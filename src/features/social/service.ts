@@ -8,7 +8,7 @@ import type { PublicResident } from '../sprouts/publicGarden';
 import type { Kandi, KandiInput, OpenKandiInput, PublicKandi } from '../kandi/kandi';
 import type { DecorId } from '../sprouts/decor';
 import type { Org, OrgCounter, OrgDay, OrgPost, OrgPostInput, OrgRequest, OrgRequestInput, OrgRequestStatus } from '../organizers/organizers';
-import type { Published, Activity, ClipComment, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, CrewCover, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, AppSettings, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic, Sprout, SproutInput, DirectChat, SetTimesTip, VideoTag } from './models';
+import type { Published, Activity, ClipComment, Comment, Crew, CrewInvite, CrewMessage, CrewMessageInput, CrewMeetup, CrewMeetupInput, CrewPicks, CrewUpdate, CrewUpdateInput, MeetSpot, CrewCover, Profile, ProfileInput, ReportReason, SharedMemory, SocialUser, Standing, AdminCounts, AdminActivity, AdminPresence, Drop, DropInput, DropStatus, Flair, AppSettings, LivePatch, Privileges, ReportRecord, SupportMessage, SupportTopic, Sprout, SproutInput, DirectChat, SetTimesTip, VideoTag } from './models';
 import type { ProviderProof } from './providerAuth';
 
 /**
@@ -329,6 +329,12 @@ export interface SocialService {
   openDirectChat(uid: string, org?: string): Promise<string>;
   /** Follow your 1-to-1 chats, now and whenever one starts. Returns a stop function. */
   watchDirectChats(listener: (chats: DirectChat[]) => void, onError?: (e: SocialError) => void): () => void;
+  /** The crew's meetups (members only), soonest first. */
+  crewMeetups(crewId: string): Promise<CrewMeetup[]>;
+  /** Set a meetup for the crew, as yourself; the crew gets a push. */
+  addMeetup(crewId: string, input: CrewMeetupInput): Promise<CrewMeetup>;
+  /** Call off a meetup (whoever set it, or the crew's owner). */
+  removeMeetup(crewId: string, meetupId: string): Promise<void>;
   /** The crew's meeting spot, if one's set. Members only. */
   meetSpot(crewId: string): Promise<MeetSpot | null>;
   /** Set the crew's meeting spot (any member), or clear it with an empty text. */
