@@ -81,6 +81,7 @@ export function FestivalFriends({
         <View style={styles.rows}>
           <LinkRow label={t('Badges to collect')} onPress={() => router.navigate({ pathname: '/profile', params: { tab: 'badges' } })} />
           <LinkRow label={t('Look after yourself')} onPress={() => router.push('/care')} />
+          <LinkRow label={t('Find my way back')} onPress={() => router.push('/spots')} />
           <LinkRow label={isShowEvent(festival) ? t('The bill') : t('Your plan for tonight')} onPress={() => router.navigate('/lineup')} />
         </View>
       </Group>

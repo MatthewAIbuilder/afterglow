@@ -280,6 +280,8 @@ jest.mock('expo-location', () => ({
   getLastKnownPositionAsync: jest.fn(async () => null),
   getCurrentPositionAsync: jest.fn(async () => ({ coords: { latitude: 0, longitude: 0 } })),
   reverseGeocodeAsync: jest.fn(async () => []),
+  watchPositionAsync: jest.fn(async () => ({ remove: jest.fn() })),
+  watchHeadingAsync: jest.fn(async () => ({ remove: jest.fn() })),
 }));
 jest.mock('expo-media-library', () => ({
   requestPermissionsAsync: jest.fn(async () => ({ granted: true })),

@@ -300,6 +300,21 @@ export default function CareScreen() {
               <Text style={styles.trailChevron}>›</Text>
             </Pressable>
           ) : null}
+          <Pressable
+            onPress={() => {
+              haptic.select();
+              router.push('/spots');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('Find my way back. Save where you parked or camped.')}
+            style={({ pressed }) => [styles.trailLink, pressed && { opacity: 0.8 }]}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={styles.trailTitle}>{t('Find my way back')}</Text>
+              <Text style={styles.trailSub}>{t('Save where you parked or camped, and an arrow points you back.')}</Text>
+            </View>
+            <Text style={styles.trailChevron}>›</Text>
+          </Pressable>
         </Part>
 
         {!help ? (
