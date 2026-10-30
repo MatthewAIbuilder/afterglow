@@ -38,6 +38,8 @@ export const NEWS_DAYS = 30;
 export const NEWS_MAX = 200;
 /** An act counts as just added on the lineup for this long. */
 export const JUST_ADDED_DAYS = 14;
+/** A new show counts as near you within this distance (km). */
+export const SHOW_NEAR_KM = 160;
 /** More new festivals than this arriving together (the nightly feed) become one notice. */
 export const NEW_FESTIVALS_GROUP_AT = 3;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -85,7 +87,18 @@ const names = (list: string[]) =>
  */
 export function lineupNotices(
   news: LineupNewsItem[],
-  opts: { festivals: Festival[]; loves: (artistId: string) => boolean; nameOf: (artistId: string) => string | undefined; going: ReadonlySet<string>; today: Date },
+  opts: {
+    festivals: Festival[];
+    loves: (artistId: string) => boolean;
+    nameOf: (artistId: string) => string | undefined;
+    going: ReadonlySet<string>;
+    today: Date;
+    /** One-night shows: how far one is from you (km), when "festivals near you" is on. */
+    showDistance?: (f: Festival) => number | undefined;
+    isShow?: (f: Festival) => boolean;
+    /** "12 mi", in your units. */
+    distanceText?: (km: number) => string;
+  },
 ): Notice[] {
   const byId = new Map(opts.festivals.map((f) => [f.id, f]));
   // New festivals that arrived together with acts you'd love: one notice when there are many.
@@ -122,6 +135,22 @@ export function lineupNotices(
     const loved = n.artists.filter((a) => onLineup.has(a) && opts.loves(a)).map(opts.nameOf).filter((x): x is string => !!x);
     if (!loved.length) continue;
     const going = opts.going.has(f.id);
+    // A show: news only near you (when you've said where you are), framed as an artist you love playing nearby.
+    if (n.newFestival && opts.isShow?.(f)) {
+      const km = opts.showDistance?.(f);
+      if (km === undefined || km > SHOW_NEAR_KM) continue;
+      const when = countdown(f, opts.today);
+      out.push({
+        id: `lineup:${f.id}:${n.at}`,
+        at: n.at,
+        kind: 'lineup',
+        festivalId: f.id,
+        href: `/festival/${f.id}`,
+        title: loved.length === 1 ? t('{names} plays near you', { names: names(loved) }) : t('{names} play near you', { names: names(loved) }),
+        body: [f.name, when, opts.distanceText ? opts.distanceText(km) : undefined].filter(Boolean).join(' · '),
+      });
+      continue;
+    }
     out.push(
       n.newFestival
         ? {

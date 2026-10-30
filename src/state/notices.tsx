@@ -1,3 +1,6 @@
+import { isShowEvent } from '../features/festivalMode/showEvent';
+import { distanceShort } from '../features/festivals/near';
+import { useNearby } from './nearby';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
@@ -87,6 +90,8 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
   const list = useMemo(() => notices(mine, going, today), [mine, going, today]);
   // Artists you'd love, newly added to a lineup (or on a festival new to Afterglow).
   const { memory } = useLineupNews();
+  // Shows count as news only near you.
+  const nearby = useNearby();
   const loves = useLoves();
   const { artist: artistById } = useCatalog();
   const lineupList = useMemo(
@@ -97,8 +102,11 @@ export function NoticesProvider({ children }: { children: ReactNode }) {
         nameOf: (id) => artistById(id)?.name,
         going: new Set(going),
         today,
+        isShow: isShowEvent,
+        showDistance: nearby.distanceTo,
+        distanceText: (km) => distanceShort(km, nearby.units),
       }),
-    [memory.news, mine, loves, artistById, going, today],
+    [memory.news, mine, loves, artistById, going, today, nearby.distanceTo, nearby.units],
   );
   // New sets from artists you'd love that you haven't watched yet.
   const { memory: clipMemory } = useClipNews();

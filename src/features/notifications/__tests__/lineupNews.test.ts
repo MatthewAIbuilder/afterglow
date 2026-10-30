@@ -61,6 +61,19 @@ describe('lineup news', () => {
     expect(lineupNotices(news, { festivals, ...opts([]) })).toEqual([]);
   });
 
+  it('a new show is news only near you, as an artist you love playing nearby', () => {
+    const news = [
+      { festivalId: 'show:near', artists: ['a'], newFestival: true, at: 5 },
+      { festivalId: 'show:far', artists: ['a'], newFestival: true, at: 6 },
+    ];
+    const festivals = [fest('show:near', ['a'], { name: 'Alpha at The Vanguard' }), fest('show:far', ['a'])];
+    const km: Record<string, number> = { 'show:near': 12, 'show:far': 900 };
+    const n = lineupNotices(news, { festivals, ...opts(['a']), isShow: (f) => f.id.startsWith('show:'), showDistance: (f) => km[f.id], distanceText: (k) => `${k} km` });
+    expect(n.map((x) => [x.title, x.body])).toEqual([['ALPHA plays near you', expect.stringMatching(/^Alpha at The Vanguard · .+ · 12 km$/)]]);
+    // Without knowing where you are, shows say nothing.
+    expect(lineupNotices(news, { festivals, ...opts(['a']), isShow: (f) => f.id.startsWith('show:') })).toEqual([]);
+  });
+
   it('many new festivals at once (the nightly feed) become one notice', () => {
     const ids = ['p', 'q', 'r', 's', 't'];
     const festivals = [...ids.map((id, i) => fest(id, [['a', 'b', 'c', 'd', 'a'][i]])), fest('f', ['a', 'b'])];
