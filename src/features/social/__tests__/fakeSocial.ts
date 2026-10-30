@@ -1,6 +1,6 @@
 import { cleanTrack } from '../../memories/track';
 import { throwbackShares } from '../../memories/throwbackLimit';
-import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, type ClipComment, type Comment, validClipId, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type CrewMeetup, type CrewLive, type CrewCover, type AdminPresence, type Drop, type LivePatch, type AppSettings, DEFAULT_APP_SETTINGS, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX, type Sprout, type DirectChat, directRoom, isDirectRoom, otherInRoom, SUPPORT_REPLIES_MAX, type SetTimesTip, type VideoTag, VIDEO_TAGS_MAX } from '../models';
+import { ARTISTS_SHOWN, CHAT_MAX, type CrewMessage, type ClipComment, type Comment, validClipId, CREW_MAX, CREW_NOTE_MAX, CREW_PICKS_MAX, CREW_STAGE_MAX, type Activity, type Crew, type CrewInvite, type CrewPicks, type CrewUpdate, MEET_SPOT_MAX, type MeetSpot, type CrewMeetup, type CrewLive, type CrewItem, CREW_ITEM_MAX, type CrewCover, type AdminPresence, type Drop, type LivePatch, type AppSettings, DEFAULT_APP_SETTINGS, type Profile, type ProfileInput, type ReportReason, type SharedMemory, type SocialUser, type Flair, FOUNDERS_MAX, type SupportMessage, SUPPORT_MAX, type Sprout, type DirectChat, directRoom, isDirectRoom, otherInRoom, SUPPORT_REPLIES_MAX, type SetTimesTip, type VideoTag, VIDEO_TAGS_MAX } from '../models';
 import { cleanBackdrop } from '../../profile/backdrops';
 import { cleanArtistName } from '../../../data/extraArtists';
 import { canGiveThemes, isGiftTheme } from '../../themes/gifts';
@@ -111,6 +111,7 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
   const votes = new Map<string, Map<string, CrewVotes>>();
   const live = new Map<string, Map<string, CrewLive>>();
   const venueMaps = new Map<string, VenueMap>();
+  const crewLists = new Map<string, CrewItem[]>();
   const covers = new Map<string, CrewCover>();
   const reports: { id: string; by: string; target: ReportTarget; reason: ReportReason; note?: string; createdAt: string; status: 'open' | 'resolved' }[] = [];
   /** Support messages, and which emails have been confirmed (the support account needs it). */
@@ -1159,6 +1160,33 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
         dmWatchers.delete(w);
       };
     },
+    async crewList(crewId) {
+      readable();
+      if (network.down) throw new SocialError('network');
+      memberOf(crewId);
+      return [...(crewLists.get(crewId) ?? [])];
+    },
+    async addCrewItem(crewId, raw) {
+      if (network.down) throw new SocialError('network');
+      memberOf(crewId);
+      const text = raw.replace(/\s+/g, ' ').trim().slice(0, CREW_ITEM_MAX);
+      if (!text) throw new SocialError('unknown');
+      const item = { id: `item-${++n}`, text, by: me().uid, at: now() };
+      crewLists.set(crewId, [...(crewLists.get(crewId) ?? []), item]);
+      return item;
+    },
+    async setCrewItemDone(crewId, itemId, done) {
+      if (network.down) throw new SocialError('network');
+      memberOf(crewId);
+      crewLists.set(crewId, (crewLists.get(crewId) ?? []).map((x) => (x.id === itemId ? (done ? { ...x, done: true, doneBy: me().uid } : { id: x.id, text: x.text, by: x.by, at: x.at }) : x)));
+    },
+    async removeCrewItem(crewId, itemId) {
+      if (network.down) throw new SocialError('network');
+      const crew = memberOf(crewId);
+      const x = (crewLists.get(crewId) ?? []).find((i) => i.id === itemId);
+      if (x && x.by !== me().uid && crew.owner !== me().uid) throw new SocialError('unknown');
+      crewLists.set(crewId, (crewLists.get(crewId) ?? []).filter((i) => i.id !== itemId));
+    },
     async venueMap(festivalId) {
       if (network.down) throw new SocialError('network');
       return venueMaps.get(festivalId) ?? null;
@@ -1672,5 +1700,5 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     reads.set(`${crewId}/${uid}`, now());
     readsChanged(crewId);
   };
-  return { service, gardens, glows, gardenBackups, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, meetups, votes, live, venueMaps, covers, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, orgs, orgMembers, orgRequests, orgViews, orgPosts, currentUser: () => current, ticketTaps, pushes, invites };
+  return { service, gardens, glows, gardenBackups, kandi, videoTags, codeOf, readAs, accounts, profiles, handles, memories, blocks, follows, likes, crews, crewInvites, sprouts, themeGrants, stickers, hunts, finds, picks, updates, crewFiles, meets, meetups, votes, live, venueMaps, crewLists, covers, chat, reads, crewCodes, agreed, comments, clipComments, network, friendCodes, founders, flairs, plus, levels, usage, counter, reports, support, verified, presence, drops, patches, dms, setTimes, orgs, orgMembers, orgRequests, orgViews, orgPosts, currentUser: () => current, ticketTaps, pushes, invites };
 }

@@ -1,3 +1,5 @@
+import { useCrews } from '../../state/crews';
+import { useMyCrewVoteCount } from '../../state/crewVotes';
 import { useMyInviter, useMyInvites } from '../../state/invites';
 import { useMemo, useState } from 'react';
 import { toCollect } from '../badges/badges';
@@ -76,6 +78,10 @@ export function useProfileBadges() {
   // Invite rewards: friends who joined from your link, and who invited you.
   const { count: invited } = useMyInvites();
   const cameWith = useMyInviter();
+  // Crew badges: your biggest crew, and the acts you've voted on with one.
+  const { crews } = useCrews();
+  const crewSize = Math.max(0, ...crews.map((c) => c.members.length));
+  const crewVotes = useMyCrewVoteCount();
   const scouted = useScouted(social.user?.uid);
   // Collecting: kandi, shinies, stickers, gold, and how much of Your collection you have.
   const { finds } = useFinds();
@@ -133,8 +139,10 @@ export function useProfileBadges() {
         glows: glows.length,
         invited,
         cameWith,
+        crewSize,
+        crewVotes,
       }),
-    [invited, cameWith, glows.length, decor.length, showcase.pinned.length, book, kandi.received.length, finds, found, sprouts.artists, scouted.length, passport, throwbacks, memories.length, kept, ratings, catalog, standing?.founder, daily.book, daily.level.glow, sprouts.garden, sprouts.gifts, sprouts.collected],
+    [invited, cameWith, crewSize, crewVotes, glows.length, decor.length, showcase.pinned.length, book, kandi.received.length, finds, found, sprouts.artists, scouted.length, passport, throwbacks, memories.length, kept, ratings, catalog, standing?.founder, daily.book, daily.level.glow, sprouts.garden, sprouts.gifts, sprouts.collected],
   );
   // Side quests: done ones come from the log, so they stay done.
   const quests = useQuests();

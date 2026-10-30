@@ -16,6 +16,8 @@ import { MeetSpotCard } from '../../features/crews/MeetSpotCard';
 import { MeetupsCard } from '../../features/crews/MeetupsCard';
 import { VoteCard } from '../../features/crews/VoteCard';
 import { CrewMapCard } from '../../features/crews/CrewMapCard';
+import { CrewListCard } from '../../features/crews/CrewListCard';
+import { CrewMoments } from '../../features/crews/CrewMoments';
 import { clashSlots, mergeStars, starsFromVotes, tallyLineup, wanted } from '../../features/crews/votes';
 import { useCrewVotes } from '../../state/crewVotes';
 import { CrewChatCard } from '../../features/crews/CrewChatCard';
@@ -487,7 +489,10 @@ function Member({
       <MeetSpotCard crew={crew} />
       <MeetupsCard crew={crew} nameOf={who} />
       {festival ? <CrewMapCard crew={crew} festival={festival} nameOf={who} /> : null}
+      {others.length ? <CrewListCard crew={crew} nameOf={who} /> : null}
 
+      {/* The countdown and the crew's warm-up before; the crew's festival looked back on after. */}
+      {festival && others.length ? <CrewMoments crew={crew} festival={festival} stars={routeStars} shared={together.shared.length} /> : null}
       {festival && others.length ? <VoteCard crew={crew} votes={crewVotes.votes} lineup={festival.lineup} /> : null}
 
       <Text style={styles.section}>{t('Sets you share')}</Text>

@@ -977,6 +977,23 @@ service cloud.firestore {
         allow delete: if signedIn() && (me() == uid || get(path('crews', id)).data.owner == me());
       }
 
+      // The crew's list (who's bringing what): members read it and add to it as themselves, with the
+      // server's time; anyone in the crew ticks a thing off (as themselves) or back on; never re-worded;
+      // removed by whoever added it or the owner.
+      match /list/{itemId} {
+        allow read: if signedIn() && me() in get(path('crews', id)).data.members;
+        allow create: if signedIn() && me() in get(path('crews', id)).data.members
+          && itemId.matches('^[A-Za-z0-9_-]{6,64}$')
+          && request.resource.data.keys().hasOnly(['text', 'by', 'at'])
+          && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 60
+          && request.resource.data.by == me() && request.resource.data.at == request.time;
+        allow update: if signedIn() && me() in get(path('crews', id)).data.members
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['done', 'doneBy'])
+          && ((request.resource.data.done == true && request.resource.data.doneBy == me())
+            || (request.resource.data.done == false && !('doneBy' in request.resource.data)));
+        allow delete: if signedIn() && (resource.data.by == me() || get(path('crews', id)).data.owner == me());
+      }
+
       // Each member's votes on the lineup (Must see / Maybe / Skip per act, a side per clash): written by
       // that member while in the crew, with the server's time; read by members; removed by that member or
       // the owner (and when they leave).

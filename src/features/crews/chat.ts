@@ -28,7 +28,7 @@ export const CHAT_LATE_MS = 10 * 60 * 1000;
 export const RUN_GAP_MS = 5 * 60 * 1000;
 
 /** Short messages for a festival, a tap away when the box is empty (sent in English as tapped; shown through `presetLabel`). */
-export const QUICK_MESSAGES = ['On my way', 'Where are you?', 'Meet at our spot', 'Water break', 'This set is amazing'] as const;
+export const QUICK_MESSAGES = ['On my way', 'Where are you?', 'Meet at our spot', 'Water break', 'This set is amazing', 'Come to the front', 'Best set so far'] as const;
 
 /** The chat rules everyone agrees to by starting or joining a crew (kept in English for the legal pages; screens show `t(rule)`). */
 export const CHAT_RULES = [
