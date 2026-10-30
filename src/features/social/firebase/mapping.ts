@@ -1,3 +1,4 @@
+import { cleanVotes, type CrewVotes } from '../../crews/votes';
 import { trackFromFields } from '../../memories/track';
 import { cleanArtistName, noteArtist } from '../../../data/extraArtists';
 import { cleanSocials } from '../socials';
@@ -270,6 +271,12 @@ export function meetSpotFromDoc(d: unknown): MeetSpot | null {
   const by = str(o.by);
   if (!text || !by) return null;
   return { text: text.slice(0, MEET_SPOT_MAX), by, at: timeOf(o.at) ?? '' };
+}
+
+/** One member's votes in a crew, from `crews/{id}/votes/{uid}`. */
+export function votesFromDoc(uid: string, d: unknown): CrewVotes | null {
+  if (!d || typeof d !== 'object') return null;
+  return cleanVotes(uid, d, timeOf((d as Record<string, unknown>).at) ?? '') ?? null;
 }
 
 /** A crew meetup from its document in `crews/{id}/meetups`. */

@@ -1,3 +1,4 @@
+import type { CrewVotes } from '../crews/votes';
 import { t, type Language } from '../../i18n';
 import type { Track } from '../memories/track';
 import type { PastEvent } from '../memories/past';
@@ -329,6 +330,10 @@ export interface SocialService {
   openDirectChat(uid: string, org?: string): Promise<string>;
   /** Follow your 1-to-1 chats, now and whenever one starts. Returns a stop function. */
   watchDirectChats(listener: (chats: DirectChat[]) => void, onError?: (e: SocialError) => void): () => void;
+  /** Everyone's votes on the lineup in a crew (members only). */
+  crewVotes(crewId: string): Promise<CrewVotes[]>;
+  /** Your votes in a crew (the whole set, replacing what was there). */
+  setCrewVotes(crewId: string, votes: Pick<CrewVotes, 'lineup' | 'clashes'>): Promise<void>;
   /** The crew's meetups (members only), soonest first. */
   crewMeetups(crewId: string): Promise<CrewMeetup[]>;
   /** Set a meetup for the crew, as yourself; the crew gets a push. */
