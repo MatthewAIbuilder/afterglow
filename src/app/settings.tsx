@@ -1,3 +1,5 @@
+import { useBatterySaver } from '../state/batterySaver';
+import { chooseSaver, SAVER_LABEL } from '../features/care/saver';
 import { router } from 'expo-router';
 import { Children, type ReactNode, useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -48,6 +50,7 @@ import { PageFeedback } from '../components/PageFeedback';
  * iOS settings, so the profile itself stays a profile.
  */
 export default function SettingsScreen() {
+  const saver = useBatterySaver();
   const toes = useToes();
   const secrets = useSecrets();
   const versionTaps = useRef<number[]>([]);
@@ -134,6 +137,7 @@ export default function SettingsScreen() {
 
         <Group title={t('Festival nights')}>
           <Row label={t('Look after yourself')} detail={t('Private')} a11y={t('Look after yourself: stopwatches, water, food and check-ins, private to you')} onPress={() => router.push('/care')} />
+          <Row label={t('Battery saver')} detail={SAVER_LABEL[saver.mode]} a11y={t('Battery saver: {mode}. Afterglow does less so your phone lasts the night', { mode: SAVER_LABEL[saver.mode] })} onPress={() => chooseSaver(saver.mode)} />
           {modeFestival ? (
             <Row
               label={mode.active?.preview ? t('End festival mode test') : mode.active ? t('Leave festival mode') : t('Test festival mode')}

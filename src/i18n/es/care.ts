@@ -422,4 +422,13 @@ export const es_care: Dictionary = {
   'Dangerous heat at {festival} today': 'Calor peligroso hoy en {festival}',
   'Hot one at {festival} today': 'Hoy hace calor en {festival}',
   'Feels like {temp} around {time}. Water, shade and a break between sets.': 'Sensación de {temp} hacia las {time}. Agua, sombra y un descanso entre sets.',
+  // Battery saver.
+  'Battery saver': 'Ahorro de batería',
+  'Battery saver: {mode}. Afterglow does less so your phone lasts the night': 'Ahorro de batería: {mode}. Afterglow hace menos para que tu teléfono aguante la noche',
+  'On': 'Activado',
+  'Automatic': 'Automático',
+  'Does less to last longer: no next clip by itself, crew news and your spot less often, a rougher trail. Automatic turns it on below 30%.': 'Hace menos para durar más: no pasa solo al siguiente clip, las novedades del grupo y tu ubicación van menos a menudo, y el recorrido es menos preciso. Automático lo activa por debajo del 30%.',
+  'Battery saver: {mode}. Change it': 'Ahorro de batería: {mode}. Cambiarlo',
+  'Battery saver on': 'Ahorro de batería activado',
+  'Battery saver: {mode}': 'Ahorro de batería: {mode}',
 };

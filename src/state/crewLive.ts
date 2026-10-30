@@ -4,6 +4,7 @@ import { AppState } from 'react-native';
 import { type Sent, worthSending } from '../features/crews/live';
 import type { CrewLive } from '../features/social/models';
 import { liveListeners, loadSharing, setSharing, sharingNow } from './crewLiveStore';
+import { saverOn } from './batterySaver';
 import { useCrews } from './crews';
 import { useSocial } from './social';
 
@@ -13,6 +14,9 @@ import { useSocial } from './social';
  * off), and reading where crewmates who share are.
  */
 const READ_EVERY_MS = 20_000;
+/** With battery saver on: your spot at most this often, crewmates' read this often. */
+const SAVER_SEND_MS = 4 * 60_000;
+const SAVER_READ_MS = 60_000;
 const CHECK_EVERY_MS = 60_000;
 
 /** Turn sharing on: asks for location first. False when it isn't allowed. */
@@ -81,6 +85,8 @@ export function LiveSharer() {
           const here = { lat: p.coords.latitude, lon: p.coords.longitude };
           const now = Date.now();
           if (!worthSending(last.current, here, now)) return;
+          // Battery saver: every few minutes at most.
+          if (saverOn() && last.current && now - last.current.at < SAVER_SEND_MS) return;
           last.current = { at: now, ...here };
           const all = sharingNow();
           for (const crewId of active) {
@@ -141,8 +147,10 @@ export function useCrewLive(crewId: string) {
         .then((list) => live && setOthers({ crewId, list }))
         .catch(() => {});
     void Promise.resolve().then(read);
+    let ticks = 0;
     const timer = setInterval(() => {
-      if (AppState.currentState === 'active') void read();
+      ticks += 1;
+      if (AppState.currentState === 'active' && (!saverOn() || ticks % Math.round(SAVER_READ_MS / READ_EVERY_MS) === 0)) void read();
     }, READ_EVERY_MS);
     return () => {
       live = false;

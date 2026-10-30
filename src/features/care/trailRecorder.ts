@@ -1,3 +1,4 @@
+import { saverOn } from '../../state/batterySaver';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { Platform } from 'react-native';
@@ -56,8 +57,9 @@ export async function startRecording(festivalId: string, until: number): Promise
     await writeActive({ festivalId, until });
     if (await Location.hasStartedLocationUpdatesAsync(TRAIL_TASK)) return true;
     await Location.startLocationUpdatesAsync(TRAIL_TASK, {
-      accuracy: Location.Accuracy.Balanced,
-      distanceInterval: 15,
+      // Battery saver: rougher, and less often.
+      accuracy: saverOn() ? Location.Accuracy.Low : Location.Accuracy.Balanced,
+      distanceInterval: saverOn() ? 40 : 15,
       timeInterval: 60_000,
       deferredUpdatesInterval: 60_000,
       deferredUpdatesDistance: 30,
