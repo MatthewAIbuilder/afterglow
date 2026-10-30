@@ -1,3 +1,5 @@
+import { useBatterySaver } from '../../state/batterySaver';
+import { chooseSaver, SAVER_LABEL } from '../care/saver';
 import { FitCheckCard } from '../fitCheck/FitCheckCard';
 import { WeatherCard } from '../weather/WeatherCard';
 import { dayStarts } from '../notifications/setReminders';
@@ -91,6 +93,8 @@ export function TonightPlan({ mode }: { mode: ModeNow }) {
           </ScrollView>
         ) : null}
 
+        {/* Battery saver, one tap away on the night. */}
+        {tonight ? <SaverPill /> : null}
         {/* Tonight's weather, and what it means for looking after yourself. */}
         {tonight && nightDate ? <WeatherCard festival={festival} only={nightDate} /> : null}
         {/* Today's outfit, yours and your crew's. */}
@@ -222,4 +226,32 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
   footnote: { ...type.caption, color: color.moonFaint, textAlign: 'center', marginTop: space.lg },
   leave: { ...type.label, color: color.moonFaint, textAlign: 'center', marginTop: space.lg, textDecorationLine: 'underline' },
+});
+
+/** "Battery saver: Off" on Tonight, choosing Off / Automatic / On. */
+function SaverPill() {
+  const saver = useBatterySaver();
+  const pct = saver.level !== undefined ? ` · ${Math.round(saver.level * 100)}%` : '';
+  return (
+    <Pressable
+      onPress={() => {
+        haptic.select();
+        chooseSaver(saver.mode);
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={t('Battery saver: {mode}. Change it', { mode: SAVER_LABEL[saver.mode] })}
+      style={({ pressed }) => [saverStyles.pill, saver.on && saverStyles.on, pressed && { opacity: 0.7 }]}
+    >
+      <Text style={[saverStyles.text, saver.on && { color: color.moon }]}>
+        {saver.on ? t('Battery saver on') : t('Battery saver: {mode}', { mode: SAVER_LABEL[saver.mode] })}
+        {pct}
+      </Text>
+    </Pressable>
+  );
+}
+
+const saverStyles = StyleSheet.create({
+  pill: { alignSelf: 'flex-start', marginTop: space.sm, paddingHorizontal: space.md, paddingVertical: 6, borderRadius: radius.pill, backgroundColor: color.glass, borderWidth: StyleSheet.hairlineWidth, borderColor: color.hairline },
+  on: { backgroundColor: glowA(0.2), borderColor: glowA(0.5) },
+  text: { ...type.caption, color: color.moonDim },
 });

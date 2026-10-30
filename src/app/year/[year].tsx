@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -44,6 +44,17 @@ export default function YearScreen() {
       <ScrollView contentContainerStyle={[pageColumn, styles.content, { paddingBottom: insets.bottom + space.xxl }]}>
         {card ? (
           <>
+            <Pressable
+              onPress={() => {
+                haptic.tap();
+                router.push({ pathname: '/wrapped/[year]', params: { year: String(year) } });
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={t('Play your {year} Wrapped', { year })}
+              style={({ pressed }) => [styles.button, styles.primary, styles.wrapped, pressed && styles.pressed]}
+            >
+              <Text style={styles.buttonText}>{t('▶ Play your Wrapped')}</Text>
+            </Pressable>
             <View ref={cardRef} collapsable={false} style={{ width: Math.min(width - space.xl * 2, CARD_MAX_WIDTH) }}>
               <PosterCard card={card} label={t('{title} on Afterglow', { title: card.title })} />
             </View>
@@ -86,6 +97,7 @@ export default function YearScreen() {
 }
 
 const styles = StyleSheet.create({
+  wrapped: { marginBottom: space.sm },
   root: { flex: 1, backgroundColor: color.night },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.xl, paddingBottom: space.md },
   heading: { ...type.title, color: color.moon },

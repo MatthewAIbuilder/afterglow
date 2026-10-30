@@ -1,3 +1,4 @@
+import { saverOn } from './batterySaver';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNetworkState } from 'expo-network';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -309,8 +310,11 @@ export function CrewUpdatesProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!ready || !live.length) return;
     const first = setTimeout(() => void refresh(), 0);
+    // Battery saver: a third as often.
+    let ticks = 0;
     const timer = setInterval(() => {
-      if (AppState.currentState === 'active') void refresh();
+      ticks += 1;
+      if (AppState.currentState === 'active' && (!saverOn() || ticks % 3 === 0)) void refresh();
     }, POLL_MS);
     const sub = AppState.addEventListener('change', (s) => {
       if (s === 'active') void refresh();

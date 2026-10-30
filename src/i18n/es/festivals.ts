@@ -242,4 +242,7 @@ export const es_festivals: Dictionary = {
   'Set times could come out any day now.': 'Los horarios podrían salir cualquier día.',
   'Set times are usually out by now. Your picks turn into a schedule the moment they are.':
     'Los horarios suelen estar listos para estas fechas. Tus elecciones se convierten en un horario en cuanto salgan.',
+  // Show alerts.
+  '{names} plays near you': '{names} toca cerca de ti',
+  '{names} play near you': '{names} tocan cerca de ti',
 };

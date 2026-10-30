@@ -7,6 +7,8 @@ import type { CardLine, CardSection, PlanCard } from '../plan/share';
 import { daysUntil } from '../festivals/when';
 import { toShares } from '../taste/lean';
 import { isWarm, type Ratings } from '../taste/ratings';
+import { distanceText } from '../care/trail';
+import { type SetVerdict, VERDICT_LABEL } from '../seen/seen';
 import { t, tn } from '../../i18n';
 
 /**
@@ -27,6 +29,14 @@ export type RecapInput = {
   taste: Record<string, number>;
   artist: (id: string) => Artist | undefined;
   today: Date;
+  /** Sets you saw there (rated or said you were at), in the order you saw them. */
+  seen?: readonly { artistId: string; verdict?: SetVerdict }[];
+  /** How far your festival trail says you walked there, in meters. */
+  walkedMeters?: number;
+  /** Your phone's units, for the distance. */
+  miles?: boolean;
+  /** Fit checks you took there. */
+  fits?: number;
 };
 
 /** What ends a recap's subtitle (taken off again for the message). */
@@ -36,16 +46,18 @@ const RECAP_TAG = () => ` · ${t('Your recap')}`;
 export const RECAP_ARTISTS = 6;
 
 /** Whether there's a recap for you: the festival is over and you were part of it. */
-export function hasRecap(i: Pick<RecapInput, 'festival' | 'going' | 'memories' | 'stars' | 'today'>): boolean {
-  return isOver(i.festival, i.today) && (i.going || i.memories.length > 0 || i.stars.size > 0);
+export function hasRecap(i: Pick<RecapInput, 'festival' | 'going' | 'memories' | 'stars' | 'today' | 'seen'>): boolean {
+  return isOver(i.festival, i.today) && (i.going || i.memories.length > 0 || i.stars.size > 0 || !!i.seen?.length);
 }
 
 /** Your artists there, strongest first: filmed, then starred, then loved; your match breaks ties. */
-export function recapArtists(i: RecapInput): { artist: Artist; videos: number; starred: boolean; rating?: 'love' | 'like' }[] {
+export function recapArtists(i: RecapInput): { artist: Artist; videos: number; starred: boolean; rating?: 'love' | 'like'; saw?: true; verdict?: SetVerdict }[] {
   const onLineup = new Set(i.festival.lineup);
   const videos = new Map<string, number>();
   for (const m of i.memories) if (m.artistId && onLineup.has(m.artistId)) videos.set(m.artistId, (videos.get(m.artistId) ?? 0) + 1);
+  const seen = new Map((i.seen ?? []).map((x) => [x.artistId, x.verdict]));
   const ids = new Set([
+    ...seen.keys(),
     ...videos.keys(),
     ...[...i.stars].filter((a) => onLineup.has(a)),
     ...i.festival.lineup.filter((a) => isWarm(i.ratings[a])),
@@ -57,8 +69,10 @@ export function recapArtists(i: RecapInput): { artist: Artist; videos: number; s
       const rating = r === 'love' || r === 'like' ? r : undefined;
       const v = videos.get(id) ?? 0;
       const starred = i.stars.has(id);
-      const score = v * 3 + (starred ? 2 : 0) + (rating === 'love' ? 2 : rating === 'like' ? 1 : 0) + (i.taste[id] ?? 0);
-      return artist ? { artist, videos: v, starred, rating, score } : undefined;
+      const verdict = seen.get(id);
+      const saw = seen.has(id);
+      const score = (saw ? 3 : 0) + (verdict === 'unreal' ? 3 : verdict === 'great' ? 1 : 0) + v * 3 + (starred ? 2 : 0) + (rating === 'love' ? 2 : rating === 'like' ? 1 : 0) + (i.taste[id] ?? 0);
+      return artist ? { artist, videos: v, starred, rating, score, ...(saw ? { saw: true as const } : {}), ...(verdict ? { verdict } : {}) } : undefined;
     })
     .filter((x): x is NonNullable<typeof x> => !!x)
     .sort((a, b) => b.score - a.score)
@@ -75,7 +89,10 @@ export function festivalRecap(i: RecapInput): PlanCard | undefined {
     const lines: CardLine[] = artists.slice(0, RECAP_ARTISTS).map((a) => ({
       name: a.artist.name,
       star: a.starred,
-      where: [a.videos ? tn(a.videos, '{n} video', '{n} videos') : '', a.rating === 'love' ? t('loved') : a.rating === 'like' ? t('liked') : ''].filter(Boolean).join(' · ') || undefined,
+      where:
+        [a.verdict ? VERDICT_LABEL[a.verdict] : a.saw ? t('seen') : '', a.videos ? tn(a.videos, '{n} video', '{n} videos') : '', !a.verdict && a.rating === 'love' ? t('loved') : !a.verdict && a.rating === 'like' ? t('liked') : '']
+          .filter(Boolean)
+          .join(' · ') || undefined,
     }));
     sections.push({ heading: t('Your artists'), lines, more: Math.max(0, artists.length - RECAP_ARTISTS) });
   }
@@ -99,7 +116,10 @@ export function festivalRecap(i: RecapInput): PlanCard | undefined {
   if (shares.length) sections.push({ heading: t('Your sound there'), lines: shares.map((s) => ({ name: SOUND_LABEL[s.tag], where: `${s.percent}%`, star: false })), more: 0 });
 
   const numbers: CardLine[] = [];
+  if (i.seen?.length) numbers.push({ name: t('Sets you saw'), where: String(i.seen.length), star: false });
+  if (i.walkedMeters && i.walkedMeters >= 100) numbers.push({ name: t('Walked'), where: distanceText(i.walkedMeters, !!i.miles), star: false });
   if (i.memories.length) numbers.push({ name: t('Videos filmed'), where: String(i.memories.length), star: false });
+  if (i.fits) numbers.push({ name: t('Fit checks'), where: String(i.fits), star: false });
   const starred = [...i.stars].filter((a) => i.festival.lineup.includes(a)).length;
   if (starred) numbers.push({ name: t('Sets starred'), where: String(starred), star: false });
   const loved = i.festival.lineup.filter((a) => isWarm(i.ratings[a])).length;

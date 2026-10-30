@@ -58,4 +58,29 @@ describe('your year', () => {
     expect(hasYear(yearStats(empty))).toBe(false);
     expect(yearCard(empty)).toBeUndefined();
   });
+
+  it('Wrapped: the sets you saw, who you saw most, your set of the year, how far you walked', () => {
+    const at = (m: number, d: number) => new Date(2026, m, d, 23).getTime();
+    const s = yearStats({
+      ...base,
+      setsSeen: [
+        { festivalId: 'spring', artistId: 'a', at: at(2, 10), verdict: 'great' },
+        { festivalId: 'winter', artistId: 'a', at: at(11, 4), verdict: 'unreal' },
+        { festivalId: 'winter', artistId: 'b', at: at(11, 5) },
+        { festivalId: 'old', artistId: 'c', at: new Date(2025, 5, 1).getTime(), verdict: 'unreal' },
+      ],
+      walked: { spring: 6200, winter: 9100, old: 50000 },
+      miles: false,
+      fits: [at(2, 10), at(11, 4), new Date(2025, 5, 1).getTime()],
+    });
+    expect(s.sets).toBe(3);
+    expect(s.seenMost.map((x) => [x.artist.id, x.times])).toEqual([['a', 2]]);
+    expect(s.setOfYear).toEqual(expect.objectContaining({ verdict: 'unreal', festival: expect.objectContaining({ id: 'winter' }) }));
+    expect(s.setOfYear?.artist.id).toBe('a');
+    expect(s.walkedMeters).toBe(15300);
+    expect(s.fits).toBe(2);
+    const card = yearCard({ ...base, setsSeen: [{ festivalId: 'winter', artistId: 'a', at: at(11, 4), verdict: 'unreal' }], walked: { winter: 9100 }, miles: false })!;
+    expect(card.sections.map((x) => x.heading)).toContain('Your set of the year');
+    expect(card.sections.find((x) => x.heading === 'By the numbers')!.lines.map((l) => l.name)).toEqual(expect.arrayContaining(['Sets you saw', 'Walked']));
+  });
 });

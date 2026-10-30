@@ -95,6 +95,7 @@ import RateSetScreen from '../rate-set';
 import SeenScreen from '../seen';
 import CrewVoteScreen from '../crew-vote/[id]';
 import FitsScreen from '../fits';
+import WrappedScreen from '../wrapped/[year]';
 import PublicProfileScreen from '../u/[handle]';
 import WelcomeScreen from '../welcome';
 import YourSoundScreen from '../your-sound';
@@ -131,6 +132,7 @@ export const APP_ROUTES = {
   seen: SeenScreen,
   'crew-vote/[id]': CrewVoteScreen,
   fits: FitsScreen,
+  'wrapped/[year]': WrappedScreen,
   'artist/[id]': ArtistScreen,
   'sound-guide/[tag]': SoundGuideScreen,
   'festival/[id]': FestivalScreen,

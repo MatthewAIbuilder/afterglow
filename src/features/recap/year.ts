@@ -5,6 +5,9 @@ import type { CardLine, CardSection, PlanCard } from '../plan/share';
 import { isWarm, type Ratings } from '../taste/ratings';
 import type { SoundShare } from '../taste/lean';
 import { datesLine } from '../festivals/format';
+import { distanceText } from '../care/trail';
+import { type SeenSet, type SetVerdict, VERDICT_LABEL } from '../seen/seen';
+import type { Notice } from '../notifications/inbox';
 import { t, tn } from '../../i18n';
 
 /**
@@ -27,6 +30,13 @@ export type YearInput = {
   sounds: readonly SoundShare[];
   artist: (id: string) => Artist | undefined;
   today: Date;
+  /** Sets you saw (rated or said you were at), any year. */
+  setsSeen?: readonly SeenSet[];
+  /** How far your festival trail says you walked, by festival (meters). */
+  walked?: Readonly<Record<string, number>>;
+  miles?: boolean;
+  /** When each fit check was taken (ms). */
+  fits?: readonly number[];
 };
 
 /** Most lines per section on the year card. */
@@ -42,6 +52,14 @@ export type YearStats = {
   loved: number;
   rated: number;
   top: { artist: Artist; videos: number }[];
+  /** Sets you saw that year. */
+  sets: number;
+  /** Who you saw live most (more than once), most first. */
+  seenMost: { artist: Artist; times: number }[];
+  /** Your set of the year: the latest Unreal (or else Great) one. */
+  setOfYear?: { artist: Artist; festival?: Festival; verdict: SetVerdict };
+  walkedMeters: number;
+  fits: number;
 };
 
 export function yearStats(i: YearInput): YearStats {
@@ -69,12 +87,30 @@ export function yearStats(i: YearInput): YearStats {
     .sort((a, b) => b.s - a.s || a.artist.name.localeCompare(b.artist.name))
     .map((x) => ({ artist: x.artist, videos: filmed.get(x.id) ?? 0 }));
 
-  return { been, coming, videos: memories.length, clips, loved: lovedIds.length, rated, top };
+  // Sets you saw that year, who you saw most, and your set of the year.
+  const yearSets = (i.setsSeen ?? []).filter((x) => x.at >= start && x.at < end);
+  const times = new Map<string, number>();
+  for (const x of yearSets) times.set(x.artistId, (times.get(x.artistId) ?? 0) + 1);
+  const seenMost = [...times]
+    .filter(([, n]) => n > 1)
+    .sort((a, b) => b[1] - a[1])
+    .flatMap(([id, n]) => {
+      const artist = i.artist(id);
+      return artist ? [{ artist, times: n }] : [];
+    });
+  const best = [...yearSets].sort((a, b) => b.at - a.at).find((x) => x.verdict === 'unreal') ?? [...yearSets].sort((a, b) => b.at - a.at).find((x) => x.verdict === 'great');
+  const bestArtist = best ? i.artist(best.artistId) : undefined;
+  const setOfYear = best && bestArtist ? { artist: bestArtist, festival: i.festivals.find((f) => f.id === best.festivalId), verdict: best.verdict! } : undefined;
+  const yearIds = new Set(mine.map((f) => f.id));
+  const walkedMeters = Object.entries(i.walked ?? {}).reduce((n, [id, m]) => n + (yearIds.has(id) ? m : 0), 0);
+  const fits = (i.fits ?? []).filter((at) => at >= start && at < end).length;
+
+  return { been, coming, videos: memories.length, clips, loved: lovedIds.length, rated, top, sets: yearSets.length, seenMost, ...(setOfYear ? { setOfYear } : {}), walkedMeters, fits };
 }
 
 /** Whether there's anything to show for the year yet. */
 export function hasYear(s: YearStats): boolean {
-  return s.been.length + s.coming.length + s.videos + s.clips + s.rated > 0;
+  return s.been.length + s.coming.length + s.videos + s.clips + s.rated + s.sets > 0;
 }
 
 export function yearCard(i: YearInput): PlanCard | undefined {
@@ -85,12 +121,17 @@ export function yearCard(i: YearInput): PlanCard | undefined {
 
   if (s.been.length) cut(t('Festivals'), s.been.map((f) => ({ name: f.name, where: datesLine(f), star: false })));
   if (s.coming.length) cut(s.been.length ? t('Still to come') : t('Festivals ahead'), s.coming.map((f) => ({ name: f.name, where: datesLine(f), star: false })));
+  if (s.setOfYear) sections.push({ heading: t('Your set of the year'), lines: [{ name: s.setOfYear.artist.name, where: [s.setOfYear.festival?.name, VERDICT_LABEL[s.setOfYear.verdict]].filter(Boolean).join(' · '), star: true }], more: 0 });
+  if (s.seenMost.length) cut(t('Seen the most'), s.seenMost.map((x) => ({ name: x.artist.name, where: t('×{n}', { n: x.times }), star: false })));
   if (s.top.length) cut(t('Your top artists'), s.top.map((x) => ({ name: x.artist.name, where: x.videos ? tn(x.videos, '{n} video', '{n} videos') : undefined, star: false })));
   if (i.sounds.length) sections.push({ heading: t('Your sound'), lines: i.sounds.slice(0, 3).map((x) => ({ name: SOUND_LABEL[x.tag], where: `${x.percent}%`, star: false })), more: 0 });
 
   const numbers: CardLine[] = [];
   const festivals = s.been.length + s.coming.length;
   if (festivals) numbers.push({ name: t('Festivals'), where: String(festivals), star: false });
+  if (s.sets) numbers.push({ name: t('Sets you saw'), where: String(s.sets), star: false });
+  if (s.walkedMeters >= 100) numbers.push({ name: t('Walked'), where: distanceText(s.walkedMeters, !!i.miles), star: false });
+  if (s.fits) numbers.push({ name: t('Fit checks'), where: String(s.fits), star: false });
   if (s.videos) numbers.push({ name: t('Videos filmed'), where: String(s.videos), star: false });
   if (s.clips) numbers.push({ name: t('Live clips watched'), where: String(s.clips), star: false });
   if (s.loved) numbers.push({ name: t('Artists you love'), where: String(s.loved), star: false });
@@ -115,4 +156,20 @@ export function yearText(card: PlanCard): string {
   }
   parts.push('', t('Made with Afterglow'));
   return parts.join('\n');
+}
+
+/** Wrapped is news from December 1 to January 15 (for the year just gone). */
+export function wrappedNotice(today: Date, hasYearFor: (year: number) => boolean): Notice | undefined {
+  const m = today.getMonth();
+  const d = today.getDate();
+  const year = m === 11 ? today.getFullYear() : m === 0 && d <= 15 ? today.getFullYear() - 1 : undefined;
+  if (year === undefined || !hasYearFor(year)) return undefined;
+  return {
+    id: `wrapped:${year}`,
+    kind: 'recap',
+    at: new Date(year, 11, 1, 10).getTime(),
+    href: `/wrapped/${year}`,
+    title: t('Your {year} Wrapped is ready', { year }),
+    body: t('Your festivals, the sets you saw, your top artists and your sound. Tap to play it.'),
+  };
 }

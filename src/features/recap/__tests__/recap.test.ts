@@ -67,4 +67,14 @@ describe('festival recap', () => {
     expect(recapNotices([cyclops], new Date(2027, 2, 1))).toEqual([]);
     expect(recapNotices([cyclops], before)).toEqual([]);
   });
+
+  it('adds the sets you saw (and how they were), how far you walked and your fit checks', () => {
+    const card = festivalRecap(input({ seen: [{ artistId: 'levity', verdict: 'unreal' }, { artistId: 'kompany' }], walkedMeters: 12400, miles: false, fits: 2 }))!;
+    const artists = card.sections.find((x) => x.heading === 'Your artists')!;
+    expect(artists.lines[0]).toEqual(expect.objectContaining({ name: 'LEVITY', where: expect.stringMatching(/^Unreal/) }));
+    const numbers = card.sections.find((x) => x.heading === 'By the numbers')!.lines.map((l) => [l.name, l.where]);
+    expect(numbers).toEqual(expect.arrayContaining([['Sets you saw', '2'], ['Walked', '12 km'], ['Fit checks', '2']]));
+    // Seeing a set is enough for a recap.
+    expect(hasRecap(input({ going: false, memories: [], stars: new Set(), seen: [{ artistId: 'levity' }] }))).toBe(true);
+  });
 });

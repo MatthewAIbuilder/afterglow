@@ -1,3 +1,4 @@
+import { useBatterySaver } from '../../state/batterySaver';
 import { LinearGradient } from 'expo-linear-gradient';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { router } from 'expo-router';
@@ -184,6 +185,9 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
 
   // Watched to the end: count down, then glide to the next clip, unless you stay (or pause).
   const autoplay = useAutoplay();
+  // Battery saver: the next clip waits for a swipe.
+  const saver = useBatterySaver();
+  const playNext = autoplay.enabled && !saver.on;
   const [upNext, setUpNext] = useState<number | null>(null);
   const [stayed, setStayed] = useState(false);
   // A new visit to the clip starts fresh; pausing during the countdown means you're staying.
@@ -204,9 +208,9 @@ function ClipCardBase({ clip, note, festival, mustSee, width, height, isActive, 
   }, [onNext]);
   const canNext = !!onNext;
   const finishPass = useCallback(() => {
-    if (!autoplay.enabled || stayed || !canNext) return;
+    if (!playNext || stayed || !canNext) return;
     setUpNext((n) => n ?? AUTOPLAY_COUNTDOWN_SEC);
-  }, [autoplay.enabled, stayed, canNext]);
+  }, [playNext, stayed, canNext]);
   const stay = useCallback(() => {
     haptic.select();
     setStayed(true);
