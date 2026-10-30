@@ -161,6 +161,7 @@ const PRESETS: ReadonlySet<string> = new Set<string>([
   'Where are you?',
   'Water break',
   'This set is amazing',
+  'Fit check',
 ]);
 const HEADING_TO = /^Can’t find you\. Heading to (.+)$/;
 
