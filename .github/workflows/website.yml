@@ -232,7 +232,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           if [ -f /tmp/set-times.md ] || [ -f /tmp/page-watch.md ]; then
-            cat /tmp/set-times.md /tmp/page-watch.md 2>/dev/null > /tmp/festival-news.md
+            # Only the reports that exist (cat fails on a missing one, which failed the nightly run).
+            for f in /tmp/set-times.md /tmp/page-watch.md; do [ -f "$f" ] && cat "$f"; done > /tmp/festival-news.md || true
             gh issue create --repo "$GITHUB_REPOSITORY" --title "Festival news: $(date -u +'%b %-d')" --body-file /tmp/festival-news.md || echo "::warning::Couldn't open the heads-up issue."
           fi
 
