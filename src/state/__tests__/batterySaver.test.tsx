@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { beforeEach, describe, expect, it } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, render } from '@testing-library/react-native';
 import { Text } from 'react-native';
 import { forgetBatterySaver, SAVER_KEY, saverOn, setSaverMode, useBatterySaver } from '../batterySaver';
@@ -35,5 +35,22 @@ describe('battery saver', () => {
     await act(async () => Promise.resolve());
     expect(app.getByText('on:true')).toBeTruthy();
     await app.unmount();
+  });
+
+  it('Automatic reads the phone: on below 30% unplugged, or with Low Power Mode', async () => {
+    const battery = jest.requireMock<{ __state: { available: boolean; level: number; state: number; lowPower: boolean; levelListeners: ((e: { batteryLevel: number }) => void)[]; lowPowerListeners: ((e: { lowPowerMode: boolean }) => void)[] } }>('expo-battery').__state;
+    Object.assign(battery, { available: true, level: 0.5, state: 1, lowPower: false, levelListeners: [], lowPowerListeners: [] });
+    await AsyncStorage.setItem(SAVER_KEY, 'auto');
+    const app = await render(<Probe />);
+    for (let i = 0; i < 6; i++) await act(async () => Promise.resolve());
+    expect(app.getByText('auto:false')).toBeTruthy();
+    await act(async () => battery.levelListeners.forEach((l) => l({ batteryLevel: 0.2 })));
+    expect(app.getByText('auto:true')).toBeTruthy();
+    await act(async () => battery.levelListeners.forEach((l) => l({ batteryLevel: 0.9 })));
+    expect(app.getByText('auto:false')).toBeTruthy();
+    await act(async () => battery.lowPowerListeners.forEach((l) => l({ lowPowerMode: true })));
+    expect(app.getByText('auto:true')).toBeTruthy();
+    await app.unmount();
+    battery.available = false;
   });
 });

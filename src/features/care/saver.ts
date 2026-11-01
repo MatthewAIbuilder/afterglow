@@ -11,7 +11,7 @@ export function chooseSaver(current: SaverMode) {
   showActionSheet(
     {
       title: t('Battery saver'),
-      message: t('Does less to last longer: no next clip by itself, crew news and your spot less often, a rougher trail. Automatic turns it on below 30%.'),
+      message: t('Does less to last longer: no next clip by itself, crew news and your spot less often, a rougher trail. Automatic turns it on below 30%, or with Low Power Mode.'),
       options,
       cancelButtonIndex: options.length - 1,
     },

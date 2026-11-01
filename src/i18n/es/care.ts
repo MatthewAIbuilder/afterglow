@@ -427,7 +427,7 @@ export const es_care: Dictionary = {
   'Battery saver: {mode}. Afterglow does less so your phone lasts the night': 'Ahorro de batería: {mode}. Afterglow hace menos para que tu teléfono aguante la noche',
   'On': 'Activado',
   'Automatic': 'Automático',
-  'Does less to last longer: no next clip by itself, crew news and your spot less often, a rougher trail. Automatic turns it on below 30%.': 'Hace menos para durar más: no pasa solo al siguiente clip, las novedades del grupo y tu ubicación van menos a menudo, y el recorrido es menos preciso. Automático lo activa por debajo del 30%.',
+  'Does less to last longer: no next clip by itself, crew news and your spot less often, a rougher trail. Automatic turns it on below 30%, or with Low Power Mode.': 'Hace menos para durar más: no pasa solo al siguiente clip, las novedades del grupo y tu ubicación van menos a menudo, y el recorrido es menos preciso. Automático lo activa por debajo del 30% o con el modo de bajo consumo.',
   'Battery saver: {mode}. Change it': 'Ahorro de batería: {mode}. Cambiarlo',
   'Battery saver on': 'Ahorro de batería activado',
   'Battery saver: {mode}': 'Ahorro de batería: {mode}',

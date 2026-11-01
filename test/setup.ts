@@ -118,6 +118,27 @@ jest.mock('expo-apple-authentication', () => {
 });
 // Keeping the screen awake (the totem).
 jest.mock('expo-keep-awake', () => ({ useKeepAwake: jest.fn(), activateKeepAwakeAsync: jest.fn(async () => {}), deactivateKeepAwake: jest.fn(async () => {}) }));
+// The battery (Battery saver's Automatic): no reading unless a test sets `__state.available`.
+jest.mock('expo-battery', () => {
+  const __state = { available: false, level: 0.8, state: 1, lowPower: false, levelListeners: [] as Function[], lowPowerListeners: [] as Function[] };
+  return {
+    __state,
+    BatteryState: { UNKNOWN: 0, UNPLUGGED: 1, CHARGING: 2, FULL: 3, NOT_CHARGING: 4 },
+    isAvailableAsync: jest.fn(async () => __state.available),
+    getBatteryLevelAsync: jest.fn(async () => __state.level),
+    getBatteryStateAsync: jest.fn(async () => __state.state),
+    isLowPowerModeEnabledAsync: jest.fn(async () => __state.lowPower),
+    addBatteryLevelListener: jest.fn((l: Function) => {
+      __state.levelListeners.push(l);
+      return { remove: () => {} };
+    }),
+    addBatteryStateListener: jest.fn(() => ({ remove: () => {} })),
+    addLowPowerModeListener: jest.fn((l: Function) => {
+      __state.lowPowerListeners.push(l);
+      return { remove: () => {} };
+    }),
+  };
+});
 jest.mock('expo-sharing', () => ({ isAvailableAsync: jest.fn(async () => true), shareAsync: jest.fn(async () => {}) }));
 
 // The secure store: an in-memory keychain the tests can read (`__items`).
