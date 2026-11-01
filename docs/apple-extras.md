@@ -10,6 +10,16 @@ Since version 1.0.6 (2026-10-29; the user asked for "an Apple Watch version… l
 
 All of it comes from your plan on your phone (`features/glance/glance.ts`): the same route "Your festival" shows, with your must-sees and your hours. Nothing goes to a server: the widgets read it from an App Group on the phone, and the Watch gets it from the phone directly.
 
+## If the build stops at "Failed to sync capabilities" (App Groups)
+
+The first automatic 1.0.6 build (2026-11-01) stopped here. Expo registered `app.afterglowmusic.widget` but Apple refused to switch on App Groups for it from the automatic build. Do it once by hand, then build from the PC:
+
+1. Go to https://developer.apple.com/account/resources/identifiers/list and sign in.
+2. Top right, change the filter from **App IDs** to **App Groups**. If `group.app.afterglowmusic` isn't listed: press **+**, choose **App Groups**, **Continue**, description `Afterglow`, identifier `group.app.afterglowmusic`, **Continue**, **Register**.
+3. Switch the filter back to **App IDs**. Open **app.afterglowmusic.widget**, tick **App Groups**, press **Configure** (or **Edit**) beside it, tick `group.app.afterglowmusic`, **Continue**, then **Save** (and **Confirm** if asked).
+4. Do the same for **app.afterglowmusic** (the app itself).
+5. On the PC: `git pull`, then `npm run build:ios`. Sign in to Apple when it asks and say **yes** to new provisioning profiles.
+
 ## How to try it (after the 1.0.6 build is on TestFlight)
 
 1. **The build**: run `git pull`, then `npm run build:ios` on your PC, signing in to Apple when it asks and saying **yes** to new provisioning profiles (the widget and the Watch app are new to your Apple account, so this first build has to come from your PC; after that the automatic build works).
