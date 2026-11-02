@@ -386,11 +386,16 @@ times identical to the hand-entered ones.
 - **Account**: the GitHub secrets `CLASHFINDER_USERNAME` and
   `CLASHFINDER_PRIVATE_KEY` (the user's Clashfinder account, added
   2026-10-29). Without them the step does nothing.
-- **Permission**: Clashfinder's data is CC BY-NC 3.0 ("free for
-  non-commercial use, contact halvin@clashfinder.com for other uses").
-  Until they say yes, `CLASHFINDER_PUBLISH` in the script is `false`: nothing
-  is published, and the nightly "Festival news" issue lists what would be.
-  Once they agree, set it to `true` (and add the credit they ask for).
+- **Permission and credit**: Clashfinder's data is CC BY-NC 3.0 ("free for
+  non-commercial use, contact halvin@clashfinder.com for other uses"). On
+  2026-11-01 the user chose to publish without waiting for an answer, with
+  credit, and to deal with any consequences later: `CLASHFINDER_PUBLISH` is
+  `true`. Each published lineup carries `"credit": { "name": "Clashfinder",
+  "url": "<the timetable>", "license": "CC BY-NC 3.0" }`; the app keeps it as
+  the festival's `setTimesCredit` and shows "Set times from Clashfinder (CC
+  BY-NC 3.0) ↗" under the timetable and on the Info tab (`SetTimesCredit`),
+  opening that timetable. To stop (if Clashfinder asks), set it back to
+  `false`: the next night's run drops every Clashfinder lineup.
 - **Limits**: at most 8 timetables a night, 31 s apart (Clashfinder allows 10
   requests per 5 minutes from March 2027).
 - Published lineups are marked `"from": "clashfinder"` (the app ignores the

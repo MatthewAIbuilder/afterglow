@@ -383,6 +383,13 @@ function parseLineup(raw: unknown, problems: string[]): FestivalLineup | undefin
       .filter((s): s is Stage => !!s?.id && !!s.name) as Stage[];
   }
   if (raw.source === 'page') lineup.source = 'page';
+  // Whose timetable it is: { "name", "url" (https), "license"? }.
+  if (isObj(raw.credit)) {
+    const name = text(raw.credit.name);
+    const url = text(raw.credit.url);
+    const license = text(raw.credit.license);
+    if (name && url && /^https:\/\//.test(url)) lineup.credit = { name: name.slice(0, 60), url, ...(license ? { license: license.slice(0, 40) } : {}) };
+  }
   return lineup;
 }
 

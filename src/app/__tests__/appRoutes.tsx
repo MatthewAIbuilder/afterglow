@@ -35,7 +35,6 @@ import MemoriesScreen from '../memories';
 import MemoryScreen from '../memory/[id]';
 import MemoryTagScreen from '../memory-tag';
 import MusicScreen from '../music';
-import MusicAuthReturn from '../music-auth';
 import NotificationsScreen from '../notifications';
 import PeopleScreen from '../people';
 import FollowsScreen from '../follows/[handle]';
@@ -172,7 +171,6 @@ export const APP_ROUTES = {
   'crew-story': CrewStoryScreen,
   'year/[year]': YearScreen,
   music: MusicScreen,
-  'music-auth': MusicAuthReturn,
   'memory-tag': MemoryTagScreen,
   camera: CameraScreen,
   memories: MemoriesScreen,

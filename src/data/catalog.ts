@@ -57,12 +57,17 @@ export function applyLineup(festival: Festival, lineup: FestivalLineup | undefin
     if (festival.sets?.length) return festival;
     const next: Festival = { ...festival, lineup: [...new Set([...festival.lineup, ...lineup.artistIds])] };
     if (lineup.sets) next.sets = lineup.sets;
+    if (lineup.sets && lineup.credit) next.setTimesCredit = lineup.credit;
     if (lineup.days) next.days = lineup.days;
     if (lineup.stages) next.stages = lineup.stages;
     return next;
   }
   const next: Festival = { ...festival, lineup: [...lineup.artistIds] };
-  if (lineup.sets) next.sets = lineup.sets;
+  if (lineup.sets) {
+    next.sets = lineup.sets;
+    if (lineup.credit) next.setTimesCredit = lineup.credit;
+    else delete next.setTimesCredit;
+  }
   if (lineup.days) next.days = lineup.days;
   if (lineup.stages) next.stages = lineup.stages;
   return next;

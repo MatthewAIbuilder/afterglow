@@ -1,24 +1,11 @@
-import { describe, expect, it, jest } from '@jest/globals';
+import { describe, expect, it } from '@jest/globals';
 import { SECRET_KEY } from '../secrets';
-import { MusicServiceError } from '../service';
-import { readSpotifyLibrary, spotifyClient, SPOTIFY_API } from '../spotify/api';
+import { libraryFromEmbeds, parseSpotifyLink, readEmbedPage, type TextFetch } from '../spotify/links';
 import { normalizeSpotify, type SpotifyLibrary } from '../spotify/normalize';
 import { spotifyService } from '../spotify/service';
-import { SPOTIFY_ENDPOINTS, SPOTIFY_SCOPES, type SpotifySession } from '../spotify/tokens';
-import {
-  fakeFetch,
-  memorySecrets,
-  SPOTIFY_FOLLOWING,
-  SPOTIFY_ROUTES,
-  SPOTIFY_SAVED_PAGE_1,
-  SPOTIFY_SAVED_PAGE_2,
-  SPOTIFY_TOKEN,
-  SPOTIFY_TOP_MEDIUM,
-  SPOTIFY_TOP_SHORT,
-} from './fixtures';
+import { memorySecrets, SPOTIFY_FOLLOWING, SPOTIFY_SAVED_PAGE_1, SPOTIFY_SAVED_PAGE_2, SPOTIFY_TOP_MEDIUM, SPOTIFY_TOP_SHORT } from './fixtures';
 
 const AT = new Date('2026-09-29T12:00:00Z');
-const NOW = AT.getTime();
 
 const library = (over: Partial<SpotifyLibrary> = {}): SpotifyLibrary => ({
   saved: [...SPOTIFY_SAVED_PAGE_1.items, ...SPOTIFY_SAVED_PAGE_2.items],
@@ -107,214 +94,105 @@ describe('Spotify library → artist signals', () => {
   });
 });
 
-const session = (over: Partial<SpotifySession> = {}): SpotifySession => ({
-  accessToken: 'fixture-access-0',
-  refreshToken: 'fixture-refresh-0',
-  expiresAt: NOW + 3_600_000,
-  ...over,
-});
+/** A Spotify embed page as the app reads it: its JSON data script with a track list. */
+const embedPage = (name: string, tracks: { uri?: string; title: string; subtitle?: string; artists?: { name: string }[] }[]) =>
+  `<html><head><script id="__NEXT_DATA__" type="application/json">${JSON.stringify({ props: { pageProps: { state: { data: { entity: { name, trackList: tracks } } } } } })}</script></head><body></body></html>`;
 
-function sessions(initial: SpotifySession | null) {
-  const store = { current: initial, cleared: false };
-  return {
-    store,
-    load: async () => store.current,
-    save: async (s: SpotifySession) => void (store.current = s),
-    clear: async () => {
-      store.current = null;
-      store.cleared = true;
-    },
+const PLAYLIST = '37i9dQZF1DXcBWIGoYBM5M';
+const page = embedPage('Festival warm-up', [
+  { uri: 'spotify:track:1', title: 'Where You Are', subtitle: 'John Summit, Hayla' },
+  { uri: 'spotify:track:2', title: 'Get Down', subtitle: 'Odd\u00a0Mob' },
+  { uri: 'spotify:track:3', title: 'Shiver', subtitle: 'John Summit' },
+  { title: 'No artist' },
+]);
+
+function net(routes: Record<string, { status: number; body?: string; url?: string } | 'offline'>) {
+  const calls: string[] = [];
+  const fetchText: TextFetch = async (url) => {
+    calls.push(url);
+    const r = routes[url];
+    if (r === 'offline') throw new Error('offline');
+    if (!r) return { ok: false, status: 404, text: async () => '' };
+    return { ok: r.status < 300, status: r.status, url: r.url ?? url, text: async () => r.body ?? '' };
   };
+  return { fetchText, calls };
 }
 
-describe('Spotify client', () => {
-  it('reads every section, following pages, with the access token', async () => {
-    const net = fakeFetch(SPOTIFY_ROUTES);
-    const client = spotifyClient({ fetch: net.fetch, sessions: sessions(session()), clientId: 'cid', now: () => NOW });
-    const lib = await readSpotifyLibrary(client.get);
-    expect(lib.saved).toHaveLength(8);
-    expect(lib.followed).toHaveLength(2);
-    expect(lib.top).toHaveLength(4);
-    expect(lib.recent).toHaveLength(2);
-    expect(lib.gaps).toEqual([]);
-    expect(net.calls.every((c) => c.init?.headers?.Authorization === 'Bearer fixture-access-0')).toBe(true);
+describe('Spotify by link', () => {
+  it('reads playlist, album and artist links however they were shared', () => {
+    expect(parseSpotifyLink(`https://open.spotify.com/playlist/${PLAYLIST}?si=abc123`)).toEqual({ kind: 'playlist', id: PLAYLIST });
+    expect(parseSpotifyLink(`Listen to this https://open.spotify.com/intl-es/playlist/${PLAYLIST}?si=x`)).toEqual({ kind: 'playlist', id: PLAYLIST });
+    expect(parseSpotifyLink(`spotify:album:${PLAYLIST}`)).toEqual({ kind: 'album', id: PLAYLIST });
+    expect(parseSpotifyLink(`https://open.spotify.com/artist/${PLAYLIST}`)).toEqual({ kind: 'artist', id: PLAYLIST });
+    expect(parseSpotifyLink('https://spotify.link/AbCdEf')).toEqual({ short: 'https://spotify.link/AbCdEf' });
+    expect(parseSpotifyLink(`https://open.spotify.com/track/${PLAYLIST}`)).toBeUndefined();
+    expect(parseSpotifyLink('https://example.com/playlist/37i9dQZF1DXcBWIGoYBM5M')).toBeUndefined();
+    expect(parseSpotifyLink('my playlist')).toBeUndefined();
   });
 
-  it('refreshes a token that is about to run out, and keeps the new one', async () => {
-    const net = fakeFetch({ ...SPOTIFY_ROUTES, [SPOTIFY_ENDPOINTS.tokenEndpoint]: { status: 200, body: { ...SPOTIFY_TOKEN, refresh_token: undefined } } });
-    const s = sessions(session({ expiresAt: NOW + 10_000 }));
-    const client = spotifyClient({ fetch: net.fetch, sessions: s, clientId: 'cid', now: () => NOW });
-    await readSpotifyLibrary(client.get);
-    const refresh = net.calls.find((c) => c.url === SPOTIFY_ENDPOINTS.tokenEndpoint)!;
-    expect(refresh.init?.body).toContain('grant_type=refresh_token');
-    expect(refresh.init?.body).toContain('client_id=cid');
-    expect(refresh.init?.body).not.toContain('client_secret');
-    // Spotify didn't send a new refresh token: the old one is kept.
-    expect(s.store.current).toEqual({ accessToken: 'fixture-access-1', refreshToken: 'fixture-refresh-0', expiresAt: NOW + 3_600_000, scope: SPOTIFY_TOKEN.scope });
+  it('reads the songs and artists from the embed page, and nothing from a page without them', () => {
+    const r = readEmbedPage(page);
+    expect(r?.name).toBe('Festival warm-up');
+    expect(r?.tracks.map((t) => t.artists)).toEqual([['John Summit', 'Hayla'], ['Odd Mob'], ['John Summit']]);
+    expect(readEmbedPage('<html>Page not found</html>')).toBeUndefined();
+    expect(readEmbedPage(embedPage('Empty', []))).toBeUndefined();
   });
 
-  it('refreshes once when Spotify says the token is no longer valid', async () => {
-    const net = fakeFetch({
-      ...SPOTIFY_ROUTES,
-      [`${SPOTIFY_API}/me/tracks?limit=50`]: [{ status: 401 }, { status: 200, body: SPOTIFY_SAVED_PAGE_1 }],
-      [SPOTIFY_ENDPOINTS.tokenEndpoint]: { status: 200, body: SPOTIFY_TOKEN },
-    });
-    const client = spotifyClient({ fetch: net.fetch, sessions: sessions(session()), clientId: 'cid', now: () => NOW });
-    const lib = await readSpotifyLibrary(client.get);
-    expect(lib.saved).toHaveLength(8);
+  it('counts each artist once per song, however many links have the song', () => {
+    const r = readEmbedPage(page)!;
+    const snap = normalizeSpotify(libraryFromEmbeds([r, r]), AT);
+    expect(snap.artists.find((a) => a.name === 'John Summit')?.savedTracks).toBe(2);
+    expect(snap.savedTracksRead).toBe(3);
+    expect(snap.gaps).toEqual([]);
+    // Song titles never leave the reading.
+    expect(JSON.stringify(snap)).not.toContain('Shiver');
   });
 
-  it('a refused refresh (revoked access) is `expired` and forgets the session', async () => {
-    const net = fakeFetch({ ...SPOTIFY_ROUTES, [SPOTIFY_ENDPOINTS.tokenEndpoint]: { status: 400, body: { error: 'invalid_grant' } } });
-    const s = sessions(session({ expiresAt: NOW - 1 }));
-    const client = spotifyClient({ fetch: net.fetch, sessions: s, clientId: 'cid', now: () => NOW });
-    const e = await readSpotifyLibrary(client.get).catch((x) => x);
-    expect(e).toBeInstanceOf(MusicServiceError);
-    expect(e.kind).toBe('expired');
-    expect(s.store.cleared).toBe(true);
-    // No token or refresh token ever appears in an error.
-    expect(String(e.message)).not.toMatch(/fixture-/);
-  });
-
-  it('with no session at all, reports `expired` without calling Spotify', async () => {
-    const net = fakeFetch({});
-    const client = spotifyClient({ fetch: net.fetch, sessions: sessions(null), clientId: 'cid', now: () => NOW });
-    await expect(readSpotifyLibrary(client.get)).rejects.toMatchObject({ kind: 'expired' });
-    expect(net.calls).toHaveLength(0);
-  });
-
-  it('a part Spotify refuses becomes a gap, not a failure', async () => {
-    const net = fakeFetch({ ...SPOTIFY_ROUTES, [`${SPOTIFY_API}/me/following?type=artist&limit=50`]: { status: 403 } });
-    const client = spotifyClient({ fetch: net.fetch, sessions: sessions(session()), clientId: 'cid', now: () => NOW });
-    const lib = await readSpotifyLibrary(client.get);
-    expect(lib.gaps).toEqual(['followed']);
-    expect(lib.followed).toEqual([]);
-    expect(lib.saved).toHaveLength(8);
-  });
-
-  it('every part refused is `denied`', async () => {
-    const refused = Object.fromEntries(Object.keys(SPOTIFY_ROUTES).map((u) => [u, { status: 403 }]));
-    const client = spotifyClient({ fetch: fakeFetch(refused).fetch, sessions: sessions(session()), clientId: 'cid', now: () => NOW });
-    await expect(readSpotifyLibrary(client.get)).rejects.toMatchObject({ kind: 'denied' });
-  });
-
-  it('rate limits and outages fail the sync with their kind', async () => {
-    const busy = fakeFetch({ ...SPOTIFY_ROUTES, [`${SPOTIFY_API}/me/tracks?limit=50`]: { status: 429 } });
-    const c1 = spotifyClient({ fetch: busy.fetch, sessions: sessions(session()), clientId: 'cid', now: () => NOW });
-    await expect(readSpotifyLibrary(c1.get)).rejects.toMatchObject({ kind: 'rate-limited' });
-    const offline = spotifyClient({
-      fetch: async () => {
-        throw new Error('offline');
-      },
-      sessions: sessions(session()),
-      clientId: 'cid',
-      now: () => NOW,
-    });
-    await expect(readSpotifyLibrary(offline.get)).rejects.toMatchObject({ kind: 'network' });
-  });
-
-  it('never sends the token outside the Spotify API', async () => {
-    const net = fakeFetch({
-      ...SPOTIFY_ROUTES,
-      [`${SPOTIFY_API}/me/tracks?limit=50`]: { status: 200, body: { ...SPOTIFY_SAVED_PAGE_1, next: 'https://evil.example/steal' } },
-    });
-    const client = spotifyClient({ fetch: net.fetch, sessions: sessions(session()), clientId: 'cid', now: () => NOW });
-    await expect(readSpotifyLibrary(client.get)).rejects.toBeInstanceOf(MusicServiceError);
-    expect(net.calls.some((c) => c.url.includes('evil'))).toBe(false);
-  });
-
-  it('asks only for the three read scopes it needs, and private playlists (Plan to playlist, only when you tap it)', () => {
-    expect([...SPOTIFY_SCOPES].sort()).toEqual(['playlist-modify-private', 'user-follow-read', 'user-library-read', 'user-top-read']);
-  });
-});
-
-describe('Spotify service', () => {
-  const make = (over: Partial<Parameters<typeof spotifyService>[0]> = {}) => {
+  it('adding a link reads it straight away and keeps it in the secure store; syncing reads every link', async () => {
     const secrets = memorySecrets();
-    const net = fakeFetch({ ...SPOTIFY_ROUTES, [SPOTIFY_ENDPOINTS.tokenEndpoint]: { status: 200, body: SPOTIFY_TOKEN } });
-    const service = spotifyService({
-      clientId: 'cid',
-      secrets,
-      fetch: net.fetch,
-      signIn: async () => ({ type: 'code', code: 'one-time-code', codeVerifier: 'verifier', redirectUri: 'afterglow://music-auth' }),
-      secureStorage: true,
-      now: () => NOW,
-      ...over,
-    });
-    return { service, secrets, net };
-  };
-
-  it('is not offered without a client id, or without a secure store', () => {
-    expect(make({ clientId: '' }).service.availability()).toEqual({ ok: false, reason: 'not-set-up' });
-    expect(make({ secureStorage: false }).service.availability()).toEqual({ ok: false, reason: 'not-on-this-device' });
-    expect(make().service.availability()).toEqual({ ok: true });
-  });
-
-  it('in Expo Go it says a development build is needed, and never opens the sign-in', async () => {
-    const signIn = jest.fn(async () => ({ type: 'cancelled' as const }));
-    const { service } = make({ needsOwnApp: true, signIn });
-    expect(service.availability()).toEqual({ ok: false, reason: 'needs-full-app' });
-    expect(await service.connect()).toEqual({ ok: false, reason: 'unavailable' });
-    expect(signIn).not.toHaveBeenCalled();
-  });
-
-  it('a sign-in Spotify refuses at the token step (bad code, wrong redirect) stores nothing', async () => {
-    const secrets = memorySecrets();
-    const net = fakeFetch({ [SPOTIFY_ENDPOINTS.tokenEndpoint]: { status: 400, body: { error: 'invalid_grant' } } });
-    const { service } = make({ secrets, fetch: net.fetch });
-    expect(await service.connect()).toEqual({ ok: false, reason: 'unknown' });
-    expect(secrets.items.size).toBe(0);
-  });
-
-  it('no connection during sign-in is a network problem, and stores nothing', async () => {
-    const secrets = memorySecrets();
-    const { service } = make({ secrets, fetch: async () => { throw new Error('offline'); } });
-    expect(await service.connect()).toEqual({ ok: false, reason: 'network' });
-    expect(secrets.items.size).toBe(0);
-  });
-
-  it('the code is exchanged with the same redirect address the sign-in used', async () => {
-    const { service, net } = make();
-    await service.connect();
-    const body = net.calls.find((c) => c.url === SPOTIFY_ENDPOINTS.tokenEndpoint)!.init!.body!;
-    expect(body).toContain(`redirect_uri=${encodeURIComponent('afterglow://music-auth')}`);
-    expect(body).not.toContain('client_secret');
-  });
-
-  it('an expired session that can’t be refreshed makes the next sync `expired` and forgets the session', async () => {
-    const { service, secrets } = make();
-    await service.connect();
-    const stored = JSON.parse(secrets.items.get(SECRET_KEY.spotify)!);
-    secrets.items.set(SECRET_KEY.spotify, JSON.stringify({ ...stored, expiresAt: NOW - 1 }));
-    const refused = make({ secrets, fetch: fakeFetch({ [SPOTIFY_ENDPOINTS.tokenEndpoint]: { status: 400, body: { error: 'invalid_grant' } } }).fetch });
-    await expect(refused.service.fetchLibrary(AT)).rejects.toMatchObject({ kind: 'expired' });
-    expect(secrets.items.size).toBe(0);
-  });
-
-  it('connecting exchanges the code with PKCE and keeps the session in the secure store only', async () => {
-    const { service, secrets, net } = make();
-    expect(await service.connect()).toEqual({ ok: true });
-    const exchange = net.calls.find((c) => c.url === SPOTIFY_ENDPOINTS.tokenEndpoint)!;
-    expect(exchange.init?.body).toContain('grant_type=authorization_code');
-    expect(exchange.init?.body).toContain('code_verifier=verifier');
-    expect(JSON.parse(secrets.items.get(SECRET_KEY.spotify)!).accessToken).toBe('fixture-access-1');
-  });
-
-  it('a cancelled or refused sign-in stores nothing', async () => {
-    const cancelled = make({ signIn: async () => ({ type: 'cancelled' }) });
-    expect(await cancelled.service.connect()).toEqual({ ok: false, reason: 'cancelled' });
-    const denied = make({ signIn: async () => ({ type: 'denied' }) });
-    expect(await denied.service.connect()).toEqual({ ok: false, reason: 'denied' });
-    expect(cancelled.secrets.items.size + denied.secrets.items.size).toBe(0);
-  });
-
-  it('reads the library as a Spotify snapshot, then disconnecting forgets the sign-in', async () => {
-    const { service, secrets } = make();
-    await service.connect();
-    const snap = await service.fetchLibrary(AT);
+    const { fetchText, calls } = net({ [`https://open.spotify.com/embed/playlist/${PLAYLIST}`]: { status: 200, body: page } });
+    const svc = spotifyService({ secrets, fetchText, onPhone: true });
+    expect(svc.availability()).toEqual({ ok: true });
+    expect(await svc.connect(`https://open.spotify.com/playlist/${PLAYLIST}?si=1`)).toEqual({ ok: true });
+    expect(JSON.parse(secrets.items.get(SECRET_KEY.spotify)!)).toEqual({ links: [{ kind: 'playlist', id: PLAYLIST, name: 'Festival warm-up' }] });
+    // The same playlist twice is kept once.
+    await svc.connect(`spotify:playlist:${PLAYLIST}`);
+    expect(await svc.links!()).toEqual([{ kind: 'playlist', name: 'Festival warm-up' }]);
+    const snap = await svc.fetchLibrary(AT);
     expect(snap.provider).toBe('spotify');
-    expect(snap.artists.every((a) => a.provider === 'spotify')).toBe(true);
-    await service.disconnect();
+    expect(snap.artists.map((a) => a.name)).toEqual(expect.arrayContaining(['John Summit', 'Hayla', 'Odd Mob']));
+    expect(calls.every((u) => u.startsWith('https://open.spotify.com/embed/'))).toBe(true);
+    await svc.disconnect();
+    expect(secrets.items.has(SECRET_KEY.spotify)).toBe(false);
+  });
+
+  it('says why a link didn’t work: not a link, private, or no signal', async () => {
+    const secrets = memorySecrets();
+    const { fetchText } = net({
+      [`https://open.spotify.com/embed/playlist/${PLAYLIST}`]: { status: 404 },
+      [`https://open.spotify.com/embed/album/${PLAYLIST}`]: 'offline',
+    });
+    const svc = spotifyService({ secrets, fetchText, onPhone: true });
+    expect(await svc.connect('hello')).toEqual({ ok: false, reason: 'bad-link' });
+    expect(await svc.connect(`https://open.spotify.com/playlist/${PLAYLIST}`)).toEqual({ ok: false, reason: 'not-public' });
+    expect(await svc.connect(`https://open.spotify.com/album/${PLAYLIST}`)).toEqual({ ok: false, reason: 'network' });
     expect(secrets.items.size).toBe(0);
+  });
+
+  it('follows a short spotify.link to the playlist', async () => {
+    const { fetchText } = net({
+      'https://spotify.link/AbCdEf': { status: 200, url: `https://open.spotify.com/playlist/${PLAYLIST}?si=z`, body: '' },
+      [`https://open.spotify.com/embed/playlist/${PLAYLIST}`]: { status: 200, body: page },
+    });
+    const svc = spotifyService({ secrets: memorySecrets(), fetchText, onPhone: true });
+    expect(await svc.connect('https://spotify.link/AbCdEf')).toEqual({ ok: true });
+  });
+
+  it('a sync with no signal keeps the last import (network), and isn’t offered on the website', async () => {
+    const secrets = memorySecrets();
+    secrets.items.set(SECRET_KEY.spotify, JSON.stringify({ links: [{ kind: 'playlist', id: PLAYLIST }] }));
+    const svc = spotifyService({ secrets, fetchText: net({ [`https://open.spotify.com/embed/playlist/${PLAYLIST}`]: 'offline' }).fetchText, onPhone: true });
+    await expect(svc.fetchLibrary(AT)).rejects.toMatchObject({ kind: 'network' });
+    expect(spotifyService({ secrets, fetchText: net({}).fetchText, onPhone: false }).availability()).toEqual({ ok: false, reason: 'not-on-this-device' });
   });
 });

@@ -421,4 +421,7 @@ export const es_festivalPage: Dictionary = {
   'Lockers': 'Taquillas',
   'Charging': 'Carga',
   'Camping': 'Camping',
+  'Set times from {source} ({license}) ↗': 'Horarios de {source} ({license}) ↗',
+  'Set times from {source} ↗': 'Horarios de {source} ↗',
+  'Set times from {source}. Opens their timetable.': 'Horarios de {source}. Abre su horario.',
 };

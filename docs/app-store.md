@@ -34,8 +34,8 @@ TestFlight app on your phone (install TestFlight from the App Store, sign in
 with the same Apple ID). Friends can test it too: App Store Connect →
 TestFlight → add them as testers.
 
-The development build in `docs/spotify-setup.md` is a different thing: it's
-for testing Spotify sign-in while you work. TestFlight is the real app.
+The development build (`docs/development-build.md`) is a different thing: it's
+for testing native features while you work. TestFlight is the real app.
 
 ## Step 2: the App Store listing
 
@@ -104,8 +104,9 @@ upload ever warns about a missing reason, it names the API: add it there.
   Store Connect → App Review Information), follow a couple of people and share
   a video, so the reviewer sees the social side working.
 - **Review notes**: say that festivals and set times come from official
-  lineups and EDMTrain, clips are YouTube's own player, and that Spotify
-  connection needs a Spotify account (or that it's switched off, see below).
+  lineups and EDMTrain (set times also from Clashfinder, credited), clips are
+  YouTube's own player, and Spotify is added by pasting a public playlist
+  link (no sign-in).
 
 ## Step 5: things App Review checks that Afterglow already does
 
@@ -138,10 +139,9 @@ upload ever warns about a missing reason, it names the API: add it there.
 
 ## Before the first public release
 
-- **Spotify**: in Spotify's development mode only 5 named people can connect.
-  Either apply for Spotify's extended quota mode in Spotify's developer
-  dashboard, or tell App Review it's limited to test users. Apple Music says "Needs the full version" and never
-  pretends to connect, which is fine.
+- **Spotify**: no sign-in since 2026-11-02 (Spotify only allowed 5 people);
+  anyone adds public playlists by link (`docs/spotify-setup.md`), so nothing
+  to apply for.
 - **Legal pages**: `docs/legal.md` lists what's still needed: your name or
   company and where you're based, and a review by someone qualified.
 - **Firebase**: rules and indexes deployed (`docs/firebase-setup.md` step 5),

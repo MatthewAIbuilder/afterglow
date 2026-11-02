@@ -14,6 +14,7 @@ const snap = (provider: 'spotify' | 'apple-music', names: string[], syncedAt = '
   gaps: [],
 });
 const good = syncSucceeded(connected({}, 'spotify'), 'spotify', snap('spotify', ['Illenium', 'Subtronics']));
+const goodApple = syncSucceeded(connected({}, 'apple-music'), 'apple-music', snap('apple-music', ['Illenium', 'Subtronics']));
 const OK: MusicAvailability = { ok: true };
 const available = { spotify: OK, 'apple-music': OK };
 
@@ -81,29 +82,29 @@ describe('connection state', () => {
 
 describe('what the screens say', () => {
   it('no service connected: offers Connect, or says plainly it isn’t available', () => {
-    expect(connectionView('spotify', undefined, OK, AT)).toMatchObject({
+    expect(connectionView('apple-music', undefined, OK, AT)).toMatchObject({
       status: 'not-connected',
       label: 'Not connected',
-      primary: { action: 'connect', label: 'Connect Spotify' },
+      primary: { action: 'connect', label: 'Connect Apple Music' },
       canDisconnect: false,
     });
-    const off = connectionView('spotify', undefined, { ok: false, reason: 'not-set-up' }, AT);
+    const off = connectionView('apple-music', undefined, { ok: false, reason: 'not-set-up' }, AT);
     expect(off).toMatchObject({ status: 'unavailable', detail: 'Not available in this version of Afterglow yet.', canDisconnect: false });
     expect(off.primary).toBeUndefined();
-    // Expo Go: Spotify needs a development build.
-    expect(connectionView('spotify', undefined, { ok: false, reason: 'needs-full-app' }, AT).detail).toMatch(/full version/);
+    // Expo Go: Apple Music needs the full app.
+    expect(connectionView('apple-music', undefined, { ok: false, reason: 'needs-full-app' }, AT).detail).toMatch(/full version/);
   });
 
   it('each of the seven states says exactly what’s true', () => {
-    const view = (c: Parameters<typeof connectionView>[1], reach: Parameters<typeof connectionView>[4] = {}) => connectionView('spotify', c, OK, AT, reach);
-    expect(view(undefined, { connecting: true })).toMatchObject({ status: 'connecting', label: 'Connecting', headline: 'Connecting to Spotify…', busy: true });
-    expect(view(connected({}, 'spotify').spotify)).toMatchObject({ status: 'connected', headline: 'Connected to Spotify', primary: { action: 'sync' } });
-    expect(view(syncStarted(connected({}, 'spotify'), 'spotify', AT).spotify)).toMatchObject({ status: 'syncing', headline: 'Reading your library…', busy: true });
-    expect(view(syncStarted(good, 'spotify', AT).spotify)).toMatchObject({ status: 'syncing', headline: 'Syncing your library…', busy: true });
-    expect(view(good.spotify, { matched: 2, upcoming: 1 })).toMatchObject({
+    const view = (c: Parameters<typeof connectionView>[1], reach: Parameters<typeof connectionView>[4] = {}) => connectionView('apple-music', c, OK, AT, reach);
+    expect(view(undefined, { connecting: true })).toMatchObject({ status: 'connecting', label: 'Connecting', headline: 'Connecting to Apple Music…', busy: true });
+    expect(view(connected({}, 'apple-music')['apple-music'])).toMatchObject({ status: 'connected', headline: 'Connected to Apple Music', primary: { action: 'sync' } });
+    expect(view(syncStarted(connected({}, 'apple-music'), 'apple-music', AT)['apple-music'])).toMatchObject({ status: 'syncing', headline: 'Reading your library…', busy: true });
+    expect(view(syncStarted(goodApple, 'apple-music', AT)['apple-music'])).toMatchObject({ status: 'syncing', headline: 'Syncing your library…', busy: true });
+    expect(view(goodApple['apple-music'], { matched: 2, upcoming: 1 })).toMatchObject({
       status: 'synced',
       label: 'Synced',
-      headline: 'Connected to Spotify',
+      headline: 'Connected to Apple Music',
       stats: [
         { value: '1 hour ago', label: 'Last synced' },
         { value: '2', label: 'artists analyzed' },
@@ -114,25 +115,36 @@ describe('what the screens say', () => {
       primary: { action: 'sync', label: 'Sync now' },
       canDisconnect: true,
     });
-    expect(view(syncFailed(good, 'spotify', 'expired').spotify)).toMatchObject({
+    expect(view(syncFailed(goodApple, 'apple-music', 'expired')['apple-music'])).toMatchObject({
       status: 'reauthorize',
       label: 'Sign in again',
-      headline: 'Spotify needs you to sign in again',
+      headline: 'Apple Music needs you to sign in again',
       primary: { action: 'connect', label: 'Sign in again' },
       tone: 'warn',
     });
-    expect(view(syncFailed(good, 'spotify', 'denied').spotify).headline).toBe('Spotify didn’t allow access');
-    expect(view(syncFailed(good, 'spotify', 'network').spotify)).toMatchObject({
+    expect(view(syncFailed(goodApple, 'apple-music', 'denied')['apple-music']).headline).toBe('Apple Music didn’t allow access');
+    expect(view(syncFailed(goodApple, 'apple-music', 'network')['apple-music'])).toMatchObject({
       status: 'failed',
       label: 'Sync failed',
-      detail: 'Couldn’t reach Spotify. Check your connection and try again. Your last import is still used until you disconnect.',
+      detail: 'Couldn’t reach Apple Music. Check your connection and try again. Your last import is still used until you disconnect.',
       tone: 'warn',
       primary: { action: 'sync', label: 'Try again' },
       canDisconnect: true,
     });
-    expect(view(syncFailed(good, 'spotify', 'rate-limited').spotify).detail).toMatch(/^Spotify is busy right now/);
+    expect(view(syncFailed(goodApple, 'apple-music', 'rate-limited')['apple-music']).detail).toMatch(/^Apple Music is busy right now/);
     // A failed first sync has no import to keep.
-    expect(view(syncFailed(connected({}, 'spotify'), 'spotify', 'unknown').spotify).detail).toBe('Something went wrong reading your library. Try again.');
+    expect(view(syncFailed(connected({}, 'apple-music'), 'apple-music', 'unknown')['apple-music']).detail).toBe('Something went wrong reading your library. Try again.');
+  });
+
+  it('Spotify is added by pasting a playlist link: its own words', () => {
+    expect(connectionView('spotify', undefined, OK, AT)).toMatchObject({ status: 'not-connected', primary: { action: 'connect', label: 'Add a playlist' } });
+    expect(connectionView('spotify', undefined, OK, AT, { connecting: true }).headline).toBe('Reading your playlist…');
+    expect(connectionView('spotify', good.spotify, OK, AT).headline).toBe('From your Spotify playlists');
+    expect(connectionView('spotify', syncFailed(good, 'spotify', 'not-public').spotify, OK, AT)).toMatchObject({ status: 'failed', headline: 'Couldn’t read your playlists', tone: 'warn' });
+    expect(connectionView('spotify', syncFailed(good, 'spotify', 'expired').spotify, OK, AT)).toMatchObject({ headline: 'Add your Spotify playlists again', primary: { action: 'connect' } });
+    expect(connectionView('spotify', undefined, { ok: false, reason: 'not-on-this-device' }, AT).detail).toBe('Add Spotify playlists in the Afterglow app on your phone.');
+    expect(connectProblem('spotify', 'bad-link')).toMatch(/^That isn’t a Spotify playlist link/);
+    expect(connectProblem('spotify', 'not-public')).toMatch(/public/);
   });
 
   it('never shows account details: only sync time and counts', () => {

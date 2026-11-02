@@ -1,5 +1,6 @@
 /**
- * Music connections: the one-time developer setup for each service. Nothing
+ * Music connections: the one-time developer setup for Apple Music (Spotify
+ * needs none: it's added by playlist link). Nothing
  * secret lives here or anywhere in the app (see docs/music-integrations.md).
  *
  * Values come from environment variables at build time (a local `.env` file,
@@ -8,31 +9,12 @@
  */
 
 /**
- * Spotify: the Client ID of the app registered at developer.spotify.com.
- * Public by design (Authorization Code with PKCE: no client secret exists in
- * the app). Its Redirect URI must list MUSIC_REDIRECT (below).
- */
-export const SPOTIFY_CLIENT_ID: string = process.env.EXPO_PUBLIC_SPOTIFY_CLIENT_ID ?? '';
-
-/**
  * Apple Music: an https link to a small service you host that returns a
  * MusicKit developer token as `{ "token": "..." }`. The token is signed with
  * a private MusicKit key, which must never be put in the app, so the app
  * only ever fetches the signed token.
  */
 export const APPLE_MUSIC_TOKEN_URL: string = process.env.EXPO_PUBLIC_APPLE_MUSIC_TOKEN_URL ?? '';
-
-/** Where a service sends you back after signing in: afterglow://music-auth (the app's scheme in app.json). */
-export const MUSIC_REDIRECT = { scheme: 'afterglow', path: 'music-auth' } as const;
-
-/**
- * Spotify's redirect address, only when it isn't the default
- * afterglow://music-auth. It must match the Spotify dashboard exactly. If
- * the dashboard refuses a custom scheme for a new app, set
- * EXPO_PUBLIC_SPOTIFY_REDIRECT_URI to an https universal link on a domain
- * you control (see docs/spotify-setup.md). A malformed value is ignored.
- */
-export const SPOTIFY_REDIRECT_SETTING: string = process.env.EXPO_PUBLIC_SPOTIFY_REDIRECT_URI ?? '';
 
 /** A connected library is read again when the app opens, once it's older than this. */
 export const MUSIC_RESYNC_MS = 24 * 60 * 60 * 1000;

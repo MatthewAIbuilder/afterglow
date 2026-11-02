@@ -57,6 +57,7 @@ import { CrowdVideos } from './CrowdVideos';
 import { LiveCrowdRow } from './LiveCrowdRow';
 import { FestivalCover } from './FestivalCover';
 import { PageFeedback } from '../../components/PageFeedback';
+import { SetTimesCredit } from './SetTimesCredit';
 
 type Order = 'match' | 'billing';
 /** The page's tabs: your plan, the whole lineup, and the practical things. */
@@ -453,6 +454,8 @@ export function FestivalPage({ festival: whole, topSpace, bottomSpace, above, be
                 <Text style={styles.sourceText}>{t('Event info from {source} ↗', { source: festival.source.name })}</Text>
               </Pressable>
             ) : null}
+            {/* Set times from someone else's timetable (Clashfinder) credit it too. */}
+            <SetTimesCredit festival={festival} style={styles.pad} />
           </View>
         ) : null}
         <PageFeedback />

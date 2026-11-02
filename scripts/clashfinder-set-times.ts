@@ -28,8 +28,12 @@ import { applyPatches, buildCatalog } from '../src/data/merge';
 import { MAX_FILE_CHARS } from '../src/data/remote';
 import { livePatches } from './livePatches';
 
-/** Publish what's clearly right, or only report it. On once Clashfinder says yes (halvin@clashfinder.com). */
-const CLASHFINDER_PUBLISH = false;
+/**
+ * Publish what's clearly right, or only report it. On since 2026-11-01: the user chose to publish
+ * with credit (Clashfinder's name, the timetable's link and CC BY-NC 3.0 beside the set times)
+ * without waiting for an answer from halvin@clashfinder.com.
+ */
+const CLASHFINDER_PUBLISH = true;
 /** Festivals starting within this many days are looked up (set times come out about a week before). */
 const WINDOW_DAYS = 21;
 /** Stays well inside Clashfinder's limit (10 requests in 5 minutes from March 2027). */
@@ -111,7 +115,7 @@ async function main() {
       const url = `https://clashfinder.com/s/${match.name}/`;
       if (decision.publish) {
         clear++;
-        if (CLASHFINDER_PUBLISH) kept.push({ ...lineupToFile(reading.lineup), from: FROM });
+        if (CLASHFINDER_PUBLISH) kept.push({ ...lineupToFile({ ...reading.lineup, credit: { name: 'Clashfinder', url, license: 'CC BY-NC 3.0' } }), from: FROM });
         lines.push(`- **${f.name}**${CLASHFINDER_PUBLISH ? '' : ' (would publish)'}: ${decision.line} [Clashfinder](${url})`);
       } else {
         if (before && CLASHFINDER_PUBLISH) kept.push(before);

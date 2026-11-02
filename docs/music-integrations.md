@@ -1,4 +1,4 @@
-# Music connections (Spotify, Apple Music)
+# Music connections (Apple Music, Spotify playlists)
 
 Afterglow can read a person's music library to get a head start on their taste. This guide covers how it's built, what's private, and the one-time setup still needed before real accounts can connect.
 
@@ -78,7 +78,7 @@ Rules the code follows:
 |---|---|---|---|
 | Normalising, merging, taste integration, privacy | Fully tested with fixtures | Yes | Nothing |
 | Music connections screen, My Sound notes, states | Tested with test doubles | Yes (shows "not available" until set up) | Nothing |
-| Spotify sign-in and sync | Tested against recorded response shapes, PKCE and state checks | No: shows "Needs the full version" | Spotify Client ID, a development build (see spotify-setup.md) |
+| Spotify playlists by link | Link reading and the embed page tested with fixtures | Yes | Nothing (a public playlist) |
 | Apple Music sign-in and sync | API reading tested with fixtures | No (Expo Go has no MusicKit) | The app's own build (1.0.1 on), MusicKit switched on for the app's identifier |
 
 Nothing in the app pretends to connect: without setup, both services say "Not available in this version of Afterglow yet." or "Needs the full version of Afterglow."
@@ -87,32 +87,21 @@ Nothing in the app pretends to connect: without setup, both services say "Not av
 
 Put these in a local `.env` (git ignores it; see `.env.example`) or in EAS environment variables. Neither is a secret, and no secret ever goes in the app.
 
-- `EXPO_PUBLIC_SPOTIFY_CLIENT_ID`: the Spotify app's Client ID.
 - `EXPO_PUBLIC_APPLE_MUSIC_TOKEN_URL`: an https link that returns `{ "token": "<MusicKit developer token>" }`.
 
-Secrets that must stay **outside** the app and the repo: the Spotify client secret (not used at all: PKCE needs none), the Apple MusicKit private key (.p8), its Key ID and your Team ID (used only by the service that signs developer tokens).
+Secrets that must stay **outside** the app and the repo: the Apple MusicKit private key (.p8), its Key ID and your Team ID (used only by the service that signs developer tokens).
 
-### Spotify
+### Spotify (by playlist link, since 2026-11-02)
 
-**Step-by-step setup and a test checklist: [`spotify-setup.md`](spotify-setup.md).**
+Spotify's sign-in was removed on 2026-11-02 (the user: "we can take Spotify out because I don't think we'll ever have access to it... unless there's a way we can just have them share a playlist"). Spotify only lets 5 listed people sign in to an app in development mode, and extended access needs a large company, so instead you **add playlists by link**:
 
-How the connection works:
-
-- **Sign-in**: Authorization Code with PKCE (S256), no client secret anywhere. `spotify/auth.ts` (pure, tested) makes the verifier, challenge and a random `state`, builds the authorize link, and reads the answer: a code only counts if it arrives at the exact redirect address with the same `state`; a denial is only believed with the right `state` too. `spotify/signIn.ts` opens it in the system sheet with `expo-web-browser`'s `openAuthSessionAsync` (ASWebAuthenticationSession on iPhone, a Custom Tab on Android). `tokens.ts` exchanges the code and refreshes.
-- **Redirect**: `afterglow://music-auth` by default. `EXPO_PUBLIC_SPOTIFY_REDIRECT_URI` can switch to an https universal link if Spotify's dashboard refuses the custom scheme for a new app; `app.config.ts` then adds the Associated Domains entitlement and an Android App Link for that host, and the sheet uses the universal-link callback (iOS 17.4+). Anything else (http, `exp://`, a query string) is ignored.
-- **Expo Go**: Spotify is shown as needing the full app (`needsOwnApp`, from `Constants.executionEnvironment`), because Expo Go's `exp://` return address can't be registered. Use a development build (`expo-dev-client`, `eas.json` profile `development`).
-- **Tokens**: kept only in the secure store, refreshed a minute before they run out and once more on a 401. A refused refresh (revoked at spotify.com/account/apps, or older than Spotify's 6-month refresh-token limit) clears the session and shows "Sign in again", keeping the last import until you disconnect.
-- **Connection state** (`state/music.tsx`): one sign-in at a time (`connecting` while the sheet is open), one read at a time (a second Sync now joins the running one), a sign-in or read that finishes after a disconnect is dropped and anything it stored is forgotten, a secure-store sign-in with no connection behind it is forgotten on launch (the iPhone keychain outlives an uninstall), and a connected library with no import yet or older than a day is read again on launch.
-- **Screen states** (`copy.ts`, `connectionStatus`): not connected, connecting, connected, syncing, synced, sign in again (expired, revoked or not allowed), sync failed (network, busy, unknown), plus "not available" when the build can't connect. Synced shows Last synced, artists analyzed and on upcoming festivals (`reach.ts`). No account details are shown or stored.
-
-Spotify's rules this relies on (checked 2026-09-29 against sources quoting Spotify's changelog; developer.spotify.com itself is blocked from the cloud session):
-
-- Development mode (February 2026): the app owner needs Premium; up to 5 listed users; existing apps migrated 2026-03-09.
-- Still available: `GET /me/tracks`, `GET /me/following?type=artist`, `GET /me/top/artists`. Removed: follow/unfollow writes, `/me/following/contains`, batch artist lookups, artist top tracks. Artist `genres` remain; `popularity` and `followers` are gone (Afterglow doesn't read them).
-- Redirects: https or loopback IP only for web addresses (no `http://`, no `localhost`, since November 2025); custom schemes documented as still supported, though some developers report new apps refusing them (hence the universal-link option).
-- Refresh tokens expire 6 months after sign-in.
-
-If Spotify stops offering a part to an app, that part becomes a gap ("Spotify didn't share your top artists this time…") and the rest still syncs. If every part is refused (typically an account missing from User Management), the sync fails as "Spotify didn't allow access".
+- **Adding** (Music connections → Spotify → paste a link → Add playlist): `spotify/links.ts` `parseSpotifyLink` takes open.spotify.com links (with `/intl-xx/`, `?si=…`, or words around them), `spotify:playlist:…` URIs, and short `spotify.link` addresses (opened first to see where they lead). Playlists, albums and artists work. The link is read straight away, so a private or wrong link says so at once (`bad-link`, `not-public`, `network`); a link that fails leaves the playlists already added alone.
+- **Reading**: each link's public embed page, `https://open.spotify.com/embed/<kind>/<id>` (what any website shows when it embeds a playlist; no key, no account). `readEmbedPage` finds the page's JSON data script (usually `__NEXT_DATA__`) and its `trackList` (`title`, `subtitle` = artists, `uri`); `libraryFromEmbeds` turns every song into a "saved" song for `normalizeSpotify`, each song counted once across links. Only artist names and counts are kept, never song titles. If Spotify changes that page, adding a link says "Spotify didn't show that playlist", and `readEmbedPage` is the one place to fix.
+- **Kept**: up to 10 links (`SPOTIFY_LINKS_MAX`) with their names, in the secure store under the Spotify key; each sync (Sync now, and on launch once a day) reads them all. Disconnecting forgets them and the import.
+- **Where**: the phone app, Expo Go included (it's only `fetch`). The website says to add playlists in the app (a browser isn't allowed to read Spotify's pages from another site).
+- **Not offered for Spotify**: Plan to playlist (it needs a sign-in; `canMakePlaylist`), followed artists, top artists, recent listening.
+- **Untested against the real page from the cloud session** (open.spotify.com is blocked here); the tests use a page in the shape Spotify's embed has had.
+- Removed with the sign-in: `spotify/auth.ts`, `signIn.ts`, `tokens.ts`, `api.ts`, `playlist.ts`, the `music-auth` route, `EXPO_PUBLIC_SPOTIFY_CLIENT_ID`, `EXPO_PUBLIC_SPOTIFY_REDIRECT_URI` and `app.config.ts`'s universal link. `docs/spotify-setup.md` now explains adding a playlist.
 
 ### Apple Music
 

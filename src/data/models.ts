@@ -159,6 +159,8 @@ export type Festival = {
   stages: Stage[];
   /** Set times. Usually published a week or two before the festival. */
   sets?: SetTime[];
+  /** Who published those set times, when it wasn't the festival or Afterglow (credited beside them), e.g. Clashfinder. */
+  setTimesCredit?: SetTimesCredit;
   /** First and last day, "YYYY-MM-DD", for the countdown. `dates` stays the text people read. */
   startDate?: string;
   endDate?: string;
@@ -196,6 +198,9 @@ export type Festival = {
  * When a snapshot carries one, it replaces the festival's own lineup (and its
  * set times, when given).
  */
+/** Credit for set times taken from someone else's timetable: their name, the page, and its licence when it has one. */
+export type SetTimesCredit = { name: string; url: string; license?: string };
+
 export type FestivalLineup = {
   festivalId: string;
   /** Artist ids in billing order. */
@@ -211,6 +216,8 @@ export type FestivalLineup = {
    * on purpose, which replaces the festival's.
    */
   source?: 'page';
+  /** Whose timetable the set times came from (Clashfinder), shown beside them. */
+  credit?: SetTimesCredit;
 };
 
 /** Before set times, a festival is a lineup; after, it's a timetable. Every schedule feature works in both. */

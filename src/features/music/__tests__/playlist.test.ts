@@ -1,7 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { makeApplePlaylist } from '../apple/playlist';
 import { planPlaylist, sameArtist } from '../playlist';
-import { makeSpotifyPlaylist } from '../spotify/playlist';
 
 const req = planPlaylist('EDC Orlando 2026', ['John Summit', 'Odd Mob', 'Nobody Known', 'John Summit']);
 
@@ -28,26 +27,5 @@ describe('plan to playlist', () => {
     expect(posts).toHaveLength(1);
     expect(posts[0].path).toBe('/v1/me/library/playlists');
     expect((posts[0].body as { relationships: { tracks: { data: unknown[] } } }).relationships.tracks.data).toHaveLength(4);
-  });
-
-  it('Spotify: a private playlist with each artist’s top tracks in your country', async () => {
-    const sent: { url: string; method: string; body: unknown }[] = [];
-    const get = async (url: string): Promise<unknown> => {
-      if (url.endsWith('/me')) return { id: 'maya', country: 'US' };
-      if (url.includes('/search?')) {
-        const q = decodeURIComponent(url.split('q=')[1]);
-        return { artists: { items: q === 'Nobody Known' ? [{ id: 'x', name: 'Somebody Else' }] : [{ id: `id-${q.replace(' ', '')}`, name: q }] } };
-      }
-      if (url.includes('/top-tracks?market=US')) return { tracks: [{ uri: `spotify:track:${url.length}a` }, { uri: `spotify:track:${url.length}b` }, { uri: 'spotify:track:c' }] };
-      throw new Error(url);
-    };
-    const send = async (url: string, method: string, body: unknown): Promise<unknown> => {
-      sent.push({ url, method, body });
-      return url.endsWith('/users/maya/playlists') ? { id: 'pl1', external_urls: { spotify: 'https://open.spotify.com/playlist/pl1' } } : {};
-    };
-    const r = await makeSpotifyPlaylist(get, send, req);
-    expect(r).toEqual({ added: 4, missing: ['Nobody Known'], url: 'https://open.spotify.com/playlist/pl1' });
-    expect(sent.map((x) => x.url.replace('https://api.spotify.com/v1', ''))).toEqual(['/users/maya/playlists', '/playlists/pl1/tracks']);
-    expect(sent[0].body).toEqual({ name: req.name, description: req.description, public: false });
   });
 });

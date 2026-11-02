@@ -1,13 +1,11 @@
-import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { Platform } from 'react-native';
-import { APPLE_MUSIC_TOKEN_URL, SPOTIFY_CLIENT_ID } from '../../config/music';
+import { APPLE_MUSIC_TOKEN_URL } from '../../config/music';
 import { nativeMusicKit } from './apple/nativeMusicKit';
 import { appleMusicService } from './apple/service';
 import type { FetchLike } from './http';
 import type { MusicProviderId } from './models';
 import { secureSecrets } from './secrets';
 import type { MusicService } from './service';
-import { spotifySignIn } from './spotify/signIn';
 import { spotifyService } from './spotify/service';
 
 /**
@@ -21,13 +19,10 @@ export function defaultMusicServices(): MusicServices {
   const fetchFn: FetchLike = (url, init) => fetch(url, init);
   return {
     spotify: spotifyService({
-      clientId: SPOTIFY_CLIENT_ID,
       secrets: secureSecrets,
-      fetch: fetchFn,
-      signIn: spotifySignIn,
-      secureStorage: Platform.OS !== 'web',
-      // Expo Go's return address (exp://<computer>/--/…) changes with the network and Spotify won't accept it.
-      needsOwnApp: Constants.executionEnvironment === ExecutionEnvironment.StoreClient,
+      fetchText: (url) => fetch(url),
+      // A browser can't read Spotify's pages from another website (and has no secure store).
+      onPhone: Platform.OS !== 'web',
     }),
     'apple-music': appleMusicService({
       authorizer: nativeMusicKit(),

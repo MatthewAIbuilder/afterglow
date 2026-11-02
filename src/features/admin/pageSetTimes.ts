@@ -175,6 +175,7 @@ export function lineupToFile(l: FestivalLineup): Record<string, unknown> {
     ...(l.days ? { days: l.days } : {}),
     ...(l.stages ? { stages: l.stages } : {}),
     ...(l.source ? { source: l.source } : {}),
+    ...(l.credit ? { credit: l.credit } : {}),
   };
 }
 

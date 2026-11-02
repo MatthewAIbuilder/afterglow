@@ -6,6 +6,7 @@ import Animated, { FadeIn, LayoutAnimationConfig, useReducedMotion } from 'react
 import { ArtistAvatar } from '../../components/ArtistAvatar';
 import { stageName } from '../../data/festival';
 import { formatTime } from '../festivals/format';
+import { SetTimesCredit } from '../festivals/SetTimesCredit';
 import type { Festival } from '../../data/types';
 import { haptic } from '../../lib/haptics';
 import { CrewStarsLine, crewStarsSaid, useCrewStars } from './CrewStars';
@@ -95,6 +96,7 @@ export function Timetable({
           ))}
         </View>
       )}
+      <SetTimesCredit festival={festival} />
     </View>
   );
 }
