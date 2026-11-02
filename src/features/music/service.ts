@@ -22,8 +22,15 @@ export interface MusicService {
   readonly provider: MusicProviderId;
   /** Whether this build can connect at all. Checked before offering Connect. */
   availability(): MusicAvailability;
-  /** Ask the person to sign in and grant access. Stores its own credentials securely. */
-  connect(): Promise<ConnectResult>;
+  /**
+   * Ask the person to sign in and grant access, or (a service with `needsLink`) add the link they
+   * pasted. Stores its own credentials or links securely.
+   */
+  connect(input?: string): Promise<ConnectResult>;
+  /** Connected by pasting links (Spotify playlists) rather than signing in. */
+  readonly needsLink?: boolean;
+  /** The links added so far, by name, for a service with `needsLink`. */
+  links?(): Promise<{ name?: string; kind: string }[]>;
   /** Read the library, normalised. Throws a MusicServiceError when it can't. */
   fetchLibrary(now: Date): Promise<MusicLibrarySnapshot>;
   /** Forget this service's credentials on the phone (and revoke them where the service allows). */

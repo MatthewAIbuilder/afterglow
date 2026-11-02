@@ -72,6 +72,16 @@ describe('lineups published separately', () => {
   it('leaves a festival as it is when no lineup is published for it', () => {
     expect(applyLineup(horizon, undefined)).toBe(horizon);
   });
+
+  it('credits set times taken from someone else\'s timetable, and only when it brings set times', () => {
+    const plain: Festival = { ...horizon, sets: undefined };
+    const credit = { name: 'Clashfinder', url: 'https://clashfinder.com/s/x/', license: 'CC BY-NC 3.0' };
+    const sets = [{ artistId: horizon.lineup[0], day: horizon.days[0], stageId: 'main', start: '22:00', end: '23:00' }];
+    expect(applyLineup(plain, { festivalId: horizon.id, artistIds: horizon.lineup, sets, source: 'page', credit }).setTimesCredit).toEqual(credit);
+    expect(applyLineup(plain, { festivalId: horizon.id, artistIds: horizon.lineup, source: 'page', credit }).setTimesCredit).toBeUndefined();
+    // Set times entered by hand win, and carry no credit.
+    expect(applyLineup({ ...horizon, sets }, { festivalId: horizon.id, artistIds: horizon.lineup, sets, source: 'page', credit }).setTimesCredit).toBeUndefined();
+  });
 });
 
 describe('validation', () => {

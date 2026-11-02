@@ -126,6 +126,10 @@ export function connectProblem(provider: MusicProviderId, reason: MusicErrorKind
       return t('Sign in to Apple Music on this iPhone (Settings, then Music), then try again.');
     case 'no-library':
       return t('Your Apple Music library isn’t on. It needs an Apple Music subscription and Sync Library on (Settings, then Music). Then try again.');
+    case 'bad-link':
+      return t('That isn’t a Spotify playlist link. In Spotify, open a playlist, tap Share, then Copy link, and paste it here.');
+    case 'not-public':
+      return t('Spotify didn’t show that playlist. Make sure it’s public (in Spotify, tap ••• then Make public) and try again.');
     default:
       return t('{service} didn’t connect. Try again.', { service: name });
   }
@@ -163,6 +167,16 @@ export function connectionView(
     if (n > 0 && gaps.length) notes.push(t('{service} didn’t share your {parts} this time, so this uses the rest.', { service: name, parts: listed(gaps.map((g) => PART[g])) }));
   }
   const kept = snap ? ` ${t('Your last import is still used until you disconnect.')}` : '';
+  // Spotify is added by pasting playlist links, not by signing in.
+  if (provider === 'spotify') {
+    if (status === 'unavailable') return { ...base, headline: name, detail: `${t('Add Spotify playlists in the Afterglow app on your phone.')}${snap ? ` ${t('Your last import is still used.')}` : ''}`, stats, tone: 'quiet' };
+    if (status === 'not-connected' || status === 'reauthorize')
+      return { ...base, headline: status === 'reauthorize' ? t('Add your Spotify playlists again') : t('Not connected'), detail: t('Paste a link to a public Spotify playlist, like your Top Songs from Wrapped. No sign-in needed.'), stats, tone: status === 'reauthorize' ? 'warn' : 'quiet', primary: { action: 'connect', label: t('Add a playlist') } };
+    if (status === 'connecting') return { ...base, headline: t('Reading your playlist…'), detail: t('This takes a few seconds.'), stats, tone: 'good', busy: true };
+    if (status === 'synced') return { ...base, headline: t('From your Spotify playlists'), stats, notes, tone: 'good', primary: { action: 'sync', label: t('Sync now') } };
+    if (status === 'failed' && c?.error === 'not-public')
+      return { ...base, headline: t('Couldn’t read your playlists'), detail: `${t('Spotify didn’t show them. Make sure they’re public, then try again.')}${kept}`, stats, notes, tone: 'warn', primary: { action: 'sync', label: t('Try again') } };
+  }
 
   switch (status) {
     case 'unavailable':

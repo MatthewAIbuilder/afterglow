@@ -105,6 +105,10 @@ export type MusicErrorKind =
   | 'signed-out'
   /** No Apple Music library on this iPhone (no subscription, or Sync Library off). */
   | 'no-library'
+  /** What was pasted isn't a Spotify playlist, album or artist link. */
+  | 'bad-link'
+  /** The playlist is private, removed, or has nothing Afterglow can read. */
+  | 'not-public'
   | 'unknown';
 
 /** Where one service stands on this phone. Saved without any token: tokens live in the secure store only. */

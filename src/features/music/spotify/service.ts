@@ -1,85 +1,75 @@
-import type { FetchLike } from '../http';
 import { SECRET_KEY, type SecretStore } from '../secrets';
-import { HttpStatusError } from '../http';
-import { errorKind, MusicServiceError, type MusicService } from '../service';
-import { makeSpotifyPlaylist } from './playlist';
-import { readSpotifyLibrary, spotifyClient, type SpotifySessionStore } from './api';
+import { MusicServiceError, type MusicService } from '../service';
+import { libraryFromEmbeds, type LinkProblem, parseSpotifyLink, readSpotifyLink, resolveShortLink, sameLink, SPOTIFY_LINKS_MAX, type SpotifyLink, type TextFetch } from './links';
 import { normalizeSpotify } from './normalize';
-import type { SpotifySignIn } from './signIn';
-import { exchangeSpotifyCode, type SpotifySession } from './tokens';
 
 /**
- * The Spotify adapter: sign-in, reading the library, and forgetting the
- * sign-in. The only place that knows Spotify exists. Its session lives in
- * the secure store under one key; nothing else is kept.
+ * Spotify by link: no sign-in (Spotify only lets a handful of people sign in
+ * to an app like Afterglow). You add public playlists, albums or artists by
+ * pasting their links; each sync reads their songs from Spotify's public
+ * embed page (`links.ts`). The links live in the secure store under the one
+ * Spotify key; disconnecting forgets them.
+ *
+ * Phones only: a browser isn't allowed to read Spotify's pages from another
+ * website, so the website says to add playlists in the app.
  */
-export function spotifyService(opts: {
-  clientId: string;
-  secrets: SecretStore;
-  fetch: FetchLike;
-  signIn: SpotifySignIn;
-  /** False on platforms without a secure store (web). */
-  secureStorage: boolean;
-  /** True in Expo Go, whose sign-in return address Spotify can't accept: a development build is needed. */
-  needsOwnApp?: boolean;
-  now?: () => number;
-}): MusicService {
-  const now = opts.now ?? Date.now;
-  const sessions: SpotifySessionStore = {
-    async load() {
-      const raw = await opts.secrets.get(SECRET_KEY.spotify);
-      if (!raw) return null;
-      try {
-        const s = JSON.parse(raw) as SpotifySession;
-        return typeof s?.accessToken === 'string' ? s : null;
-      } catch {
-        return null;
-      }
-    },
-    save: (s) => opts.secrets.set(SECRET_KEY.spotify, JSON.stringify(s)),
-    clear: () => opts.secrets.remove(SECRET_KEY.spotify),
+export type SpotifyLinks = { links: (SpotifyLink & { name?: string })[] };
+
+const kindOf = (p: LinkProblem) => (p === 'network' ? 'network' : p);
+
+export function spotifyService(opts: { secrets: SecretStore; fetchText: TextFetch; onPhone: boolean }): MusicService {
+  const load = async (): Promise<SpotifyLinks> => {
+    const raw = await opts.secrets.get(SECRET_KEY.spotify).catch(() => null);
+    if (!raw) return { links: [] };
+    try {
+      const v = JSON.parse(raw) as Partial<SpotifyLinks>;
+      return { links: Array.isArray(v.links) ? v.links.filter((l) => l && typeof l.id === 'string' && typeof l.kind === 'string') : [] };
+    } catch {
+      return { links: [] };
+    }
   };
+  const save = (v: SpotifyLinks) => opts.secrets.set(SECRET_KEY.spotify, JSON.stringify(v));
 
   return {
     provider: 'spotify',
+    needsLink: true,
     availability() {
-      if (!opts.secureStorage) return { ok: false, reason: 'not-on-this-device' };
-      if (!opts.clientId) return { ok: false, reason: 'not-set-up' };
-      if (opts.needsOwnApp) return { ok: false, reason: 'needs-full-app' };
+      return opts.onPhone ? { ok: true } : { ok: false, reason: 'not-on-this-device' };
+    },
+    async connect(input) {
+      if (!opts.onPhone) return { ok: false, reason: 'unavailable' };
+      const parsed = parseSpotifyLink(input ?? '');
+      if (!parsed) return { ok: false, reason: 'bad-link' };
+      const link = 'short' in parsed ? await resolveShortLink(opts.fetchText, parsed.short) : parsed;
+      if (typeof link === 'string') return { ok: false, reason: kindOf(link) };
+      // Read it now, so a private or empty playlist is said straight away.
+      const reading = await readSpotifyLink(opts.fetchText, link);
+      if (typeof reading === 'string') return { ok: false, reason: kindOf(reading) };
+      const saved = await load();
+      const rest = saved.links.filter((l) => !sameLink(l, link));
+      await save({ links: [...rest, { ...link, ...(reading.name ? { name: reading.name.slice(0, 80) } : {}) }].slice(-SPOTIFY_LINKS_MAX) });
       return { ok: true };
     },
-    async connect() {
-      if (!this.availability().ok) return { ok: false, reason: 'unavailable' };
-      try {
-        const r = await opts.signIn(opts.clientId);
-        if (r.type === 'cancelled') return { ok: false, reason: 'cancelled' };
-        if (r.type === 'denied') return { ok: false, reason: 'denied' };
-        if (r.type === 'error') return { ok: false, reason: 'unknown' };
-        const session = await exchangeSpotifyCode({ ...r, clientId: opts.clientId }, opts.fetch, now());
-        await sessions.save(session);
-        return { ok: true };
-      } catch (e) {
-        return { ok: false, reason: errorKind(e) };
-      }
-    },
     async fetchLibrary(at) {
-      const client = spotifyClient({ fetch: opts.fetch, sessions, clientId: opts.clientId, now });
-      return normalizeSpotify(await readSpotifyLibrary(client.get), at);
-    },
-    async makePlaylist(req) {
-      const client = spotifyClient({ fetch: opts.fetch, sessions, clientId: opts.clientId, now });
-      try {
-        return await makeSpotifyPlaylist(client.get, client.send, req);
-      } catch (e) {
-        // Connected before playlists were asked for: Spotify says no until you connect again.
-        if (e instanceof HttpStatusError && e.status === 403) throw new MusicServiceError('denied', 'Spotify needs permission to make playlists');
-        throw e;
+      const { links } = await load();
+      if (!links.length) throw new MusicServiceError('expired', 'No Spotify links');
+      const readings = [];
+      let network = 0;
+      for (const l of links) {
+        const r = await readSpotifyLink(opts.fetchText, l);
+        if (typeof r !== 'string') readings.push(r);
+        else if (r === 'network') network++;
       }
+      // Every link failed for want of signal: keep the last import rather than empty it.
+      if (!readings.length && network) throw new MusicServiceError('network', 'Spotify embed: no answer');
+      if (!readings.length) throw new MusicServiceError('not-public', 'No public Spotify links');
+      return normalizeSpotify(libraryFromEmbeds(readings), at);
+    },
+    async links() {
+      return (await load()).links.map((l) => ({ kind: l.kind, ...(l.name ? { name: l.name } : {}) }));
     },
     async disconnect() {
-      // Spotify has no way for an app to revoke its own access: the sign-in is
-      // forgotten here, and access can be removed at spotify.com/account/apps.
-      await sessions.clear();
+      await opts.secrets.remove(SECRET_KEY.spotify);
     },
   };
 }

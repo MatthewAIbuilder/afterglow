@@ -4,7 +4,7 @@ import { t } from '../../i18n';
  * Plan to playlist: your festival plan as a playlist in Apple Music or
  * Spotify, to warm up on the way there. Pure: what to ask for. Each service
  * finds every artist by name, takes their most popular songs, and makes a
- * private playlist in your library (`apple/playlist.ts`, `spotify/playlist.ts`).
+ * private playlist in your library (`apple/playlist.ts`; Spotify, added by link, can't make one).
  */
 export type PlaylistRequest = { name: string; description: string; artists: string[]; perArtist: number };
 export type PlaylistResult = { added: number; missing: string[]; url?: string };

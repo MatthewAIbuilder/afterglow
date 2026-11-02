@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassCircleButton } from '../components/GlassCircleButton';
 import { NightSky } from '../components/NightSky';
@@ -18,8 +18,9 @@ import { t } from '../i18n';
 import { PageFeedback } from '../components/PageFeedback';
 
 /**
- * Music connections: connect Spotify (or, later, Apple Music) so Afterglow
- * starts from the artists you already play. Each service is one card that
+ * Music connections: connect Apple Music (signing in) or add Spotify
+ * playlists (pasting their links) so Afterglow starts from the artists you
+ * already play. Each service is one card that
  * says exactly where it stands, what came in, and how to remove it; below,
  * plainly, what's read and what stays private.
  */
@@ -70,13 +71,13 @@ export default function MusicScreen() {
           <Text style={styles.aboutTitle}>{t('What Afterglow reads')}</Text>
           <Text style={styles.aboutBody}>
             {t(
-              'The artists you follow, the songs you’ve saved and the artists you play most. From those it keeps only each artist’s name, how much you play them and their genres.',
+              'The artists you follow, the songs you’ve saved and the artists you play most (from Spotify, the songs on the playlists you add). From those it keeps only each artist’s name, how much you play them and their genres.',
             )}
           </Text>
           <Text style={styles.aboutTitle}>{t('What it never keeps')}</Text>
           <Text style={styles.aboutBody}>
             {t(
-              'Your password, your account details, your playlists or the songs themselves. The sign-in is kept in this phone’s secure storage and used only to read your library.',
+              'Your password, your account details or the songs themselves. A sign-in or a playlist link is kept in this phone’s secure storage and used only to read your music.',
             )}
           </Text>
           <Text style={styles.aboutTitle}>{t('Private to you')}</Text>
@@ -102,23 +103,43 @@ function ServiceCard({ provider, view }: { provider: MusicProviderId; view: Conn
   // A sign-in that didn't finish leaves no state behind, so its reason is said here, once.
   const [problem, setProblem] = useState<string | undefined>();
 
+  // Spotify is added by pasting playlist links.
+  const byLink = provider === 'spotify';
+  const [link, setLink] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [added, setAdded] = useState<{ name?: string; kind: string }[]>([]);
+  const synced = view.status === 'synced';
+  useEffect(() => {
+    if (!byLink) return;
+    let live = true;
+    void music.links(provider).then((l) => live && setAdded(l));
+    return () => {
+      live = false;
+    };
+  }, [byLink, music, provider, synced]);
+
   const act = async (action: 'connect' | 'sync') => {
     haptic.tap();
     setProblem(undefined);
     if (action === 'sync') return music.sync(provider);
-    const reason = await music.connect(provider);
+    const reason = await music.connect(provider, byLink ? link : undefined);
     const text = connectProblem(provider, reason);
     setProblem(text);
-    if (!reason) haptic.settle();
-    else if (text) haptic.soft();
+    if (!reason) {
+      haptic.settle();
+      setLink('');
+      setAdding(false);
+    } else if (text) haptic.soft();
   };
+  const showForm = byLink && view.primary?.action === 'connect' ? true : byLink && synced && adding;
 
   const disconnect = () => {
     haptic.select();
     showAlert(
       t('Disconnect {service}?', { service: name }),
-      t('Everything Afterglow imported from {service} is removed from this phone and the sign-in is forgotten. Your likes, saves and ratings stay.', { service: name }) +
-        (provider === 'spotify' ? `\n\n${t('To also remove Afterglow from your Spotify account, visit spotify.com/account/apps.')}` : ''),
+      byLink
+        ? t('Everything Afterglow imported from your Spotify playlists is removed from this phone and the links are forgotten. Your likes, saves and ratings stay.')
+        : t('Everything Afterglow imported from {service} is removed from this phone and the sign-in is forgotten. Your likes, saves and ratings stay.', { service: name }),
       [
         { text: t('Cancel'), style: 'cancel' },
         {
@@ -173,7 +194,46 @@ function ServiceCard({ provider, view }: { provider: MusicProviderId; view: Conn
         </Text>
       ) : null}
 
-      {view.primary ? (
+      {byLink && added.length && (synced || view.status === 'failed') ? (
+        <Text style={styles.note}>{added.map((l) => l.name ?? t('A Spotify playlist')).join(' · ')}</Text>
+      ) : null}
+
+      {showForm ? (
+        <View style={styles.linkForm}>
+          <TextInput
+            value={link}
+            onChangeText={setLink}
+            placeholder={t('Paste a Spotify playlist link')}
+            placeholderTextColor={color.moonFaint}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+            returnKeyType="done"
+            onSubmitEditing={() => link.trim() && void act('connect')}
+            accessibilityLabel={t('Spotify playlist link')}
+            style={styles.linkInput}
+          />
+          <Text style={styles.note}>{t('In Spotify, open a playlist (your Top Songs from Wrapped work well), tap Share, then Copy link. It must be public.')}</Text>
+          <Pressable
+            onPress={() => void act('connect')}
+            disabled={view.busy || !music.hydrated || !link.trim()}
+            accessibilityRole="button"
+            accessibilityLabel={t('Add this Spotify playlist')}
+            accessibilityState={{ disabled: view.busy || !music.hydrated || !link.trim() }}
+            style={({ pressed }) => [styles.primary, !link.trim() && { opacity: 0.5 }, pressed && styles.pressed]}
+          >
+            <Text style={styles.primaryText}>{t('Add playlist')}</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
+      {byLink && synced && !adding ? (
+        <Pressable onPress={() => setAdding(true)} accessibilityRole="button" hitSlop={8} style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}>
+          <Text style={styles.secondaryText}>{t('Add another playlist')}</Text>
+        </Pressable>
+      ) : null}
+
+      {view.primary && !(showForm && view.primary.action === 'connect') ? (
         <Pressable
           onPress={() => void act(view.primary!.action)}
           disabled={view.busy || !music.hydrated}
@@ -281,6 +341,17 @@ const styles = StyleSheet.create({
   },
   primaryText: { ...type.label, color: color.moon },
   secondary: { alignSelf: 'flex-start', paddingVertical: space.xs },
+  linkForm: { gap: space.sm },
+  linkInput: {
+    ...type.body,
+    color: color.moon,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm + 2,
+    borderRadius: radius.md,
+    backgroundColor: color.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: color.hairline,
+  },
   secondaryText: { ...type.caption, color: color.moonDim },
   pressed: { opacity: 0.75, transform: [{ scale: 0.98 }] },
   about: { marginTop: space.xxl, gap: space.sm },

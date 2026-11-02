@@ -5,7 +5,6 @@ has the features Expo put in it. A **development build** is Afterglow's own
 app, installed on your iPhone with its own name and icon. It's what lets these
 work, now or in the next steps:
 
-- Spotify sign-in (built; Expo Go can't complete it)
 - Sign in with Apple and with Google (built in 1.0.5, `docs/sign-in-providers.md`)
 - Heart rate from Apple Health in Look after yourself (later)
 - Real push notifications, so a crewmate's "come find me" or a support reply
@@ -117,7 +116,7 @@ Apple only lets a development build run on phones you've registered.
    from the terminal with the iPhone camera.
 3. It loads like Expo Go did. Shake the phone for the developer menu.
 
-Your `.env` file (Firebase and Spotify settings) is read on your PC as
+Your `.env` file (Firebase settings) is read on your PC as
 before, so accounts work in the development build the same way.
 
 ### When you need to build again
@@ -147,7 +146,6 @@ On iPhone the festival map is Apple Maps, which needs nothing set up. An Android
 
 - **TestFlight and the App Store**: `docs/app-store.md` (a production build,
   then `submit`).
-- **Spotify on the development build**: `docs/spotify-setup.md`.
 - **Tapping phones to give a sprout**: worth knowing before planning it. iPhones
   can't swap data phone to phone over NFC (Apple keeps that for Apple Pay and
   NameDrop), so "tap to give" can't work between two iPhones the way it does

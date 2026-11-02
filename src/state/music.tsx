@@ -31,8 +31,15 @@ type Ctx = {
   state: MusicState;
   hydrated: boolean;
   availability: Record<MusicProviderId, MusicAvailability>;
-  /** Sign in, then read the library. Resolves with what went wrong, if anything ('cancelled' included). */
-  connect: (provider: MusicProviderId) => Promise<MusicErrorKind | 'cancelled' | undefined>;
+  /**
+   * Sign in (or, for Spotify, add the pasted playlist link), then read the library. Resolves with what
+   * went wrong, if anything ('cancelled' included).
+   */
+  connect: (provider: MusicProviderId, link?: string) => Promise<MusicErrorKind | 'cancelled' | undefined>;
+  /** Whether a service can make a playlist from your plan (Apple Music can; Spotify, added by link, can't). */
+  canMakePlaylist: (provider: MusicProviderId) => boolean;
+  /** The playlists added by link (Spotify), by name. Empty for a service you sign in to. */
+  links: (provider: MusicProviderId) => Promise<{ name?: string; kind: string }[]>;
   /** Read the library again. A failure keeps the last good import. */
   sync: (provider: MusicProviderId) => Promise<void>;
   /** Forget the sign-in and remove everything imported from that service. */
@@ -121,14 +128,14 @@ export function MusicConnectionsProvider({ children, services: given }: { childr
   const signingIn = useRef<Set<MusicProviderId>>(new Set());
   const [connecting, setConnecting] = useState<MusicProviderId[]>([]);
   const connect = useCallback(
-    async (provider: MusicProviderId) => {
+    async (provider: MusicProviderId, link?: string) => {
       if (signingIn.current.has(provider)) return 'cancelled' as const;
       signingIn.current.add(provider);
       setConnecting((ps) => [...ps.filter((p) => p !== provider), provider]);
       const gen = generation.current[provider] ?? 0;
       let r: ConnectResult;
       try {
-        r = await services[provider].connect();
+        r = await services[provider].connect(link);
       } catch {
         r = { ok: false, reason: 'unknown' };
       } finally {
@@ -141,7 +148,9 @@ export function MusicConnectionsProvider({ children, services: given }: { childr
         return 'cancelled' as const;
       }
       if (!r.ok) {
-        setState((s) => connectFailed(s, provider, r.reason === 'cancelled' ? undefined : r.reason));
+        // A link that didn't work leaves the playlists you already added as they are.
+        const linked = !!services[provider].needsLink;
+        setState((s) => (linked && s[provider] ? s : connectFailed(s, provider, r.reason === 'cancelled' ? undefined : r.reason)));
         return r.reason;
       }
       setState((s) => connected(s, provider));
@@ -193,9 +202,11 @@ export function MusicConnectionsProvider({ children, services: given }: { childr
     },
     [services],
   );
+  const canMakePlaylist = useCallback((provider: MusicProviderId) => !!services[provider].makePlaylist, [services]);
+  const links = useCallback(async (provider: MusicProviderId) => (await services[provider].links?.().catch(() => [])) ?? [], [services]);
   const value = useMemo<Ctx>(
-    () => ({ state, hydrated, availability, connect, sync, disconnect, library, imported, importing, connecting, makePlaylist }),
-    [state, hydrated, availability, connect, sync, disconnect, library, imported, importing, connecting, makePlaylist],
+    () => ({ state, hydrated, availability, connect, canMakePlaylist, links, sync, disconnect, library, imported, importing, connecting, makePlaylist }),
+    [state, hydrated, availability, connect, canMakePlaylist, links, sync, disconnect, library, imported, importing, connecting, makePlaylist],
   );
   return <MusicContext.Provider value={value}>{children}</MusicContext.Provider>;
 }

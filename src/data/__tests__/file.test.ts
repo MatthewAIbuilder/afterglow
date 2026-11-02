@@ -343,3 +343,14 @@ describe('updates written in part (asPatch)', () => {
     expect(out.sets).toEqual(f.sets);
   });
 });
+
+describe('lineup credits', () => {
+  it('reads a credit with an https link, and drops a bad one', () => {
+    const lineup = (credit: unknown) =>
+      parseCatalogFile({ version: 1, mode: 'add', artists: [], festivals: [], clips: [], lineups: [{ festival: 'f', artists: ['a'], source: 'page', credit }] }).snapshot?.lineups?.[0];
+    expect(lineup({ name: 'Clashfinder', url: 'https://clashfinder.com/s/x/', license: 'CC BY-NC 3.0' })?.credit).toEqual({ name: 'Clashfinder', url: 'https://clashfinder.com/s/x/', license: 'CC BY-NC 3.0' });
+    expect(lineup({ name: 'Clashfinder', url: 'http://clashfinder.com/' })?.credit).toBeUndefined();
+    expect(lineup('Clashfinder')?.credit).toBeUndefined();
+  });
+});
+

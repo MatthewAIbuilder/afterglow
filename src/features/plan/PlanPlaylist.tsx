@@ -13,14 +13,14 @@ import { t, tn } from '../../i18n';
 
 /**
  * Plan to playlist: your plan for a festival as a private playlist in a
- * music service you've connected (Apple Music on iPhone, Spotify in the
- * full app), each act's most popular songs, to warm up on the way. Nothing
- * when no service is connected.
+ * music service you've connected that can make one (Apple Music on iPhone;
+ * Spotify, added by playlist link, can't), each act's most popular songs, to
+ * warm up on the way. Nothing when no such service is connected.
  */
 export function PlanPlaylist({ festival, picks }: { festival: Festival; picks: Pick[] }) {
   const music = useMusic();
   const [busy, setBusy] = useState<MusicProviderId | undefined>();
-  const ready = MUSIC_PROVIDERS.filter((p) => music.state[p]?.connected && music.availability[p].ok);
+  const ready = MUSIC_PROVIDERS.filter((p) => music.state[p]?.connected && music.availability[p].ok && music.canMakePlaylist(p));
   const names = picks.filter((p) => p.tier !== 'explore' || p.pinned).map((p) => p.artist.name);
   if (!ready.length || !names.length) return null;
 

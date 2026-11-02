@@ -13,7 +13,7 @@ export type LegalSection = { heading?: string; paragraphs: string[] };
 export type LegalDocument = { id: LegalDoc; title: string; updated: string; intro: string; sections: LegalSection[] };
 
 /** When these words last changed (shown as "Last updated"). */
-export const LEGAL_UPDATED = 'October 30, 2026';
+export const LEGAL_UPDATED = 'November 2, 2026';
 
 /** Who runs Afterglow, named on the Privacy Policy and the Terms. */
 export const OPERATOR = 'Matthew Smith, in Florida, United States';
@@ -62,8 +62,8 @@ export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL, opts:
               'Find my way back: if you save where you parked, camped or any spot, Afterglow keeps that place on your phone (or in your browser) to point you back to it. It is never sent to us, and Forget removes it.',
               'Fit checks (photos of your outfit) and the sets you’ve seen and rated stay on your phone. A fit check goes to your crew only if you tap Send, as a crew photo.',
               'Festival weather: for a festival coming up soon, Afterglow asks Open-Meteo (a free weather service) for the forecast at the festival’s location, not yours. Nothing about you is sent with it.',
-              'If you connect Spotify or Apple Music, your sign-in is kept in your phone’s secure storage and a summary of your library (which artists, not song titles or playlists) is kept on your phone to shape your recommendations. None of it is sent to us. Disconnecting removes it.',
-              'Plan to playlist: if you tap it, Afterglow makes one private playlist in your Spotify or Apple Music library from your festival plan (each artist’s most popular songs). It changes nothing else in your library.',
+              'If you connect Apple Music, your sign-in is kept in your phone’s secure storage. If you add Spotify playlists, their links are kept there instead, and Afterglow reads those playlists from Spotify’s public pages. Either way a summary (which artists, not song titles) is kept on your phone to shape your recommendations. None of it is sent to us. Disconnecting removes it.',
+              'Plan to playlist: if you tap it, Afterglow makes one private playlist in your Apple Music library from your festival plan (each artist’s most popular songs). It changes nothing else in your library.',
               'Reminders are scheduled on your phone. If you allow notifications and are signed in, your phone’s notification address is stored with your account: in each crew and 1-to-1 chat you’re in (so the people there can notify you of their messages, check-ins and meeting spot), and on its own for friends who follow you back (crew invites) and Afterglow support (replies to your messages). Turning notifications off in your phone’s settings stops them, and signing out removes this phone’s address.',
               'Messages you write in a crew’s chat are seen only by the people in that crew, with when you wrote them and when they arrived; leaving the crew removes yours and ending it removes them all. 1-to-1 messages are seen only by the two of you, and deleting your account removes yours. Afterglow support can read crew chats and 1-to-1 messages, and does so only when handling a report or a safety issue; it can remove messages that break the rules. Joining a crew also records that you agreed to its chat rules and how you were invited.',
               'Photos you send to a crew go only to the people in that crew, stored with the crew\u2019s updates; they never appear on Discover or your profile, and leaving the crew removes the ones you sent.',
@@ -94,7 +94,7 @@ export function legalDocument(id: LegalDoc, email: string = SUPPORT_EMAIL, opts:
               'Accounts, shared videos and the website are run on Google Firebase (Authentication, Cloud Firestore, Cloud Storage and Hosting), with data stored in the United States. Google processes it for us under its own terms.',
               'Notifications go through Expo’s push service (650 Industries) and Apple’s or Google’s, which carry a notification’s words (for a chat message, its first lines) to your phone.',
               'On iPhone, while you tag a video Afterglow can ask Apple’s Shazam which song is playing: your phone sends Apple a short fingerprint of the sound (not the video or its sound itself), and nothing is kept unless you add the song.',
-              'Clips in Discover play in YouTube’s own player, so YouTube (Google) receives what any embedded YouTube video receives and applies its own privacy policy. Spotify and Apple Music sign-ins happen on their own pages.',
+              'Clips in Discover play in YouTube’s own player, so YouTube (Google) receives what any embedded YouTube video receives and applies its own privacy policy. Apple Music sign-in happens on Apple’s own screen. When you add a Spotify playlist, its public page is read from Spotify, which receives what any visit to that page sends.',
               ...(partners ? [PARTNER_PRIVACY] : []),
               'We don’t sell your data, show ads, or use advertising or third-party analytics trackers.',
             ],
