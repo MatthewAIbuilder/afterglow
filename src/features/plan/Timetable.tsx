@@ -21,11 +21,13 @@ import type { ClashVerdict, Schedule, ScheduleDay, ScheduleItem, TimedPick } fro
 import type { DayRoute } from './route';
 import { RouteList } from './RouteList';
 import { SetReminderToggle } from './SetReminderToggle';
+import { PickSets } from './PickSets';
 import { TimetableGrid } from './TimetableGrid';
 import { DayHoursBar } from './YourHours';
 import { t, tn } from '../../i18n';
 
-type Mode = 'route' | 'picks' | 'grid';
+export type TimetableMode = 'route' | 'pick' | 'picks' | 'grid';
+type Mode = TimetableMode;
 
 /** After set times: your picks as a day-by-day timeline, with clashes called out. */
 export function Timetable({
@@ -33,6 +35,7 @@ export function Timetable({
   schedule,
   route,
   initialDay,
+  initialMode,
 }: {
   festival: Festival;
   schedule: Schedule;
@@ -40,10 +43,12 @@ export function Timetable({
   route?: DayRoute[];
   /** Open on this day (tonight, during the festival) instead of the first day with something on. */
   initialDay?: string;
+  /** Open on this view (Pick sets when you're building your own plan). */
+  initialMode?: Mode;
 }) {
   const reduceMotion = useReducedMotion();
   // The full day, set to set, first; your picks and clashes one tap away.
-  const [mode, setMode] = useState<Mode>(route ? 'route' : 'picks');
+  const [mode, setMode] = useState<Mode>(initialMode ?? (route ? 'route' : 'picks'));
   const [day, setDay] = useState(
     () =>
       (initialDay && schedule.days.some((d) => d.day === initialDay)
@@ -63,6 +68,8 @@ export function Timetable({
         <Animated.View key={`${mode}:${current.day}`} entering={reduceMotion ? undefined : FadeIn.duration(220)}>
           {mode === 'grid' ? (
             <TimetableGrid festival={festival} day={current.day} route={dayRoute} />
+          ) : mode === 'pick' ? (
+            <PickSets festival={festival} day={current.day} />
           ) : mode === 'route' && dayRoute ? (
             <RouteList
               festival={festival}
@@ -118,6 +125,7 @@ function daySummary(d: ScheduleDay) {
 function ModePicker({ value, onChange }: { value: Mode; onChange: (m: Mode) => void }) {
   const options: { key: Mode; label: string; a11y: string }[] = [
     { key: 'route', label: t('Full day'), a11y: t('Full day, set to set') },
+    { key: 'pick', label: t('Pick sets'), a11y: t('Pick sets: everyone on, hour by hour, to star who you want to see') },
     { key: 'picks', label: t('Your picks'), a11y: t('Your picks and clashes') },
     { key: 'grid', label: t('All sets'), a11y: t('All sets, as a timetable') },
   ];

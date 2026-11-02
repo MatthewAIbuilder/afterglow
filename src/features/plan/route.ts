@@ -61,6 +61,11 @@ export type RouteStop = {
   walk?: number;
   /** Other sets on while you're here that you'd enjoy too, best first: what you're trading off. */
   alsoOn?: AlsoOn[];
+  /**
+   * Everyone else on while you're here (taken-out acts aside, and in "only your picks" too), your
+   * must-sees first, then best match, then billing: the "also on now" list you open on the card.
+   */
+  elseOn?: AlsoOn[];
 };
 
 export type AlsoOn = { artist: Artist; set: SetTime; match: number; known: boolean };
@@ -217,9 +222,16 @@ export function dayRoute(input: RouteInput, day: string): DayRoute {
     stops.push(st < 0 ? breakFor(from, to, brk) : stopFor(sets[st], from, to));
   });
   stops = walks(tidy(stops), input.walkBetween);
+  // Everyone on this day, whether or not the plan would pick them (only taken-out acts are left out).
+  const everyone = input.edits?.own ? timedSets({ ...input, edits: { ...input.edits, own: false } }, day) : all;
   // What else is on while you're at each stop, that you'd enjoy too.
   for (const stop of stops) {
     if (stop.kind !== 'set') continue;
+    const elseOn = everyone
+      .filter((t) => t.set !== stop.set && t.start < stop.to && stop.from < t.end)
+      .sort((a, b) => Number(b.pinned) - Number(a.pinned) || Number(b.known) - Number(a.known) || b.match - a.match || a.rank - b.rank)
+      .map((t) => ({ artist: t.artist, set: t.set, match: t.match, known: t.known }));
+    if (elseOn.length) stop.elseOn = elseOn;
     const others = sets
       .filter((t) => t.set !== stop.set && t.start < stop.to && stop.from < t.end && (t.pinned || (t.known && t.match >= ALSO_ON_MIN)))
       .sort((a, b) => b.value - a.value || a.rank - b.rank)
