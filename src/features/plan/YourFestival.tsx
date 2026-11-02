@@ -73,6 +73,15 @@ export function YourFestival({ festival }: { festival: Festival }) {
           ) : null}
         </View>
         <PlanModeToggle own={edits.own} onChange={(own) => setOwn(festival.id, own)} />
+        <Text style={styles.modeHint}>
+          {festival.sets?.length
+            ? edits.own
+              ? t('Only the acts you star. Go through each day in Pick sets and star who you want to see.')
+              : t('Your stars, plus the best matches for you in the gaps. Tap Also on now to see who else is playing.')
+            : edits.own
+              ? t('Only the acts you star. Star anyone on the lineup to add them.')
+              : t('Your stars, plus the best matches for you.')}
+        </Text>
         {expected ? <Text style={styles.expected}>{expected}</Text> : null}
         {/* Fans often see set times first: they can send them in, for HQ to check and publish. */}
         {!festival.sets?.length && (expected || isLive(festival, today)) ? (
@@ -122,7 +131,7 @@ export function YourFestival({ festival }: { festival: Festival }) {
         <>
           {maybeLive && <LiveNow festival={festival} schedule={schedule} route={route} />}
           {maybeLive ? <FitCheckCard festival={festival} /> : null}
-          <Timetable festival={festival} schedule={schedule} route={route} initialDay={tonight} />
+          <Timetable key={edits.own ? 'own' : 'suggested'} festival={festival} schedule={schedule} route={route} initialDay={tonight} initialMode={edits.own ? 'pick' : undefined} />
         </>
       ) : byDayPossible ? (
         <>
@@ -142,8 +151,8 @@ function PlanModeToggle({ own, onChange }: { own: boolean; onChange: (own: boole
   return (
     <View style={[styles.toggle, styles.modeToggle]} accessibilityRole="tablist">
       {[
-        { on: !own, label: t('Suggested'), a11y: t('Suggested plan: your matches and your stars'), value: false },
-        { on: own, label: t('Only mine'), a11y: t('Only your picks: just the acts you starred'), value: true },
+        { on: !own, label: t('Auto-suggest'), a11y: t('Auto-suggest: your stars plus the best matches for you'), value: false },
+        { on: own, label: t('Build my own'), a11y: t('Build my own: only the acts you star'), value: true },
       ].map((o) => (
         <Pressable
           key={o.label}
@@ -270,6 +279,7 @@ const styles = StyleSheet.create({
     marginTop: space.lg,
   },
   modeToggle: { marginTop: space.md },
+  modeHint: { ...type.caption, color: color.moonDim, marginTop: space.sm },
   toggleItem: { paddingHorizontal: space.lg, paddingVertical: 6, borderRadius: radius.pill },
   out: {
     marginTop: space.xl,

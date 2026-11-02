@@ -1,5 +1,9 @@
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeIn, useReducedMotion } from 'react-native-reanimated';
+import { ChevronIcon } from '../../components/TabIcons';
+import { usePlan } from '../../state/plan';
 import { ArtistAvatar } from '../../components/ArtistAvatar';
 import { stageName } from '../../data/festival';
 import type { Festival } from '../../data/types';
@@ -213,11 +217,52 @@ function StopCard({
           <PlanEditButton artist={stop.artist} festivalId={festival.id} over={stop.alsoOn?.map((o) => o.artist.id)} />
         </View>
       </View>
-      {/* What you're trading off: others you'd enjoy on at the same time. Star one to switch. */}
-      {stop.alsoOn?.length ? (
-        <View style={styles.also}>
-          {stop.alsoOn.map((o) => (
-            <View key={o.artist.id} style={styles.alsoRow}>
+      {/* Who else is on meanwhile, on other stages: one quiet button that opens the whole list. */}
+      <AlsoOnNow festival={festival} stop={stop} />
+    </Pressable>
+  );
+}
+
+/**
+ * "Also on now": everyone else playing while you're at this set, on other
+ * stages. Closed, one line you can't miss (how many, and the best few names);
+ * open, every one of them with their stage and time, a star, and "See
+ * instead" to swap them into your plan.
+ */
+function AlsoOnNow({ festival, stop }: { festival: Festival; stop: RouteStop }) {
+  const reduceMotion = useReducedMotion();
+  const [open, setOpen] = useState(false);
+  const { goWith } = usePlan();
+  const list = stop.elseOn ?? stop.alsoOn ?? [];
+  if (!list.length) return null;
+  const preview = list.slice(0, 2).map((o) => o.artist.name);
+  const more = list.length - preview.length;
+  return (
+    <View style={styles.also}>
+      <Pressable
+        onPress={() => {
+          haptic.select();
+          setOpen((v) => !v);
+        }}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        accessibilityLabel={tn(list.length, 'Also on now: {n} other set, {names}. Show it', 'Also on now: {n} other sets, {names}. Show them', { names: preview.join(', ') })}
+        hitSlop={4}
+        style={({ pressed }) => [styles.alsoHead, pressed && { opacity: 0.6 }]}
+      >
+        <View style={styles.alsoCount}>
+          <Text style={styles.alsoCountText}>{list.length}</Text>
+        </View>
+        <Text style={styles.alsoHeadText} numberOfLines={1}>
+          <Text style={styles.alsoHeadLabel}>{`${t('Also on now')}  `}</Text>
+          {more > 0 ? t('{names} +{n}', { names: preview.join(', '), n: more }) : preview.join(', ')}
+        </Text>
+        <ChevronIcon color={color.glow} size={14} direction={open ? 'up' : 'down'} />
+      </Pressable>
+      {open ? (
+        <Animated.View entering={reduceMotion ? undefined : FadeIn.duration(180)}>
+          {list.map((o) => (
+            <View key={`${o.artist.id}-${o.set.stageId}`} style={styles.alsoRow}>
               <Pressable
                 onPress={() => {
                   haptic.select();
@@ -228,21 +273,35 @@ function StopCard({
                 hitSlop={4}
                 style={({ pressed }) => [styles.alsoMain, pressed && { opacity: 0.6 }]}
               >
-                <Text style={styles.alsoText} numberOfLines={1}>
-                  <Text style={styles.alsoLabel}>{`${t('Also on')}  `}</Text>
-                  {o.artist.name}
-                  <Text style={styles.alsoLabel}>{`  ${stageName(festival, o.set.stageId)}`}</Text>
-                </Text>
+                <ArtistAvatar artist={o.artist} size={28} />
+                <View style={styles.text}>
+                  <Text style={styles.alsoName} numberOfLines={1}>
+                    {o.artist.name}
+                  </Text>
+                  <Text style={styles.alsoMeta} numberOfLines={1}>
+                    {`${stageName(festival, o.set.stageId)} · ${formatTime(o.set.start)}–${formatTime(o.set.end)}`}
+                  </Text>
+                </View>
                 {o.known ? <Text style={styles.alsoPct}>{Math.round(o.match * 100)}%</Text> : null}
               </Pressable>
-              {/* Star them here to have the route switch to them, or go with them over this one. */}
-              <MustSeeToggle artist={o.artist} festivalId={festival.id} size={14} />
-              <PlanEditButton artist={o.artist} festivalId={festival.id} over={[stop.artist.id]} size={14} />
+              <MustSeeToggle artist={o.artist} festivalId={festival.id} size={16} />
+              <Pressable
+                onPress={() => {
+                  haptic.tap();
+                  goWith(festival.id, o.artist.id, [stop.artist.id]);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={t('See {artist} instead of {other}', { artist: o.artist.name, other: stop.artist.name })}
+                hitSlop={6}
+                style={({ pressed }) => [styles.swap, pressed && { opacity: 0.6 }]}
+              >
+                <Text style={styles.swapText}>{t('See instead')}</Text>
+              </Pressable>
             </View>
           ))}
-        </View>
+        </Animated.View>
       ) : null}
-    </Pressable>
+    </View>
   );
 }
 
@@ -314,9 +373,16 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: color.hairline,
   },
-  alsoRow: { flexDirection: 'row', alignItems: 'center', marginRight: -6 },
+  alsoHead: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: space.xs + 2 },
+  alsoCount: { minWidth: 20, height: 20, paddingHorizontal: 5, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: glowA(0.18), borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.5) },
+  alsoCountText: { ...type.caption, fontSize: 11, color: color.moon, fontVariant: ['tabular-nums'] },
+  alsoHeadText: { ...type.caption, color: color.moon, flex: 1 },
+  alsoHeadLabel: { color: color.glow },
+  alsoRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs, paddingVertical: 2 },
   alsoMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: 4 },
-  alsoText: { ...type.caption, color: color.moon, flex: 1 },
-  alsoLabel: { color: color.moonFaint },
+  alsoName: { ...type.label, color: color.moon },
+  alsoMeta: { ...type.caption, color: color.moonDim, marginTop: 1 },
   alsoPct: { ...type.caption, color: color.moonDim, fontVariant: ['tabular-nums'] },
+  swap: { paddingHorizontal: space.sm, paddingVertical: 4, borderRadius: radius.pill, borderWidth: StyleSheet.hairlineWidth, borderColor: glowA(0.5), backgroundColor: glowA(0.1) },
+  swapText: { ...type.caption, fontSize: 11, color: color.moon },
 });

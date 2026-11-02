@@ -50,11 +50,21 @@ describe('making the plan yours', () => {
     const app = await renderApp('/festival/solstice-26');
     await settle();
     expect(app.getByText(/^\d+ sets, .+ Where to be all day\.$/)).toBeTruthy();
-    await fireEvent.press(app.getByLabelText('Only your picks: just the acts you starred'));
+    await fireEvent.press(app.getByLabelText('Build my own: only the acts you star'));
+    await settle();
+    // Building your own opens on Pick sets: the whole day, hour by hour, to star from.
+    expect(app.getByText(/^1 starred today\. Star anyone else you want to see\.$/)).toBeTruthy();
+    await fireEvent.press(app.getByLabelText('Full day, set to set'));
     await settle();
     expect(app.getByText(/^1 set, .+ Where to be all day\.$/)).toBeTruthy();
     expect(app.getAllByLabelText(subtronics).length).toBe(1);
-    await fireEvent.press(app.getByLabelText('Suggested plan: your matches and your stars'));
+    // Everyone else on meanwhile is one tap away.
+    expect(app.getAllByLabelText(/^Also on now: \d+ other sets?, /).length).toBeGreaterThan(0);
+    expect(app.queryAllByText('See instead')).toHaveLength(0);
+    await fireEvent.press(app.getAllByLabelText(/^Also on now: \d+ other sets?, /)[0]);
+    await settle();
+    expect(app.getAllByText('See instead').length).toBeGreaterThan(0);
+    await fireEvent.press(app.getByLabelText('Auto-suggest: your stars plus the best matches for you'));
     await settle();
     expect(app.getByText(/^\d+ sets, .+ Where to be all day\.$/)).toBeTruthy();
     await app.unmount();

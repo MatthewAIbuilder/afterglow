@@ -109,5 +109,24 @@ describe('the full-day route', () => {
     expect(first.artist.id).toBe('top');
     expect(first.alsoOn?.map((a) => a.artist.id)).toEqual(['close']);
     expect((route.stops[1] as RouteStop).alsoOn).toBeUndefined();
+    // The full "also on now" list: everyone else on meanwhile, best match first, however low.
+    expect(first.elseOn?.map((a) => a.artist.id)).toEqual(['close', 'meh']);
+  });
+
+  it('lists everyone else on, even when building your own plan, but never acts you took out', () => {
+    const f = festival([set('mine', '21:00', '22:00'), set('other', '21:00', '22:00', 'tent'), set('gone', '21:30', '22:00', 'tent')]);
+    const route = dayRoute(
+      {
+        festival: f,
+        artists: everyone(f),
+        taste: { mine: 0.4, other: 0.2 },
+        informed: { mine: true, other: true },
+        pinned: new Set(['mine']),
+        edits: { out: new Set(['gone']), first: new Set(), own: true },
+      },
+      'Friday',
+    );
+    expect(summary(route.stops)).toEqual(['mine 1260-1320']);
+    expect((route.stops[0] as RouteStop).elseOn?.map((a) => a.artist.id)).toEqual(['other']);
   });
 });
