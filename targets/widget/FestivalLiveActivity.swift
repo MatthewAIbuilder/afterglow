@@ -49,7 +49,7 @@ struct FestivalLiveActivity: Widget {
         }
       } compactLeading: {
         HStack(spacing: 4) {
-          Circle().fill(tint(state.color)).frame(width: 8, height: 8)
+          Circle().fill(artistColor(state.color)).frame(width: 8, height: 8)
           Text(initials(state.nowArtist ?? state.nextArtist ?? "")).font(.caption2.weight(.bold))
         }
       } compactTrailing: {
@@ -66,7 +66,8 @@ struct FestivalLiveActivity: Widget {
   }
 }
 
-private func tint(_ hex: String?) -> Color {
+// Not called `tint`: inside a View that name resolves to SwiftUI's own `.tint(_:)` method.
+private func artistColor(_ hex: String?) -> Color {
   guard let (r, g, b) = hex?.rgb else { return Color("glow") }
   return Color(red: r, green: g, blue: b)
 }
@@ -113,7 +114,7 @@ struct LockScreenView: View {
           }
           Spacer(minLength: 8)
           VStack(alignment: .trailing, spacing: 2) {
-            Countdown(state: state).font(.title2.weight(.semibold)).monospacedDigit().foregroundStyle(tint(state.color))
+            Countdown(state: state).font(.title2.weight(.semibold)).monospacedDigit().foregroundStyle(artistColor(state.color))
             Text("left").font(.caption2).foregroundStyle(Color("moon").opacity(0.6))
           }
         }
