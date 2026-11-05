@@ -8,6 +8,7 @@ import { LikeSync } from '../features/community/LikeSync';
 import { OfflineNotice } from '../features/offline/OfflineNotice';
 import { ReminderSync } from '../features/notifications/ReminderSync';
 import { PushRegistration } from '../features/notifications/PushRegistration';
+import { WebInstallSetup } from '../features/install/WebInstallSetup';
 import { SentMoment } from '../features/memories/SentMoment';
 import '../features/care/trailRecorder';
 import { TrailKeeper } from '../features/care/TrailKeeper';
@@ -292,6 +293,7 @@ export default function RootLayout() {
       <LevelSync />
       <ReminderSync />
       <PushRegistration />
+      <WebInstallSetup />
       <TrailKeeper />
       <InviteClaim />
       <MeetupReminders />

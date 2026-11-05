@@ -9,6 +9,18 @@ export const es_profile: Dictionary = {
   You: 'Tú',
   'Your festivals, your videos and your sound.': 'Tus festivales, tus videos y tu sonido.',
   'Share profile': 'Compartir perfil',
+  // Add to home screen (the website)
+  'Add Afterglow to your home screen': 'Agrega Afterglow a tu pantalla de inicio',
+  'It opens full screen, like an app. The App Store app is coming soon.': 'Se abre a pantalla completa, como una app. La app de la App Store llegará pronto.',
+  'Tap the Share button at the bottom of your browser.': 'Toca el botón Compartir en la parte de abajo de tu navegador.',
+  'Scroll down and tap Add to Home Screen.': 'Desplázate hacia abajo y toca Añadir a pantalla de inicio.',
+  'Tap Add. Afterglow is now on your home screen.': 'Toca Añadir. Afterglow ya está en tu pantalla de inicio.',
+  'This browser can’t add websites to your home screen. Open afterglowmusic.app in Safari first, then tap Share and Add to Home Screen.':
+    'Este navegador no puede agregar sitios web a tu pantalla de inicio. Abre afterglowmusic.app en Safari primero, luego toca Compartir y Añadir a pantalla de inicio.',
+  'Open your browser’s menu and tap Add to Home screen.': 'Abre el menú de tu navegador y toca Añadir a pantalla de inicio.',
+  'Add to home screen': 'Agregar a pantalla de inicio',
+  'Show me how': 'Muéstrame cómo',
+  'Hide this for now': 'Ocultar por ahora',
   '@{handle} on Afterglow: {url}': '@{handle} en Afterglow: {url}',
   'Going to {n} festivals': 'Va a {n} festivales',
   'Going to {festivals}': 'Va a {festivals}',

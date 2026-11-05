@@ -1,5 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { PageTitle } from '../../components/PageTitle';
+import { InstallCard } from '../../features/install/InstallCard';
 import { router } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
@@ -218,6 +219,7 @@ function FestivalsScreen({ onlyOurs }: { onlyOurs?: () => void }) {
             />
           </View>
         </View>
+        {searching ? null : <InstallCard />}
         {searching ? (
           <View style={styles.results}>
             {foundOrgs.length > 0 && <Text style={styles.resultsHead}>{t('Organizers')}</Text>}

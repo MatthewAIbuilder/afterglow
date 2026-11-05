@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
 import { PageTitle } from '../../components/PageTitle';
+import { InstallCard } from '../../features/install/InstallCard';
 import { MenuIcon, TilesIcon, BookmarkIcon, FestivalsIcon, PinIcon } from '../../components/TabIcons';
 import { FestivalProfile } from '../../features/festivalMode/FestivalProfile';
 import { useFestivalMode } from '../../state/festivalMode';
@@ -334,6 +335,8 @@ function FullProfile() {
             <ProfileButton label={social.user ? t('Finish your profile') : t('Create your profile')} onPress={signIn} glow />
           ) : null}
         </ProfileHeader>
+
+        <InstallCard />
 
         {/* Swap between your cover photo and background, in the corner just under the orbit. */}
         {me ? <CoverSwap me={me} shown={backdrop} style={{ top: insets.top + 205, right: space.lg }} /> : null}
