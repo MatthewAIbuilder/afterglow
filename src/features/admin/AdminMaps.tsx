@@ -9,6 +9,7 @@ import { useCatalog } from '../../state/catalog';
 import { useSocial } from '../../state/social';
 import { rememberVenueMap } from '../../state/venueMaps';
 import { color, glowA, radius, space, type } from '../../theme/tokens';
+import { parseMarkerList } from '../venueMap/markerList';
 import { type Anchor, fitOf, LABEL_MAX, type Pin, PIN_KINDS, type PinKind, PINS_MAX, toGeo } from '../venueMap/venueMap';
 
 type Mode = { kind: 'anchor'; index: number } | { kind: 'pin'; pin: PinKind } | { kind: 'check' };
@@ -42,6 +43,7 @@ export function AdminMaps() {
   const [busy, setBusy] = useState(false);
   const [checked, setChecked] = useState<{ lat: number; lon: number } | undefined>();
   const [stageFor, setStageFor] = useState<string | undefined>();
+  const [pasted, setPasted] = useState('');
 
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -100,6 +102,20 @@ export function AdminMaps() {
       const pin: Pin = { id: `p${Date.now().toString(36)}`, kind: mode.pin, label: stage?.name ?? '', x, y, ...(stage ? { stageId: stage.id } : {}) };
       setDraft({ ...draft, pins: [...draft.pins, pin] });
     } else if (fit) setChecked(toGeo(fit, x, y));
+  };
+
+  const addPasted = () => {
+    if (!draft) return;
+    const stamp = Date.now().toString(36);
+    const r = parseMarkerList(pasted, draft, draft.pins.length, (i) => `p${stamp}${i}`);
+    if ('error' in r) {
+      showAlert('Couldn’t add them', r.error);
+      return;
+    }
+    setDraft({ ...draft, pins: [...draft.pins, ...r.pins] });
+    setPasted('');
+    haptic.settle();
+    showAlert('Added', `${r.pins.length} markers added${r.skipped ? `, ${r.skipped} left out` : ''}. Check them on the picture, then save.`);
   };
 
   const save = async () => {
@@ -202,6 +218,11 @@ export function AdminMaps() {
                 )
               ) : null}
               <Text style={styles.h2}>Markers ({draft.pins.length})</Text>
+              <Text style={styles.p}>Got a marker list (a prepared set of spots, like the official EDC map’s)? Paste it here and tap Add.</Text>
+              <TextInput value={pasted} onChangeText={setPasted} placeholder='{"width":1206,"height":1520,"pins":[…]}' placeholderTextColor={color.moonFaint} style={[styles.input, { minHeight: 72 }]} multiline autoCapitalize="none" autoCorrect={false} />
+              <Pressable onPress={addPasted} style={styles.button}>
+                <Text style={styles.buttonText}>Add these markers</Text>
+              </Pressable>
               {draft.pins.map((p) => (
                 <View key={p.id} style={styles.pinRow}>
                   <Text style={styles.pinKind}>{p.kind}</Text>

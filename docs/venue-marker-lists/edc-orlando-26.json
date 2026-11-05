@@ -1,0 +1,198 @@
+{
+ "width": 1206,
+ "height": 1520,
+ "pins": [
+  {
+   "kind": "medical",
+   "label": "First aid",
+   "x": 541,
+   "y": 737
+  },
+  {
+   "kind": "medical",
+   "label": "First aid",
+   "x": 379,
+   "y": 742
+  },
+  {
+   "kind": "toilets",
+   "label": "GA+ restrooms",
+   "x": 415,
+   "y": 647
+  },
+  {
+   "kind": "medical",
+   "label": "First aid",
+   "x": 181,
+   "y": 758
+  },
+  {
+   "kind": "food",
+   "label": "Food",
+   "x": 628,
+   "y": 911
+  },
+  {
+   "kind": "lockers",
+   "label": "Lockers",
+   "x": 367,
+   "y": 553
+  },
+  {
+   "kind": "toilets",
+   "label": "GA+ restrooms",
+   "x": 559,
+   "y": 631
+  },
+  {
+   "kind": "charging",
+   "label": "Charge station",
+   "x": 350,
+   "y": 742
+  },
+  {
+   "kind": "toilets",
+   "label": "Restrooms",
+   "x": 657,
+   "y": 420
+  },
+  {
+   "kind": "food",
+   "label": "Food truck",
+   "x": 459,
+   "y": 1075
+  },
+  {
+   "kind": "charging",
+   "label": "Charge station",
+   "x": 904,
+   "y": 649
+  },
+  {
+   "kind": "medical",
+   "label": "First aid",
+   "x": 884,
+   "y": 592
+  },
+  {
+   "kind": "toilets",
+   "label": "Restrooms",
+   "x": 534,
+   "y": 631
+  },
+  {
+   "kind": "food",
+   "label": "Food truck",
+   "x": 627,
+   "y": 939
+  },
+  {
+   "kind": "food",
+   "label": "Food",
+   "x": 154,
+   "y": 701
+  },
+  {
+   "kind": "food",
+   "label": "Food truck",
+   "x": 330,
+   "y": 488
+  },
+  {
+   "kind": "food",
+   "label": "Food",
+   "x": 525,
+   "y": 834
+  },
+  {
+   "kind": "toilets",
+   "label": "Restrooms",
+   "x": 390,
+   "y": 647
+  },
+  {
+   "kind": "lockers",
+   "label": "Lockers",
+   "x": 1059,
+   "y": 642
+  },
+  {
+   "kind": "toilets",
+   "label": "Restrooms",
+   "x": 946,
+   "y": 792
+  },
+  {
+   "kind": "food",
+   "label": "Food",
+   "x": 626,
+   "y": 829
+  },
+  {
+   "kind": "food",
+   "label": "Food",
+   "x": 682,
+   "y": 860
+  },
+  {
+   "kind": "toilets",
+   "label": "GA+ restrooms",
+   "x": 945,
+   "y": 758
+  },
+  {
+   "kind": "lockers",
+   "label": "Lockers",
+   "x": 522,
+   "y": 712
+  },
+  {
+   "kind": "water",
+   "label": "Water taps (40)",
+   "x": 172,
+   "y": 840
+  },
+  {
+   "kind": "water",
+   "label": "Water taps (64)",
+   "x": 607,
+   "y": 1053
+  },
+  {
+   "kind": "entrance",
+   "label": "Entrance",
+   "x": 918,
+   "y": 560
+  },
+  {
+   "kind": "stage",
+   "label": "circuitGROUNDS",
+   "x": 220,
+   "y": 600
+  },
+  {
+   "kind": "stage",
+   "label": "kineticFIELD",
+   "x": 753,
+   "y": 807
+  },
+  {
+   "kind": "stage",
+   "label": "stereoBLOOM",
+   "x": 263,
+   "y": 853
+  },
+  {
+   "kind": "stage",
+   "label": "neonGARDEN",
+   "x": 1013,
+   "y": 683
+  },
+  {
+   "kind": "info",
+   "label": "Info",
+   "x": 481,
+   "y": 733
+  }
+ ]
+}
