@@ -44,6 +44,7 @@ export function planText(festival: Festival, picks: Pick[], schedule: Schedule |
     if (item.kind === 'discover') return undefined;
     const v = item.verdict;
     if (v.kind === 'close') return `${at(v.a)}\n   ${t('or {set}', { set: at(v.b) })}`;
+    if (v.kind === 'both') return `${at(v.first)}\n   ${t('then {set}', { set: at(v.second) })}`;
     return `${at(v.pick)}\n   ${t('(clashes with {name})', { name: v.other.artist.name })}`;
   };
   const days = schedule.days

@@ -58,7 +58,7 @@ describe('must-sees are per festival', () => {
     // Excision loses Saturday's clash to Levity at Solstice unless starred there.
     const saturday = (stars: MustSees) => {
       const clash = buildSchedule(A, plan(stars)).days[1].items.find((i) => i.kind === 'clash');
-      return clash?.kind === 'clash' && clash.verdict.kind !== 'close' ? clash.verdict.pick.artist.id : null;
+      return clash?.kind === 'clash' && 'pick' in clash.verdict ? clash.verdict.pick.artist.id : null;
     };
     expect(saturday(toggleMustSee({}, B.id, 'excision'))).toBe('levity');
     expect(saturday(toggleMustSee({}, A.id, 'excision'))).toBe('excision');

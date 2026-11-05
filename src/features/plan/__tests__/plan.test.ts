@@ -154,6 +154,43 @@ describe('schedule (after set times)', () => {
     expect(s.days.map((d) => d.clashes)).toEqual([0, 0]);
   });
 
+  it('does not chain back-to-back sets into a clash through a third set that overlaps both', () => {
+    const s = schedule([
+      set('ace', 'Friday', '21:00', '22:00'),
+      set('bolt', 'Friday', '22:00', '23:00'),
+      set('crest', 'Friday', '21:30', '22:30'),
+    ]);
+    // ace and bolt don't overlap, so you can see both; crest is the one that clashes (with the stronger of them).
+    expect(itemIds(s.days[0].items)).toEqual(['ace+crest', 'bolt']);
+    expect(s.days[0].clashes).toBe(1);
+    const clash = s.days[0].items[0];
+    if (clash.kind !== 'clash') throw new Error('expected a clash');
+    expect(clash.picks.every((p) => p.start < clash.picks[0].end && clash.picks[0].start < p.end)).toBe(true);
+  });
+
+  it('says you can see both when two sets overlap only slightly', () => {
+    const s = schedule([set('ace', 'Friday', '21:50', '23:00'), set('dune', 'Friday', '22:50', '23:50')]);
+    const clash = s.days[0].items[0];
+    if (clash.kind !== 'clash') throw new Error('expected a clash');
+    expect(clash.verdict).toMatchObject({ kind: 'both', switchAt: toMinutes('22:55'), missFirst: 5, missSecond: 5 });
+  });
+
+  it('keeps a big overlap a real choice', () => {
+    const s = schedule([set('ace', 'Friday', '22:00', '23:30'), set('dune', 'Friday', '22:30', '23:30')]);
+    const clash = s.days[0].items[0];
+    if (clash.kind !== 'clash') throw new Error('expected a clash');
+    expect(clash.verdict.kind).not.toBe('both');
+  });
+
+  it('still groups three sets that all overlap the same one', () => {
+    const s = schedule([
+      set('ace', 'Friday', '21:00', '23:00'),
+      set('bolt', 'Friday', '21:30', '22:30'),
+      set('crest', 'Friday', '22:00', '23:00'),
+    ]);
+    expect(itemIds(s.days[0].items)).toEqual(['ace+bolt+crest']);
+  });
+
   it('recommends the stronger match when the difference is clear', () => {
     const s = schedule([set('ace', 'Friday', '22:00', '23:30'), set('dune', 'Friday', '22:30', '23:30')]);
     const clash = s.days[0].items[0];
@@ -173,7 +210,7 @@ describe('schedule (after set times)', () => {
   });
 
   it('points out the part of a clashing set you can still catch', () => {
-    const s = schedule([set('ace', 'Friday', '23:00', '00:30'), set('dune', 'Friday', '22:00', '23:15')]);
+    const s = schedule([set('ace', 'Friday', '23:00', '00:30'), set('dune', 'Friday', '22:00', '23:45')]);
     const clash = s.days[0].items[0];
     expect(clash.kind === 'clash' && clash.verdict.catch).toMatchObject({
       pick: { artist: { id: 'dune' } },

@@ -1,5 +1,6 @@
 import { SOUND_LABEL, type Artist } from '../../data/types';
 import { t } from '../../i18n';
+import { formatTime } from '../festivals/format';
 import type { Catch, ClashVerdict, ExploreReason, Pick, Tier } from './plan';
 
 /**
@@ -76,6 +77,18 @@ export function verdictLines(v: ClashVerdict): { head: string; sub: string } {
         head: t('{name} is the stronger match for you.', { name: plainName(v.pick.artist) }),
         sub: t('{n} points ahead on your taste.', { n: Math.round(v.lead * 100) }),
       };
+    case 'both': {
+      const at = `${Math.floor((v.switchAt % 1440) / 60)}:${String(v.switchAt % 60).padStart(2, '0')}`;
+      return {
+        head: t('You can see both.'),
+        sub: t('Leave {first} around {time}, then head to {second}. You’ll miss about {n} minutes of each.', {
+          first: plainName(v.first.artist),
+          second: plainName(v.second.artist),
+          time: formatTime(at),
+          n: Math.max(v.missFirst, v.missSecond),
+        }),
+      };
+    }
     case 'close':
       return {
         head: t('Close call. Both are strong matches.'),

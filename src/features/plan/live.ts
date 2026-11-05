@@ -41,7 +41,7 @@ const daySpan = (start: string, end: string) => dayNumber(end) - dayNumber(start
 function suggested(item: ScheduleItem): TimedPick[] {
   if (item.kind !== 'clash') return [item.pick];
   const v = item.verdict;
-  return v.kind === 'close' ? [v.a, v.b] : [v.pick];
+  return v.kind === 'close' ? [v.a, v.b] : v.kind === 'both' ? [v.first, v.second] : [v.pick];
 }
 
 export type LiveNow = {

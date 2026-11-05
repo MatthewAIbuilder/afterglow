@@ -293,7 +293,7 @@ function SetCard({ festival, item }: { festival: Festival; item: Extract<Schedul
   );
 }
 
-const chosen = (v: ClashVerdict) => (v.kind === 'close' ? null : v.pick.artist.id);
+const chosen = (v: ClashVerdict) => (v.kind === 'close' || v.kind === 'both' ? null : v.pick.artist.id);
 
 function ClashCard({ festival, item }: { festival: Festival; item: Extract<ScheduleItem, { kind: 'clash' }> }) {
   const { verdict } = item;

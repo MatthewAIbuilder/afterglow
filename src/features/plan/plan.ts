@@ -24,6 +24,8 @@ export const EXPLORE_SHOWN = 8;
 export const CLOSE_CALL = 0.05;
 /** Similarity needed to call one artist's sound "close to" another's. */
 const NEAR_SOUND = 0.3;
+/** Two sets that overlap by no more than this (and by less than half of either) can both be seen: leave one a little early. */
+export const BOTH_MAX_OVERLAP = 30;
 /** Shortest part of a clashing set worth suggesting you catch. */
 const MIN_CATCH = 20;
 /**
@@ -143,6 +145,8 @@ export type ClashVerdict =
   | { kind: 'pinned'; pick: TimedPick; other: TimedPick; catch?: Catch }
   /** One is clearly the better match. `lead` is the gap in match, 0 to 1. */
   | { kind: 'clear'; pick: TimedPick; other: TimedPick; lead: number; catch?: Catch }
+  /** A slight overlap: you can see both by leaving the first at `switchAt` (minutes), missing a little of each. */
+  | { kind: 'both'; first: TimedPick; second: TimedPick; switchAt: number; missFirst: number; missSecond: number; catch?: undefined }
   /** Too close to call: a genuine choice. */
   | { kind: 'close'; a: TimedPick; b: TimedPick; catch?: Catch };
 
@@ -176,21 +180,47 @@ function catchable(keep: TimedPick, miss: TimedPick): Catch | undefined {
 export function judgeClash(ranked: TimedPick[]): ClashVerdict {
   const [top, next] = ranked;
   if ((top.pinned && !next.pinned) || (top.first && !next.first)) return { kind: 'pinned', pick: top, other: next, catch: catchable(top, next) };
+  if (ranked.length === 2) {
+    const [first, second] = top.start <= next.start ? [top, next] : [next, top];
+    const overlap = Math.min(first.end, second.end) - second.start;
+    if (overlap > 0 && overlap <= BOTH_MAX_OVERLAP && overlap * 2 < Math.min(first.end - first.start, second.end - second.start)) {
+      const switchAt = second.start + Math.floor(overlap / 2);
+      return { kind: 'both', first, second, switchAt, missFirst: first.end - switchAt, missSecond: switchAt - second.start };
+    }
+  }
   const lead = top.match - next.match;
   if (lead < CLOSE_CALL) return { kind: 'close', a: top, b: next, catch: catchable(top, next) };
   return { kind: 'clear', pick: top, other: next, lead, catch: catchable(top, next) };
 }
 
-/** Groups sets that overlap each other, directly or through a chain. */
+/**
+ * Groups of sets that truly clash: every set in a group overlaps the first
+ * (the one you'd go to) in time. Sets that only touch a clash through
+ * another set (A runs into B, B runs into C, but A ends as C starts) are not
+ * a clash with each other, so you can still see both.
+ *
+ * Within a run of overlapping sets, the most important set is kept first,
+ * then the next most important one that doesn't overlap anything kept
+ * already, and so on. Each set left over joins the clash of the most
+ * important kept set it overlaps.
+ */
 function overlapGroups(sets: TimedPick[]): TimedPick[][] {
-  const groups: TimedPick[][] = [];
+  const runs: TimedPick[][] = [];
   let reach = -Infinity;
   for (const s of [...sets].sort((a, b) => a.start - b.start)) {
-    if (s.start < reach) groups[groups.length - 1].push(s);
-    else groups.push([s]);
+    if (s.start < reach) runs[runs.length - 1].push(s);
+    else runs.push([s]);
     reach = Math.max(reach, s.end);
   }
-  return groups;
+  return runs.flatMap((run) => {
+    const keep: TimedPick[] = [];
+    const left: TimedPick[] = [];
+    for (const s of [...run].sort(priority)) (keep.some((k) => overlaps(k, s)) ? left : keep).push(s);
+    const groups = keep.map((k) => [k]);
+    // `left` is in priority order, so each set goes to the best kept set it overlaps (kept sets are in priority order too).
+    for (const l of left) groups[keep.findIndex((k) => overlaps(k, l))].push(l);
+    return groups;
+  });
 }
 
 /**
