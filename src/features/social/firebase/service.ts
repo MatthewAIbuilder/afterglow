@@ -29,7 +29,8 @@ import { cleanNote, cleanPublicKandi, cleanWord, isCharm, isPattern, KANDI_ID, k
 import { cleanArtistName } from '../../../data/extraArtists';
 import { cutVideoPart } from '../../memories/cutPart';
 import { trackFields } from '../../memories/track';
-import { cleanPushAddress, PUSH_ENDPOINT, pushMessages, updatePushKind, withToken, type PushAddress, type PushEvent } from '../../notifications/push';
+import { WEB_PUSH_URL } from '../../../config/app';
+import { cleanPushAddress, isWebPushToken, PUSH_ENDPOINT, pushMessages, updatePushKind, webPushJobs, withToken, type PushAddress, type PushEvent } from '../../notifications/push';
 import { inviteFromDoc, profileToDoc, asSocialError, dropFromDoc, patchFromDoc, privilegesFrom, commentFromDoc, clipCommentFromDoc, crewFromDoc, crewInviteFromDoc, crewMessageFromDoc, crewPicksFromDoc, crewUpdateFromDoc, meetSpotFromDoc, meetupFromDoc, votesFromDoc, liveFromDoc, venueMapFromDoc, crewItemFromDoc, crewCoverFromDoc, memoryFromDoc, prefixEnd, profileFromDoc, reportFromDoc, standingFromDocs, supportFromDoc, videoType, accountFindFromDoc, sproutFromDoc, stickerFromDoc, huntFromDoc, setTimesTipFromDoc, videoTagFromDoc, orgRequestFromDoc, orgDayFromDoc, orgPostFromDoc } from './mapping';
 
 
@@ -239,8 +240,19 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
     void (async () => {
       const to = await addresses();
       if (!to.length) return;
-      for (const m of pushMessages(to, await event(), href)) {
+      const ev = await event();
+      for (const m of pushMessages(to, ev, href)) {
         await fetch(PUSH_ENDPOINT, { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify(m) }).catch(() => {});
+      }
+      // Browsers (the website installed on a home screen) go through Afterglow's own push sender, once it's set up.
+      if (WEB_PUSH_URL) {
+        const jobs = webPushJobs(to, ev, href);
+        const idToken = jobs.length ? await fb().auth.currentUser?.getIdToken().catch(() => undefined) : undefined;
+        if (idToken) {
+          for (const j of jobs) {
+            await fetch(`${WEB_PUSH_URL}/send`, { method: 'POST', headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(j) }).catch(() => {});
+          }
+        }
       }
     })().catch(() => {});
   }
@@ -2172,7 +2184,23 @@ export function firebaseSocialService(config: typeof FIREBASE_CONFIG): SocialSer
       );
     },
     registerPush: (token, lang) => guard(async () => updatePushRecords(token, lang)),
-    unregisterPush: (token) => guard(async () => updatePushRecords(token, undefined)),
+    webPushSubscribe: (subscription) =>
+      guard(async () => {
+        if (!WEB_PUSH_URL) return undefined;
+        const idToken = await fb().auth.currentUser?.getIdToken();
+        if (!idToken) return undefined;
+        const res = await fetch(`${WEB_PUSH_URL}/subscribe`, { method: 'POST', headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription }) });
+        const d = (await res.json().catch(() => null)) as { token?: unknown } | null;
+        return res.ok && isWebPushToken(d?.token) ? d.token : undefined;
+      }),
+    unregisterPush: (token) =>
+      guard(async () => {
+        if (isWebPushToken(token) && WEB_PUSH_URL) {
+          const idToken = await fb().auth.currentUser?.getIdToken().catch(() => undefined);
+          if (idToken) await fetch(`${WEB_PUSH_URL}/unsubscribe`, { method: 'POST', headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) }).catch(() => {});
+        }
+        await updatePushRecords(token, undefined);
+      }),
     deleteCrewMessage: (crewId, id) =>
       guard(async () => {
         await deleteDoc(doc(fb().db, ...room(crewId), 'chat', id));

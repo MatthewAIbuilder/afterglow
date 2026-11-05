@@ -6,6 +6,6 @@ module.exports = defineConfig([
   expoConfig,
   {
     // scripts/ holds tools run outside the app (their packages aren't app dependencies).
-    ignores: ["dist/*", "scripts/*"],
+    ignores: ["dist/*", "scripts/*", "worker/*"],
   }
 ]);

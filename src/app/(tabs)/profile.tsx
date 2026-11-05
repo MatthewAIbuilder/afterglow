@@ -10,6 +10,7 @@ import { useTabBarSpace } from '../../components/GlassTabBar';
 import { NightSky } from '../../components/NightSky';
 import { PageTitle } from '../../components/PageTitle';
 import { InstallCard } from '../../features/install/InstallCard';
+import { NotifyCard } from '../../features/notifications/NotifyCard';
 import { MenuIcon, TilesIcon, BookmarkIcon, FestivalsIcon, PinIcon } from '../../components/TabIcons';
 import { FestivalProfile } from '../../features/festivalMode/FestivalProfile';
 import { useFestivalMode } from '../../state/festivalMode';
@@ -337,6 +338,7 @@ function FullProfile() {
         </ProfileHeader>
 
         <InstallCard />
+        <NotifyCard />
 
         {/* Swap between your cover photo and background, in the corner just under the orbit. */}
         {me ? <CoverSwap me={me} shown={backdrop} style={{ top: insets.top + 205, right: space.lg }} /> : null}

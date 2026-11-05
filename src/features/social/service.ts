@@ -320,6 +320,12 @@ export interface SocialService {
    * meeting spot, crew invites and support replies then reach your phone.
    */
   registerPush(token: string, lang: Language): Promise<void>;
+  /**
+   * A browser's notification subscription (the website installed on a home screen) handed to Afterglow's
+   * push sender, which keeps it and returns the browser's address (`WebPush[id]`, then used with
+   * `registerPush`). Undefined when web push isn't set up. docs/web-push.md.
+   */
+  webPushSubscribe(subscription: unknown): Promise<string | undefined>;
   /** Take this phone's push address away again, everywhere it was kept (before signing out). */
   unregisterPush(token: string): Promise<void>;
   /**

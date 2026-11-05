@@ -1106,6 +1106,9 @@ export function fakeSocial(opts: { available?: boolean; fileBytes?: (uri: string
     async registerPush(token, lang) {
       pushes.set(me().uid, { token, lang });
     },
+    async webPushSubscribe() {
+      return 'WebPush[test-browser-000000]';
+    },
     async unregisterPush(token) {
       const uid = me().uid;
       if (pushes.get(uid)?.token === token) pushes.delete(uid);

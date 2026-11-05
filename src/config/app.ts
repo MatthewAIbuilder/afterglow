@@ -31,3 +31,9 @@ export const SUPPORT_EMAIL = 'afterglowmusic.support@gmail.com';
  * coming instead of showing a download button.
  */
 export const APP_STORE_URL = '';
+
+/**
+ * The web push sender (a Cloudflare Worker, `worker/`, docs/web-push.md), e.g. `https://afterglow-push.<name>.workers.dev`.
+ * Empty until it's deployed: the website then doesn't offer notifications at all.
+ */
+export const WEB_PUSH_URL = '';

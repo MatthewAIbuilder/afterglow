@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { cleanPushAddress, isExpoPushToken, PUSH_BATCH, PUSH_TOKENS_MAX, pushMessages, pushText, updatePushKind, withToken } from '../push';
+import { cleanPushAddress, isExpoPushToken, isWebPushToken, PUSH_BATCH, PUSH_TOKENS_MAX, pushMessages, pushText, updatePushKind, webPushJobs, withToken } from '../push';
 
 const tok = (n: number | string) => `ExponentPushToken[${n}]`;
 
@@ -71,5 +71,32 @@ describe('what a push says', () => {
     const tokens = Array.from({ length: PUSH_BATCH + 1 }, (_, i) => tok(i));
     const msgs = pushMessages(tokens.map((t) => ({ tokens: [t], lang: 'en' as const })), { kind: 'support', text: 'hi' }, '/support');
     expect(msgs.map((m) => m.to.length)).toEqual([PUSH_BATCH, 1]);
+  });
+});
+
+describe('browser addresses', () => {
+  const WEB = 'WebPush[abcdefghijklmnop1234]';
+  const EXPO = 'ExponentPushToken[abc]';
+
+  it('keeps a browser’s address beside phones’ and throws out lookalikes', () => {
+    expect(isWebPushToken(WEB)).toBe(true);
+    expect(isWebPushToken('WebPush[short]')).toBe(false);
+    expect(isWebPushToken('WebPush[abcdefghijklmnop1234] extra')).toBe(false);
+    expect(cleanPushAddress({ tokens: [WEB, EXPO, 'nope'], lang: 'es' })).toEqual({ tokens: [WEB, EXPO], lang: 'es' });
+    expect(withToken([EXPO], WEB)).toEqual([EXPO, WEB]);
+  });
+
+  it('sends phones through Expo and browsers through the push sender, never mixed', () => {
+    const addresses = [{ tokens: [EXPO, WEB], lang: 'en' as const }];
+    const event = { kind: 'support', text: 'Hi' } as const;
+    const expo = pushMessages(addresses, event, '/support');
+    expect(expo).toHaveLength(1);
+    expect(expo[0].to).toEqual([EXPO]);
+    const web = webPushJobs(addresses, event, '/support');
+    expect(web).toEqual([{ tokens: [WEB], title: 'Afterglow support', body: 'Hi', href: '/support' }]);
+  });
+
+  it('says nothing to the push sender when nobody has a browser', () => {
+    expect(webPushJobs([{ tokens: [EXPO], lang: 'en' }], { kind: 'support', text: 'Hi' }, '/support')).toEqual([]);
   });
 });

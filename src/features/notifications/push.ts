@@ -18,7 +18,7 @@ export type PushRegistered = { uid: string; token: string; lang: string; rooms: 
 export function readPushRegistered(raw: string | null): PushRegistered | undefined {
   try {
     const r = raw ? (JSON.parse(raw) as Partial<PushRegistered>) : undefined;
-    return r && typeof r.uid === 'string' && isExpoPushToken(r.token) && typeof r.lang === 'string' && typeof r.rooms === 'string' && typeof r.day === 'string' ? (r as PushRegistered) : undefined;
+    return r && typeof r.uid === 'string' && isPushAddress(r.token) && typeof r.lang === 'string' && typeof r.rooms === 'string' && typeof r.day === 'string' ? (r as PushRegistered) : undefined;
   } catch {
     return undefined;
   }
@@ -47,19 +47,23 @@ export type PushAddress = { tokens: string[]; lang: Language };
 export type ExpoPushMessage = { to: string[]; title: string; body: string; data: { href: string }; sound: 'default'; priority: 'high' };
 
 export const isExpoPushToken = (x: unknown): x is string => typeof x === 'string' && x.length <= 200 && /^Expo(nent)?PushToken\[[^\]\s]+\]$/.test(x);
+/** A browser's address, `WebPush[id]`: the id is made by Afterglow's push sender (worker/, docs/web-push.md), which keeps the browser's real address. */
+export const isWebPushToken = (x: unknown): x is string => typeof x === 'string' && /^WebPush\[[A-Za-z0-9_-]{16,64}\]$/.test(x);
+/** Any address a notification can go to: a phone's or a browser's. */
+export const isPushAddress = (x: unknown): x is string => isExpoPushToken(x) || isWebPushToken(x);
 
 /** A stored push address, checked (anything malformed is left out). */
 export function cleanPushAddress(data: unknown): PushAddress | undefined {
   if (!data || typeof data !== 'object') return undefined;
   const { tokens, lang } = data as { tokens?: unknown; lang?: unknown };
-  const good = Array.isArray(tokens) ? [...new Set(tokens.filter(isExpoPushToken))].slice(-PUSH_TOKENS_MAX) : [];
+  const good = Array.isArray(tokens) ? [...new Set(tokens.filter(isPushAddress))].slice(-PUSH_TOKENS_MAX) : [];
   if (!good.length) return undefined;
   return { tokens: good, lang: lang === 'es' ? 'es' : 'en' };
 }
 
 /** Your phone's address added to the ones kept (newest last, at most `PUSH_TOKENS_MAX`). */
 export function withToken(tokens: readonly string[], token: string): string[] {
-  return [...tokens.filter((x) => x !== token && isExpoPushToken(x)), token].slice(-PUSH_TOKENS_MAX);
+  return [...tokens.filter((x) => x !== token && isPushAddress(x)), token].slice(-PUSH_TOKENS_MAX);
 }
 
 const short = (text: string) => {
@@ -113,7 +117,7 @@ export function pushText(e: PushEvent, lang: Language): { title: string; body: s
  */
 export function pushMessages(addresses: readonly PushAddress[], event: PushEvent, href: string): ExpoPushMessage[] {
   const byLang = new Map<Language, Set<string>>();
-  for (const a of addresses) for (const tk of a.tokens) (byLang.get(a.lang) ?? byLang.set(a.lang, new Set()).get(a.lang)!).add(tk);
+  for (const a of addresses) for (const tk of a.tokens) if (isExpoPushToken(tk)) (byLang.get(a.lang) ?? byLang.set(a.lang, new Set()).get(a.lang)!).add(tk);
   const out: ExpoPushMessage[] = [];
   for (const [lang, tokens] of byLang) {
     const { title, body } = pushText(event, lang);
@@ -122,6 +126,22 @@ export function pushMessages(addresses: readonly PushAddress[], event: PushEvent
   }
   return out;
 }
+
+export type WebPushJob = { tokens: string[]; title: string; body: string; href: string };
+
+/** The same event for the browsers among the addresses: one job per language (the push sender takes up to `WEB_PUSH_BATCH` addresses). */
+export function webPushJobs(addresses: readonly PushAddress[], event: PushEvent, href: string): WebPushJob[] {
+  const byLang = new Map<Language, Set<string>>();
+  for (const a of addresses) for (const tk of a.tokens) if (isWebPushToken(tk)) (byLang.get(a.lang) ?? byLang.set(a.lang, new Set()).get(a.lang)!).add(tk);
+  const out: WebPushJob[] = [];
+  for (const [lang, tokens] of byLang) {
+    const { title, body } = pushText(event, lang);
+    const all = [...tokens];
+    for (let i = 0; i < all.length; i += WEB_PUSH_BATCH) out.push({ tokens: all.slice(i, i + WEB_PUSH_BATCH), title, body, href });
+  }
+  return out;
+}
+export const WEB_PUSH_BATCH = 100;
 
 /** The update kinds that become a push, from a crew update. */
 export function updatePushKind(u: { kind: string; care?: string; lost?: boolean }): Extract<PushEvent, { kind: 'update' }>['update'] {

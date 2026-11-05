@@ -3,6 +3,7 @@
   "compilerOptions": {
     "strict": true
   },
+  "exclude": ["worker", "node_modules"],
   "include": [
     "**/*.ts",
     "**/*.tsx",

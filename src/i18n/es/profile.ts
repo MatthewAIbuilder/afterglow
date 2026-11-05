@@ -257,4 +257,6 @@ export const es_profile: Dictionary = {
   'Fit checks': 'Outfits',
   'Your {year} Wrapped is ready': 'Tu Wrapped de {year} está listo',
   'Your festivals, the sets you saw, your top artists and your sound. Tap to play it.': 'Tus festivales, los sets que viste, tus artistas top y tu sonido. Toca para verlo.',
+  'Turn on notifications': 'Activa las notificaciones',
+  'Hear when your crew messages you, checks in or sets a meeting spot, even when Afterglow is closed.': 'Entérate cuando tu crew te escriba, haga check-in o fije un punto de encuentro, aunque Afterglow esté cerrado.',
 };

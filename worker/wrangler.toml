@@ -1,0 +1,17 @@
+# Afterglow's web push sender (docs/web-push.md). Deploy: `npx wrangler deploy` from this folder.
+name = "afterglow-push"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+[vars]
+ALLOWED_ORIGIN = "https://afterglowmusic.app"
+FIREBASE_PROJECT = "afterglowmusic"
+VAPID_SUBJECT = "mailto:afterglowmusic.support@gmail.com"
+
+# The list of browsers that said yes. Create it once (docs/web-push.md) and paste its id here.
+[[kv_namespaces]]
+binding = "SUBS"
+id = "PASTE_THE_KV_ID_HERE"
+
+# Secrets (set with `npx wrangler secret put <NAME>`, never written here):
+#   VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY
