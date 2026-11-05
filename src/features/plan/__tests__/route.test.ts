@@ -122,7 +122,7 @@ describe('the full-day route', () => {
         taste: { mine: 0.4, other: 0.2 },
         informed: { mine: true, other: true },
         pinned: new Set(['mine']),
-        edits: { out: new Set(['gone']), first: new Set(), own: true },
+        edits: { out: new Set(['gone']), first: new Set(), own: true, days: new Set<string>() },
       },
       'Friday',
     );

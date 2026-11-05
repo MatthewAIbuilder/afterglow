@@ -12,6 +12,7 @@ import { useGoing } from '../../state/going';
 import { color, radius, space, type, glowA } from '../../theme/tokens';
 import { festivalNight } from './live';
 import { LiveNow } from './LiveNow';
+import { GoingDays } from './GoingDays';
 import { ByDayList } from './ByDayList';
 import { MustSeeList } from './MustSeeList';
 import { Timetable } from './Timetable';
@@ -30,7 +31,7 @@ import { PlanPlaylist } from './PlanPlaylist';
  * ranked must-see list; once they are out it becomes a day-by-day plan.
  */
 export function YourFestival({ festival }: { festival: Festival }) {
-  const { picks, schedule, route, text } = useFestivalPlan(festival);
+  const { picks, lineup, schedule, route, text } = useFestivalPlan(festival);
   // Only during the festival's days (and the morning after) is there anything live to show.
   const today = useToday();
   const maybeLive = !!schedule && isLive(festival, today);
@@ -72,6 +73,7 @@ export function YourFestival({ festival }: { festival: Festival }) {
             </Pressable>
           ) : null}
         </View>
+        <GoingDays festival={festival} />
         <PlanModeToggle own={edits.own} onChange={(own) => setOwn(festival.id, own)} />
         <Text style={styles.modeHint}>
           {festival.sets?.length
@@ -123,10 +125,16 @@ export function YourFestival({ festival }: { festival: Festival }) {
         {/* Or the plan as a playlist in your own music service. */}
         <PlanPlaylist festival={festival} picks={picks} />
       </View>
-      {picks.length === 0 ? (
+      {picks.length === 0 && !(edits.own && lineup.length > 0) ? (
         <Text style={[styles.sub, styles.head]}>
           {edits.own ? t('Only your picks: star anyone on the lineup to add them to your plan.') : t('Like a few clips in Discover and your picks will show up here.')}
         </Text>
+      ) : picks.length === 0 && edits.own && !schedule ? (
+        // Building your own before set times with nobody starred yet: the whole lineup, to star from.
+        <>
+          <Text style={[styles.sub, styles.head]}>{t('Nobody yet. Star the acts you want to see.')}</Text>
+          {byDayPossible ? <ByDayList festival={festival} picks={lineup} /> : <MustSeeList festivalId={festival.id} picks={lineup} />}
+        </>
       ) : schedule ? (
         <>
           {maybeLive && <LiveNow festival={festival} schedule={schedule} route={route} />}

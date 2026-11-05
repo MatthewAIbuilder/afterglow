@@ -35,7 +35,12 @@ export function useFestivalPlan(festival: Festival) {
     () => rankLineup({ festival, artists, taste, informed, pinned: mustSeesAt(festival.id), edits }),
     [festival, artists, taste, informed, mustSeesAt, edits],
   );
-  const schedule = useMemo(() => (festival.sets?.length ? buildSchedule(festival, picks) : null), [festival, picks]);
+  // The whole lineup ranked for you, to star from when you build your own plan and haven't picked anyone yet.
+  const lineup = useMemo(
+    () => (edits.own ? rankLineup({ festival, artists, taste, informed, pinned: mustSeesAt(festival.id), edits: { ...edits, own: false } }) : picks),
+    [festival, artists, taste, informed, mustSeesAt, edits, picks],
+  );
+  const schedule = useMemo(() => (festival.sets?.length ? buildSchedule(festival, picks, edits.days) : null), [festival, picks, edits.days]);
   // Every day set to set, from the same live taste and must-sees.
   const route = useMemo(
     () => (festival.sets?.length ? festivalRoute({ festival, artists, taste, informed, pinned: mustSeesAt(festival.id), hours, edits, walkBetween }) : undefined),
@@ -47,5 +52,5 @@ export function useFestivalPlan(festival: Festival) {
     [festival, route, picks, schedule],
   );
   const card = useMemo(() => planCard(festival, picks, route), [festival, picks, route]);
-  return { picks, schedule, route, text, card };
+  return { picks, lineup, schedule, route, text, card };
 }

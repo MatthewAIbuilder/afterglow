@@ -154,6 +154,17 @@ describe('schedule (after set times)', () => {
     expect(s.days.map((d) => d.clashes)).toEqual([0, 0]);
   });
 
+  it('only holds the days you are going to', () => {
+    const f = fest([set('ace', 'Friday', '21:00', '22:00'), set('bolt', 'Saturday', '21:00', '22:00'), set('crest', 'Saturday', '23:00', '23:30')]);
+    const days = new Set(['Saturday']);
+    const edits = { out: new Set<string>(), first: new Set<string>(), own: false, days };
+    const picks = rankLineup({ festival: f, artists: ARTS, taste: TASTE, edits });
+    expect(ids(picks)).not.toContain('ace');
+    expect(ids(picks)).toContain('bolt');
+    const s = buildSchedule(f, picks, days);
+    expect(s.days.map((d) => d.day)).toEqual(['Saturday']);
+  });
+
   it('does not chain back-to-back sets into a clash through a third set that overlaps both', () => {
     const s = schedule([
       set('ace', 'Friday', '21:00', '22:00'),

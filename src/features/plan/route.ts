@@ -251,7 +251,8 @@ const sameBreak = (a: RouteBreak, yours?: { label?: string }) => (yours ? !!a.yo
 
 /** Every day of the festival, in order. */
 export function festivalRoute(input: RouteInput): DayRoute[] {
-  return input.festival.days.map((day) => dayRoute(input, day));
+  const only = input.edits?.days;
+  return input.festival.days.filter((d) => !only?.size || only.has(d)).map((day) => dayRoute(input, day));
 }
 
 const stopFor = (s: Timed, from: number, to: number): RouteStop => ({

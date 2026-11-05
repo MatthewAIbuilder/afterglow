@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import type { Artist, Festival, SetTime } from '../../../data/types';
-import { bringAllBack, bringBack, cleanEdits, editsAt, goWith, NO_EDITS, setOwn, takeOut } from '../edits';
+import { bringAllBack, bringBack, cleanEdits, editsAt, goWith, NO_EDITS, setDays, setOwn, takeOut } from '../edits';
 import { buildSchedule, rankLineup } from '../plan';
 import { dayRoute, type RouteStop } from '../route';
 
@@ -87,5 +87,16 @@ describe('the plan and the route follow your changes', () => {
     const pinned = new Set(['d']);
     expect(ids(dayRoute({ ...base, pinned, edits }, 'Friday').stops)).toEqual(['d']);
     expect(rankLineup({ ...base, pinned, edits }).map((p) => p.artist.id)).toEqual(['d']);
+  });
+});
+
+describe('the days you are going to', () => {
+  it('keeps them per festival, and none means all days', () => {
+    const e = setDays({}, 'f', ['Sunday', 'Sunday']);
+    expect(e).toEqual({ f: { days: ['Sunday'] } });
+    expect([...editsAt(e, 'f').days]).toEqual(['Sunday']);
+    expect(editsAt(e, 'other').days.size).toBe(0);
+    expect(setDays(e, 'f', [])).toEqual({});
+    expect(cleanEdits({ f: { days: ['Sunday', 3, ''] } })).toEqual({ f: { days: ['Sunday'] } });
   });
 });

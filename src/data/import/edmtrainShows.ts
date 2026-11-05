@@ -78,6 +78,7 @@ export function edmtrainShows(
 
   const seen = new Set<number | string>();
   const candidates: (FileShow & { order: number })[] = [];
+  const bareDays: (FileShow & { order: number })[] = [];
   events.forEach((e, order) => {
     if (!e || typeof e !== 'object') return void skipped.incomplete++;
     // Festivals have their own pages; livestreams have no venue to go to.
@@ -92,11 +93,13 @@ export function edmtrainShows(
     seen.add(e.id);
     const ids: string[] = [];
     for (const a of e.artistList ?? []) for (const id of idsFor(clean(a?.name, 120))) if (!ids.includes(id)) ids.push(id);
-    if (!ids.length) return void skipped.noArtists++;
     const name = clean(e.name, 80);
     const location = clean(e.venue?.location, 80);
     const place = e.venue ? placeOf(e.venue) : undefined;
-    candidates.push({
+    // A day nobody on Afterglow plays still belongs to its event's page (below) when the event has a name of its own.
+    const bare = !ids.length;
+    if (bare && !(name && fold(name) !== fold(venue))) return void skipped.noArtists++;
+    (bare ? bareDays : candidates).push({
       id: `edm-${e.id}`,
       date: e.date,
       ...(name && fold(name) !== fold(venue) ? { name } : {}),
@@ -129,5 +132,22 @@ export function edmtrainShows(
     if (key) keptDays.add(`${key}|${show.date}`);
     shows.push(show);
   }
+  // Days of a named event with nobody on Afterglow playing them join the days already kept next to them
+  // (a weekend's Saturday and Sunday, when only Friday has someone we know), so the event shows all its days.
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const { order: _order, ...show } of bareDays) {
+      const key = runKey(show)!;
+      if (keptDays.has(`${key}|${show.date}`) || shows.length >= rules.maxShows) continue;
+      const nextDayOf = new Date(utc(show.date) + DAY_MS).toISOString().slice(0, 10);
+      if (!keptDays.has(`${key}|${dayBefore(show.date)}`) && !keptDays.has(`${key}|${nextDayOf}`)) continue;
+      keptDays.add(`${key}|${show.date}`);
+      shows.push(show);
+      grew = true;
+    }
+  }
+  for (const { order: _order, ...show } of bareDays) if (!keptDays.has(`${runKey(show)}|${show.date}`)) skipped.noArtists++;
+  shows.sort((a, b) => a.date.localeCompare(b.date));
   return { shows, skipped };
 }

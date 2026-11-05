@@ -45,6 +45,16 @@ describe('making the plan yours', () => {
     await app.unmount();
   });
 
+  it('building your own with nobody starred yet still shows the day to star from', async () => {
+    const app = await renderApp('/festival/solstice-26');
+    await settle();
+    await fireEvent.press(app.getByLabelText('Build my own: only the acts you star'));
+    await settle();
+    expect(app.queryByText('Only your picks: star anyone on the lineup to add them to your plan.')).toBeNull();
+    expect(app.getByText('Everyone on today, hour by hour. Star who you want to see.')).toBeTruthy();
+    await app.unmount();
+  });
+
   it('with only your picks, the day holds just what you starred', async () => {
     await AsyncStorage.setItem('mustSees.v2', JSON.stringify({ 'solstice-26': ['subtronics'] }));
     const app = await renderApp('/festival/solstice-26');

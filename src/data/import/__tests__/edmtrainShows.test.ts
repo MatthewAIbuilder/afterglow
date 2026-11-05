@@ -51,6 +51,27 @@ describe('club shows from EDMTrain', () => {
     expect(edmtrainShows([show('2026-10-18', ['Someone New'])], artists, TODAY).shows).toEqual([]);
   });
 
+  it('keeps the days of a named weekend where nobody on Afterglow plays, next to a day that is kept', () => {
+    const wbh = { name: 'We Belong Here - Tampa Bay', venue: { id: 9, name: 'Armature Works', location: 'Tampa, FL' } };
+    const { shows, skipped } = edmtrainShows(
+      [
+        show('2026-12-13', ['Someone New'], wbh),
+        show('2026-12-11', ['Subtronics'], wbh),
+        show('2026-12-12', ['Someone New'], wbh),
+        show('2026-12-20', ['Someone New'], wbh), // a week later, not next to a kept day
+        show('2026-12-14', ['Someone New']), // a club night: no name of its own
+      ],
+      artists,
+      TODAY,
+    );
+    expect(shows.map((x) => [x.date, x.artists])).toEqual([
+      ['2026-12-11', ['subtronics']],
+      ['2026-12-12', []],
+      ['2026-12-13', []],
+    ]);
+    expect(skipped.noArtists).toBe(2);
+  });
+
   it('counts a b2b act for each of its artists on Afterglow', () => {
     const { shows } = edmtrainShows([show('2026-10-20', ['SUBTRONICS B2B CRANKDAT', 'Crankdat'])], artists, TODAY);
     expect(shows[0].artists).toEqual(['subtronics', 'crankdat']);

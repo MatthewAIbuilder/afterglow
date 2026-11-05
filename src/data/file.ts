@@ -413,7 +413,8 @@ function parseShow(raw: unknown): Show | undefined {
   const venue = text(raw.venue);
   const link = safeImageUrl(raw.link);
   const artistIds = [...new Set(list(raw.artists).flatMap((a) => (id(a) ? [id(a)!] : [])))].slice(0, MAX_SHOW_ARTISTS);
-  if (!showId || !date || !venue || !link || !artistIds.length) return undefined;
+  // A show with nobody on Afterglow's bill is only kept as a day of a named event (a weekend's Sunday).
+  if (!showId || !date || !venue || !link || (!artistIds.length && !text(raw.name))) return undefined;
   const show: Show = { id: showId, date, venue, location: text(raw.location) ?? '', link, artistIds };
   const name = text(raw.name);
   if (name) show.name = name;

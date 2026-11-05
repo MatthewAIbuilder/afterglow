@@ -1,5 +1,6 @@
 import type { Artist, Festival, SetTime, SoundTag, TasteProfile } from '../../data/types';
 import { type Similarity, soundSimilarity } from '../taste/similarity';
+import { daysOf } from '../festivals/days';
 import type { EditsAt } from './edits';
 
 /**
@@ -92,6 +93,11 @@ export function rankLineup({ festival, artists, taste, pinned, informed, edits }
     const isPinned = !!pinned?.has(id);
     // Taken out, or (only your picks) not one of yours: not in your plan.
     if (edits?.out.has(id) || (edits?.own && !isPinned)) continue;
+    // Only going some days: an artist who plays only on other days isn't in your plan (no day known: stays).
+    if (edits?.days.size) {
+      const played = daysOf(festival, id);
+      if (played.length && !played.some((d) => edits.days.has(d))) continue;
+    }
     const tier = tierFor(match, known, isPinned);
     if (!tier) continue;
     const first = isPinned && !!edits?.first.has(id);
@@ -229,13 +235,13 @@ function overlapGroups(sets: TimedPick[]): TimedPick[][] {
  * discoveries when you are free, or as a quiet alternative when they overlap
  * something already on your plan.
  */
-export function buildSchedule(festival: Festival, picks: Pick[]): Schedule {
+export function buildSchedule(festival: Festival, picks: Pick[], onlyDays?: ReadonlySet<string>): Schedule {
   // Every set an artist plays (some play twice), each on its own day and time.
   const setsOf = (id: string) => (festival.sets ?? []).filter((s) => s.artistId === id);
   const withSet = picks.flatMap((p) => setsOf(p.artist.id).map((set) => timed({ ...p, set })));
   const unscheduled = picks.filter((p) => !setsOf(p.artist.id).length);
 
-  const days = festival.days.map((day): ScheduleDay => {
+  const days = festival.days.filter((d) => !onlyDays?.size || onlyDays.has(d)).map((day): ScheduleDay => {
     const today = withSet.filter((p) => p.set.day === day);
     const planned = today.filter((p) => p.tier !== 'explore');
     const explore = today.filter((p) => p.tier === 'explore');

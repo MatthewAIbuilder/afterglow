@@ -26,6 +26,8 @@ type Ctx = {
   goWith: (festivalId: string, artistId: string, over?: readonly string[]) => void;
   /** Only what you starred, nothing suggested. */
   setOwn: (festivalId: string, own: boolean) => void;
+  /** The festival days you're going to (none: all of them). */
+  setDays: (festivalId: string, days: readonly string[]) => void;
 };
 
 // v1 stored stars per artist for every festival. Those can't be assigned to a festival, so they are dropped.
@@ -90,6 +92,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
         setAll((c) => (isMustSee(c, f, a) ? c : toggleMustSee(c, f, a)));
       },
       setOwn: (f: string, own: boolean) => setEdits((c) => E.setOwn(c, f, own)),
+      setDays: (f: string, days: readonly string[]) => setEdits((c) => E.setDays(c, f, days)),
     }),
     [],
   );

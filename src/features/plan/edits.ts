@@ -7,18 +7,19 @@
  * - `first`: your first choices ("Go with this one"): they win every clash
  *   they're in, even against another star.
  * - `own`: only what you starred; nothing suggested.
+ * - `days`: the festival days you're going to (none: all of them), so the plan only holds those.
  */
-export type PlanEdit = { out?: string[]; first?: string[]; own?: true };
+export type PlanEdit = { out?: string[]; first?: string[]; own?: true; days?: string[] };
 export type PlanEdits = Record<string, PlanEdit>;
 
-export type EditsAt = { out: ReadonlySet<string>; first: ReadonlySet<string>; own: boolean };
+export type EditsAt = { out: ReadonlySet<string>; first: ReadonlySet<string>; own: boolean; days: ReadonlySet<string> };
 
-export const NO_EDITS: EditsAt = { out: new Set(), first: new Set(), own: false };
+export const NO_EDITS: EditsAt = { out: new Set(), first: new Set(), own: false, days: new Set() };
 
 export function editsAt(all: PlanEdits, festivalId: string): EditsAt {
   const e = all[festivalId];
   if (!e) return NO_EDITS;
-  return { out: new Set(e.out ?? []), first: new Set(e.first ?? []), own: !!e.own };
+  return { out: new Set(e.out ?? []), first: new Set(e.first ?? []), own: !!e.own, days: new Set(e.days ?? []) };
 }
 
 const ids = (v: unknown): string[] | undefined => {
@@ -41,6 +42,8 @@ export function cleanEdits(raw: unknown): PlanEdits {
     if (first) edit.first = first.filter((id) => !o?.includes(id));
     if (!edit.first?.length) delete edit.first;
     if (e.own === true) edit.own = true;
+    const days = ids(e.days);
+    if (days) edit.days = days;
     if (Object.keys(edit).length) out[f] = edit;
   }
   return out;
@@ -52,6 +55,7 @@ function put(all: PlanEdits, festivalId: string, edit: PlanEdit): PlanEdits {
   if (edit.out?.length) tidy.out = edit.out;
   if (edit.first?.length) tidy.first = edit.first;
   if (edit.own) tidy.own = true;
+  if (edit.days?.length) tidy.days = edit.days;
   return Object.keys(tidy).length ? { ...rest, [festivalId]: tidy } : rest;
 }
 
@@ -100,4 +104,9 @@ export function notFirst(all: PlanEdits, festivalId: string, artistId: string): 
 /** "Only mine" on or off. */
 export function setOwn(all: PlanEdits, festivalId: string, own: boolean): PlanEdits {
   return put(all, festivalId, { ...(all[festivalId] ?? {}), own: own ? true : undefined });
+}
+
+/** The festival days you're going to (empty: all of them). */
+export function setDays(all: PlanEdits, festivalId: string, days: readonly string[]): PlanEdits {
+  return put(all, festivalId, { ...(all[festivalId] ?? {}), days: [...new Set(days)] });
 }
