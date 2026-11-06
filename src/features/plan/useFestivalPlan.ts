@@ -15,13 +15,19 @@ import { fitOf, stageWalk } from '../venueMap/venueMap';
  * Your plan for a festival, from your live taste and must-sees: ranked picks,
  * the schedule and full-day route once set times are out, and the text and
  * card to share. Shared by "Your festival" and the plan card.
+ *
+ * `everyDay`: ignore the days you said you're going to (festival mode shows
+ * every night: you're there, and may want to look at the others).
  */
-export function useFestivalPlan(festival: Festival) {
+export function useFestivalPlan(festival: Festival, { everyDay = false }: { everyDay?: boolean } = {}) {
   const { taste, informed } = useTaste();
   const { artists } = useCatalog();
   const { mustSeesAt, editsAt } = usePlan();
   // Your own changes: taken out, first choices, only your picks.
-  const edits = useMemo(() => editsAt(festival.id), [editsAt, festival.id]);
+  const edits = useMemo(() => {
+    const e = editsAt(festival.id);
+    return everyDay && e.days.size ? { ...e, days: new Set<string>() } : e;
+  }, [editsAt, festival.id, everyDay]);
   // Your hours each day (arrive, leave, breaks): the route plans inside them.
   const { hours } = useDayHours(festival.id);
   // Real walks between stages, when the festival has a map with its stages pinned.

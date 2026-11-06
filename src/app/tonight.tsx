@@ -139,7 +139,7 @@ function NextUp() {
 }
 
 function TonightBody({ festival, night }: { festival: Festival; night?: string }) {
-  const { picks, schedule, route } = useFestivalPlan(festival);
+  const { picks, schedule, route } = useFestivalPlan(festival, { everyDay: true });
   // A one-night show: its bill, no set times or route.
   const show = isShowEvent(festival);
   const social = useSocial();

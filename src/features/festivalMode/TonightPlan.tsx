@@ -39,7 +39,7 @@ export function TonightPlan({ mode }: { mode: ModeNow }) {
   const insets = useSafeAreaInsets();
   const tabSpace = useTabBarSpace();
   const { festival } = mode;
-  const { picks, schedule, route } = useFestivalPlan(festival);
+  const { picks, schedule, route } = useFestivalPlan(festival, { everyDay: true });
   const days = route?.length ? route.map((r) => r.day) : lineupDays(festival);
   const [chosen, setChosen] = useState<string | undefined>();
   const day = (chosen && days.includes(chosen) ? chosen : undefined) ?? (mode.night && days.includes(mode.night) ? mode.night : days[0]);
